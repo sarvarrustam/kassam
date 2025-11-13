@@ -21,4 +21,23 @@ class Transaction extends Equatable {
 
   @override
   List<Object?> get props => [id, title, amount, date, type, category];
+
+  // copyWith metodi
+  Transaction copyWith({
+    String? id,
+    String? title,
+    double? amount,
+    DateTime? date,
+    TransactionType? type,
+    String? category,
+  }) {
+    return Transaction(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      date: date ?? this.date,
+      type: type ?? this.type,
+      category: category ?? this.category,
+    );
+  }
 }

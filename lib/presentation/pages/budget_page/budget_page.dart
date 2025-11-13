@@ -6,8 +6,8 @@ class BudgetPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Budget')),
-      body: const Center(child: Text('Budget Page')),
+      appBar: AppBar(title: const Text('Byudjet')),
+      body: const Center(child: Text('Byudjet sahifasi')),
     );
   }
 }

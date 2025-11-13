@@ -6,8 +6,8 @@ class StatsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Stats')),
-      body: const Center(child: Text('Statistics Page')),
+      appBar: AppBar(title: const Text('Statistika')),
+      body: const Center(child: Text('Statistika sahifasi')),
     );
   }
 }

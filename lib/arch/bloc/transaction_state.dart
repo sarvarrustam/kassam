@@ -8,7 +8,14 @@ abstract class TransactionState extends Equatable {
   List<Object?> get props => [];
 }
 
-class TransactionLoading extends TransactionState {}
+// Boshlang'ich state
+class TransactionInitial extends TransactionState {
+  const TransactionInitial();
+}
+
+class TransactionLoading extends TransactionState {
+  const TransactionLoading();
+}
 
 class TransactionLoaded extends TransactionState {
   final List<Transaction> transactions;

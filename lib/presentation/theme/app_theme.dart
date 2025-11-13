@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Asosiy ranglar - BREND
-  static const Color primaryBrown = Color(0xFF8D6E63); // Jigarrang (Asosiy)
+  static const Color primaryBrown = const Color.fromARGB(
+    255,
+    108,
+    43,
+    20,
+  ); // Jigarrang (Asosiy)
   static const Color successGreen = Color(
     0xFF388E3C,
   ); // Yashil (Daromad/Ijobiy)
@@ -14,8 +19,11 @@ class AppColors {
     0xFFFAFAFA,
   ); // Sut rang (Sahifa foni)
   static const Color surfaceLight = Colors.white; // Oq rang (Karta/Input foni)
-  static const Color softBorder = Color(
-    0xFFBCAAA4,
+  static const Color softBorder = Color.fromARGB(
+    255,
+    108,
+    43,
+    20,
   ); // Yumshoq Jigarrang (Border/Shadow)
 
   // Matn ranglari
@@ -30,9 +38,9 @@ class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       // 1. Ranglar Palitrasi
-      primaryColor: AppColors.primaryBrown,
+      primaryColor: const Color.fromARGB(255, 108, 43, 20),
       colorScheme: const ColorScheme.light(
-        primary: AppColors.primaryBrown, // Jigarrang (Asosiy)
+        primary: Color.fromARGB(255, 108, 43, 20), // Jigarrang (Asosiy)
         secondary: AppColors.accentBlue,
         error: AppColors.errorRed,
         background: AppColors.backgroundLight,
@@ -46,7 +54,7 @@ class AppTheme {
 
       // 3. App Bar (Yuqori Qism)
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.primaryBrown, // Jigarrang
+        backgroundColor: const Color.fromARGB(255, 108, 43, 20), // Jigarrang
         foregroundColor: AppColors.onPrimary, // Oq matn
         elevation: 0,
       ),
@@ -83,7 +91,7 @@ class AppTheme {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12.0),
           borderSide: const BorderSide(
-            color: AppColors.primaryBrown, // Jigarrang fokusda
+            color: const Color.fromARGB(255, 108, 43, 20), // Jigarrang fokusda
             width: 2.0,
           ),
         ),
@@ -96,7 +104,7 @@ class AppTheme {
       // 7. Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryBrown,
+          backgroundColor: const Color.fromARGB(255, 108, 43, 20),
           foregroundColor: AppColors.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),

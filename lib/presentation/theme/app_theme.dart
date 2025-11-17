@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Asosiy ranglar - BREND
-  static const Color primaryBrown = const Color.fromARGB(
+  static const Color primaryBrown = Color.fromARGB(
     255,
     108,
     43,
@@ -38,15 +38,17 @@ class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       // 1. Ranglar Palitrasi
-      primaryColor: const Color.fromARGB(255, 108, 43, 20),
+      primaryColor: const Color.fromARGB(255, 134, 223, 134),
+      //  primaryColor: const Color.fromARGB(255, 108, 43, 20),
       colorScheme: const ColorScheme.light(
-        primary: Color.fromARGB(255, 108, 43, 20), // Jigarrang (Asosiy)
+        //  primary: Color.fromARGB(255, 108, 43, 20), // Jigarrang (Asosiy)
         secondary: AppColors.accentBlue,
         error: AppColors.errorRed,
-        background: AppColors.backgroundLight,
         surface: AppColors.surfaceLight,
         onPrimary: AppColors.onPrimary,
-        onBackground: AppColors.onBackground,
+        onSurface: AppColors.onBackground,
+
+        primary: Color.fromARGB(255, 134, 129, 129),
       ),
 
       // 2. Scaffold (Sahifa) Foni
@@ -54,7 +56,7 @@ class AppTheme {
 
       // 3. App Bar (Yuqori Qism)
       appBarTheme: const AppBarTheme(
-        backgroundColor: const Color.fromARGB(255, 108, 43, 20), // Jigarrang
+        backgroundColor: Color.fromARGB(255, 108, 43, 20), // Jigarrang
         foregroundColor: AppColors.onPrimary, // Oq matn
         elevation: 0,
       ),
@@ -91,7 +93,7 @@ class AppTheme {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12.0),
           borderSide: const BorderSide(
-            color: const Color.fromARGB(255, 108, 43, 20), // Jigarrang fokusda
+            color: Color.fromARGB(255, 108, 43, 20), // Jigarrang fokusda
             width: 2.0,
           ),
         ),

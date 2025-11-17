@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/countries.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:kassam/presentation/pages/home_page/home_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -33,7 +34,10 @@ class HomePage extends StatelessWidget {
   BoxDecoration _buildBackground() {
     return const BoxDecoration(
       gradient: LinearGradient(
-        colors: [Color(0xFF000000), Color(0xFF003300)], // Qora va to'q yashil
+        colors: [
+          Color.fromARGB(255, 134, 129, 129),
+          Color.fromARGB(255, 134, 223, 134),
+        ], // Qora va to'q yashil
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ),
@@ -64,9 +68,10 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
 
+
                     // Brend nomi
                     const Text(
-                      'HISOBCHIM',
+                      'HISOBCHIM', 
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 28,
@@ -74,6 +79,7 @@ class HomePage extends StatelessWidget {
                         letterSpacing: 2,
                       ),
                     ),
+ 
                     const SizedBox(height: 5),
 
                     // Slogan
@@ -97,7 +103,10 @@ class HomePage extends StatelessWidget {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(25),
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF008000), Color(0xFF00CC00)],
+                            colors: [
+                              Color.fromARGB(255, 118, 203, 118),
+                              Color(0xFF00CC00),
+                            ],
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                           ),
@@ -165,11 +174,11 @@ class SignUpPage extends StatelessWidget {
     return const BoxDecoration(
       gradient: LinearGradient(
         colors: [
-          Color(0xFF000000),
-          Color(0xFF000000),
-          Color(0xFF003300),
-          Color(0xFF003300),
-          Color(0xFF003300),
+          Color.fromARGB(255, 134, 129, 129),
+          Color.fromARGB(255, 134, 223, 134),
+
+          Color.fromARGB(255, 118, 203, 118),
+          Color.fromARGB(255, 88, 231, 88),
         ],
         begin: Alignment.topRight,
 
@@ -313,8 +322,17 @@ class SignUpPage extends StatelessWidget {
                           // Sign Up tugmasi
                           _buildGreenButton(
                             text: 'SMS Code\'ni olish',
-                            onPressed: () {},
+
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => HomePage(),
+                                ),
+                              );
+                            },
                           ),
+
                           const SizedBox(height: 20),
                         ],
                       ),

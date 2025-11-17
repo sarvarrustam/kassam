@@ -1,117 +1,228 @@
 import 'package:flutter/material.dart';
-
-class AppColors {
-  // Asosiy ranglar - BREND
-  static const Color primaryBrown = Color.fromARGB(
-    255,
-    108,
-    43,
-    20,
-  ); // Jigarrang (Asosiy)
-  static const Color successGreen = Color(
-    0xFF388E3C,
-  ); // Yashil (Daromad/Ijobiy)
-  static const Color accentBlue = Color(0xFF03A9F4); // Ko'k (Aksent)
-  static const Color errorRed = Color(0xFFD32F2F); // Qizil (Xarajat/Xato)
-
-  // Fon va Surface ranglari
-  static const Color backgroundLight = Color(
-    0xFFFAFAFA,
-  ); // Sut rang (Sahifa foni)
-  static const Color surfaceLight = Colors.white; // Oq rang (Karta/Input foni)
-  static const Color softBorder = Color.fromARGB(
-    255,
-    108,
-    43,
-    20,
-  ); // Yumshoq Jigarrang (Border/Shadow)
-
-  // Matn ranglari
-  static const Color onPrimary = Colors.white; // Oq matn
-  static const Color onBackground = Color(0xFF212121); // Qora/To'q matn
-
-  // Eski nomlar (kompatibillik uchun)
-  static const Color primaryGreen = successGreen;
-}
+import 'app_colors.dart';
 
 class AppTheme {
+  // Light Theme
   static ThemeData get lightTheme {
     return ThemeData(
-      // 1. Ranglar Palitrasi
-      primaryColor: const Color.fromARGB(255, 134, 223, 134),
-      //  primaryColor: const Color.fromARGB(255, 108, 43, 20),
+      useMaterial3: true,
+      brightness: Brightness.light,
+      primaryColor: AppColors.primaryGreen,
+      scaffoldBackgroundColor: AppColors.lightBackground,
+
       colorScheme: const ColorScheme.light(
-        //  primary: Color.fromARGB(255, 108, 43, 20), // Jigarrang (Asosiy)
+        primary: AppColors.primaryGreen,
         secondary: AppColors.accentBlue,
+        surface: AppColors.lightSurface,
         error: AppColors.errorRed,
-        surface: AppColors.surfaceLight,
-        onPrimary: AppColors.onPrimary,
-        onSurface: AppColors.onBackground,
-
-        primary: Color.fromARGB(255, 134, 129, 129),
+        onPrimary: AppColors.white,
+        onSecondary: AppColors.white,
+        onSurface: AppColors.textPrimary,
+        onError: AppColors.white,
       ),
 
-      // 2. Scaffold (Sahifa) Foni
-      scaffoldBackgroundColor: AppColors.backgroundLight,
-
-      // 3. App Bar (Yuqori Qism)
+      // AppBar Theme
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color.fromARGB(255, 108, 43, 20), // Jigarrang
-        foregroundColor: AppColors.onPrimary, // Oq matn
+        backgroundColor: AppColors.primaryGreen,
+        foregroundColor: AppColors.white,
         elevation: 0,
+        centerTitle: true,
       ),
 
-      // 4. Floating Action Button (FAB)
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.successGreen, // Yashil (Ijobiy)
+      // Bottom Navigation Bar Theme
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: AppColors.lightSurface,
+        selectedItemColor: AppColors.primaryGreen,
+        unselectedItemColor: AppColors.textSecondary,
+        elevation: 8,
+        type: BottomNavigationBarType.fixed,
       ),
 
-      // 5. Matn Stillari
+      // Text Themes
       textTheme: const TextTheme(
-        // Katta sarlavhalar
         displayLarge: TextStyle(
-          color: AppColors.onBackground,
+          fontSize: 32,
           fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
         ),
-        // Oddiy matnlar
-        bodyLarge: TextStyle(color: AppColors.onBackground),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
+        bodyLarge: TextStyle(fontSize: 16, color: AppColors.textPrimary),
+        bodyMedium: TextStyle(fontSize: 14, color: AppColors.textSecondary),
       ),
 
-      // 6. Input Decoration Theme (Yumshoq Dizayn)
+      // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceLight,
-        // Yumshoq bordyur
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(color: AppColors.softBorder, width: 1.0),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(color: AppColors.softBorder, width: 1.0),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(
-            color: Color.fromARGB(255, 108, 43, 20), // Jigarrang fokusda
-            width: 2.0,
-          ),
-        ),
+        fillColor: AppColors.lightCardBackground,
+        hintStyle: const TextStyle(color: AppColors.textSecondary),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 20,
           vertical: 16,
         ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.borderGrey, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.borderGrey, width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primaryGreen, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.errorRed, width: 1),
+        ),
       ),
 
-      // 7. Elevated Button Theme
+      // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color.fromARGB(255, 108, 43, 20),
-          foregroundColor: AppColors.onPrimary,
+          backgroundColor: AppColors.primaryGreen,
+          foregroundColor: AppColors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
+          elevation: 2,
         ),
+      ),
+
+      // Card Theme
+      cardTheme: CardThemeData(
+        color: AppColors.lightSurface,
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  // Dark Theme
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      primaryColor: AppColors.primaryGreenLight,
+      scaffoldBackgroundColor: AppColors.darkBackground,
+
+      colorScheme: const ColorScheme.dark(
+        primary: AppColors.primaryGreenLight,
+        secondary: AppColors.accentBlue,
+        surface: AppColors.darkSurface,
+        error: AppColors.errorRed,
+        onPrimary: AppColors.black,
+        onSecondary: AppColors.black,
+        onSurface: AppColors.white,
+        onError: AppColors.black,
+      ),
+
+      // AppBar Theme
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.darkSurface,
+        foregroundColor: AppColors.white,
+        elevation: 0,
+        centerTitle: true,
+      ),
+
+      // Bottom Navigation Bar Theme
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: AppColors.darkSurface,
+        selectedItemColor: AppColors.primaryGreenLight,
+        unselectedItemColor: AppColors.textSecondary,
+        elevation: 8,
+        type: BottomNavigationBarType.fixed,
+      ),
+
+      // Text Themes
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          color: AppColors.white,
+        ),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: AppColors.white,
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: AppColors.white,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppColors.white,
+        ),
+        bodyLarge: TextStyle(fontSize: 16, color: AppColors.white),
+        bodyMedium: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+      ),
+
+      // Input Decoration Theme
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.darkCardBackground,
+        hintStyle: const TextStyle(color: AppColors.textSecondary),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.borderGrey, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.borderGrey, width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: AppColors.primaryGreenLight,
+            width: 2,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.errorRed, width: 1),
+        ),
+      ),
+
+      // Elevated Button Theme
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryGreenLight,
+          foregroundColor: AppColors.black,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 2,
+        ),
+      ),
+
+      // Card Theme
+      cardTheme: CardThemeData(
+        color: AppColors.darkCardBackground,
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

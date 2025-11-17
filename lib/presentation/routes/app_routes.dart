@@ -1,51 +1,107 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:kassam/presentation/pages/home_page/home_page.dart';
-import 'package:kassam/presentation/pages/stats_page/stats_page.dart';
-import 'package:kassam/presentation/pages/budget_page/budget_page.dart';
-import 'package:kassam/presentation/pages/settings_page/settings_page.dart';
-import 'package:kassam/presentation/pages/auth_pages/phone_input_page.dart';
-import 'package:kassam/presentation/pages/auth_pages/otp_verify_page.dart';
-import 'package:kassam/presentation/pages/auth_pages/profile_setup_page.dart';
+import '../pages/entry_page.dart';
+import '../pages/phone_registration_page.dart';
+import '../pages/sms_verification_page.dart';
+import '../pages/create_user_page.dart';
+import '../pages/home_page.dart';
+import '../pages/stats_page.dart';
+import '../pages/settings_page.dart';
+import '../pages/add_transaction_page.dart';
+import '../pages/transactions_list_page.dart';
+import '../pages/wallet_page.dart';
 
-// RootLayout - Bottom Navigation Bar bilan
+// RootLayout - Bottom Navigation Bar va Floating Action Button bilan
 class RootLayout extends StatefulWidget {
   final Widget child;
+  final String currentLocation;
 
-  const RootLayout({required this.child, super.key});
+  const RootLayout({
+    required this.child,
+    required this.currentLocation,
+    super.key,
+  });
 
   @override
   State<RootLayout> createState() => _RootLayoutState();
 }
 
 class _RootLayoutState extends State<RootLayout> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateSelectedIndex();
+  }
+
+  @override
+  void didUpdateWidget(RootLayout oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentLocation != widget.currentLocation) {
+      _updateSelectedIndex();
+    }
+  }
+
+  void _updateSelectedIndex() {
+    switch (widget.currentLocation) {
+      case '/home':
+        _selectedIndex = 0;
+        break;
+      case '/stats':
+        _selectedIndex = 1;
+        break;
+      case '/wallet':
+        _selectedIndex = 2;
+        break;
+      case '/settings':
+        _selectedIndex = 3;
+        break;
+      default:
+        _selectedIndex = 0;
+    }
+  }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    final routes = ['/home', '/stats', '/budget', '/settings'];
+    final routes = ['/home', '/stats', '/wallet', '/settings'];
     context.go(routes[index]);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('Kassam'), elevation: 0),
       body: widget.child,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          context.push('/add-transaction');
+        },
+        elevation: 4,
+        child: const Icon(Icons.add),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Bosh'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Bosh',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart_outlined),
+            activeIcon: Icon(Icons.bar_chart),
             label: 'Statistika',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.wallet), label: 'Byudjet'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
+            icon: Icon(Icons.wallet_outlined),
+            activeIcon: Icon(Icons.wallet),
+            label: 'Hamyon',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            activeIcon: Icon(Icons.settings),
             label: 'Sozlamalar',
           ),
         ],
@@ -55,34 +111,54 @@ class _RootLayoutState extends State<RootLayout> {
 }
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/phone-input',
+  initialLocation: '/entry',
   routes: <RouteBase>[
-    // Auth Routes (Shell bilan emas)
+    // Auth Routes (Entry Pages - without Bottom Navigation)
+    GoRoute(
+      path: '/entry',
+      name: 'entry',
+      builder: (context, state) => const EntryPage(),
+    ),
     GoRoute(
       path: '/phone-input',
       name: 'phone-input',
-      builder: (context, state) => const PhoneInputPage(),
+      builder: (context, state) => const PhoneRegistrationPage(),
     ),
     GoRoute(
-      path: '/otp-verify',
-      name: 'otp-verify',
+      path: '/sms-verification',
+      name: 'sms-verification',
       builder: (context, state) {
         final phoneNumber = state.extra as String? ?? '';
-        return OtpVerifyPage(phoneNumber: phoneNumber);
+        return SmsVerificationPage(phoneNumber: phoneNumber);
       },
     ),
     GoRoute(
-      path: '/profile-setup',
-      name: 'profile-setup',
+      path: '/create-user',
+      name: 'create-user',
       builder: (context, state) {
         final phoneNumber = state.extra as String? ?? '';
-        return ProfileSetupPage(phoneNumber: phoneNumber);
+        return CreateUserPage(phoneNumber: phoneNumber);
       },
     ),
-    // Main App Routes (Bottom Navigation bar bilan)
+
+    // Add Transaction Route (Modal)
+    GoRoute(
+      path: '/add-transaction',
+      name: 'add-transaction',
+      builder: (context, state) => const AddTransactionPage(),
+    ),
+
+    // Transactions List Route
+    GoRoute(
+      path: '/transactions-list',
+      name: 'transactions-list',
+      builder: (context, state) => const TransactionsListPage(),
+    ),
+
+    // Main App Routes (with Bottom Navigation Bar)
     ShellRoute(
       builder: (context, state, child) {
-        return RootLayout(child: child);
+        return RootLayout(child: child, currentLocation: state.matchedLocation);
       },
       routes: [
         GoRoute(
@@ -96,9 +172,9 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) => const StatsPage(),
         ),
         GoRoute(
-          path: '/budget',
-          name: 'budget',
-          builder: (context, state) => const BudgetPage(),
+          path: '/wallet',
+          name: 'wallet',
+          builder: (context, state) => const WalletPage(),
         ),
         GoRoute(
           path: '/settings',

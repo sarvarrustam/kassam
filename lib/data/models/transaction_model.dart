@@ -20,12 +20,40 @@ enum TransactionCategory {
 }
 
 class Transaction extends Equatable {
+  factory Transaction.fromJson(Map<String, dynamic> json) {
+    return Transaction(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      amount: (json['amount'] as num).toDouble(),
+      type: TransactionType.values[json['type'] as int],
+      category: TransactionCategory.values[json['category'] as int],
+      date: DateTime.parse(json['date'] as String),
+      walletId: json['walletId'] as String?,
+      description: json['description'] as String?,
+      notes: json['notes'] as String?,
+      paymentMethod: json['paymentMethod'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'amount': amount,
+    'type': type.index,
+    'category': category.index,
+    'date': date.toIso8601String(),
+    'walletId': walletId,
+    'description': description,
+    'notes': notes,
+    'paymentMethod': paymentMethod,
+  };
   final String id;
   final String title;
   final double amount;
   final TransactionType type;
   final TransactionCategory category;
   final DateTime date;
+  final String? walletId;
   final String? description;
   final String? notes;
   final String? paymentMethod;
@@ -37,6 +65,7 @@ class Transaction extends Equatable {
     required this.type,
     required this.category,
     required this.date,
+    this.walletId,
     this.description,
     this.notes,
     this.paymentMethod,
@@ -50,6 +79,7 @@ class Transaction extends Equatable {
     type,
     category,
     date,
+    walletId,
     description,
     notes,
     paymentMethod,

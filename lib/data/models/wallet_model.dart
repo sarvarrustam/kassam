@@ -3,6 +3,29 @@ import 'package:equatable/equatable.dart';
 enum WalletType { checking, savings, cash, card }
 
 class Wallet extends Equatable {
+  factory Wallet.fromJson(Map<String, dynamic> json) {
+    return Wallet(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      type: WalletType.values[json['type'] as int],
+      balance: (json['balance'] as num).toDouble(),
+      currency: json['currency'] as String,
+      color: json['color'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      isDefault: json['isDefault'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'type': type.index,
+    'balance': balance,
+    'currency': currency,
+    'color': color,
+    'createdAt': createdAt.toIso8601String(),
+    'isDefault': isDefault,
+  };
   final String id;
   final String name;
   final WalletType type;

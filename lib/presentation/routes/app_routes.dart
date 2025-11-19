@@ -72,13 +72,13 @@ class _RootLayoutState extends State<RootLayout> {
     return Scaffold(
       //appBar: AppBar(title: const Text('Kassam'), elevation: 11),
       body: widget.child,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          context.push('/add-transaction');
-        },
-        elevation: 4,
-        child: const Icon(Icons.add),
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: () {
+      //     context.push('/add-transaction');
+      //   },
+      //   elevation: 4,
+      //   child: const Icon(Icons.add),
+      // ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,

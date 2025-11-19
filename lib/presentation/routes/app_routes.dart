@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../pages/entry_page.dart';
-import '../pages/phone_registration_page.dart';
-import '../pages/sms_verification_page.dart';
-import '../pages/create_user_page.dart';
-import '../pages/home_page.dart';
+import '../pages/entry_pages/entry_page.dart';
+import '../pages/registration_pages/phone_registration_page.dart';
+import '../pages/registration_pages/sms_verification_page.dart';
+import '../pages/registration_pages/create_user_page.dart';
+import '../pages/home_page/home_page.dart';
 import '../pages/stats_page.dart';
 import '../pages/settings_page.dart';
 import '../pages/add_transaction_page.dart';
@@ -70,7 +70,7 @@ class _RootLayoutState extends State<RootLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Kassam'), elevation: 0),
+      //appBar: AppBar(title: const Text('Kassam'), elevation: 11),
       body: widget.child,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -158,7 +158,7 @@ final GoRouter appRouter = GoRouter(
     // Main App Routes (with Bottom Navigation Bar)
     ShellRoute(
       builder: (context, state, child) {
-        return RootLayout(child: child, currentLocation: state.matchedLocation);
+        return RootLayout(currentLocation: state.matchedLocation, child: child);
       },
       routes: [
         GoRoute(

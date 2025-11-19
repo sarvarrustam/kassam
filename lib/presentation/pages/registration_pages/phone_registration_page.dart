@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:go_router/go_router.dart';
-import '../theme/app_colors.dart';
+import '../../theme/app_colors.dart';
 
 class PhoneRegistrationPage extends StatefulWidget {
   const PhoneRegistrationPage({super.key});
@@ -50,17 +50,21 @@ class _PhoneRegistrationPageState extends State<PhoneRegistrationPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 32),
-              Text(
-                'Telefon Raqamingiz',
-                style: Theme.of(context).textTheme.displayMedium,
+              const SizedBox(height: 100),
+              Center(
+                child: Text(
+                  'Telefon Raqamingiz',
+                  style: Theme.of(context).textTheme.displayMedium,
+                ),
               ),
               const SizedBox(height: 12),
-              Text(
-                'Ro\'yxatdan o\'tish uchun telefon raqamini kiriting. Bunga SMS orqali tasdiqlanadi.',
-                style: Theme.of(context).textTheme.bodyMedium,
+              Center(
+                child: Text(
+                  'Ro\'yxatdan o\'tish uchun telefon raqamini kiriting.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 50),
               IntlPhoneField(
                 controller: _phoneController,
                 decoration: InputDecoration(
@@ -92,22 +96,25 @@ class _PhoneRegistrationPageState extends State<PhoneRegistrationPage> {
                             ),
                           ),
                         )
-                      : const Text('Davom Ettirish'),
+                      : const Text(
+                          'Davom Etish',
+                          style: TextStyle(fontSize: 18),
+                        ),
                 ),
               ),
               const SizedBox(height: 24),
               Center(
                 child: Column(
                   children: [
-                    Text(
-                      'Raqamni boranda?',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+                    // Text(
+                    //   'Raqamni boranda?',
+                    //   style: Theme.of(context).textTheme.bodyMedium,
+                    // ),
                     const SizedBox(height: 8),
                     GestureDetector(
                       onTap: () => context.pop(),
                       child: Text(
-                        'Orqaga qaytish',
+                        'Mehmon sifatida kirish',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: AppColors.primaryGreen,
                           fontWeight: FontWeight.w600,

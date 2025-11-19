@@ -20,6 +20,7 @@ class MyApp extends StatelessWidget {
           return MaterialApp.router(
             title: 'Kassam - Shaxsiy Moliya',
             theme: AppTheme.lightTheme,
+            debugShowCheckedModeBanner: false,
             darkTheme: AppTheme.darkTheme,
             themeMode: state.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             routerDelegate: appRouter.routerDelegate,

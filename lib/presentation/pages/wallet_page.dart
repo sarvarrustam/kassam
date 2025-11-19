@@ -139,52 +139,52 @@ class _WalletPageState extends State<WalletPage> {
             ),
             const SizedBox(height: 12),
 
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _wallets.length,
-              itemBuilder: (context, index) {
-                final wallet = _wallets[index];
-                return WalletCard(wallet: wallet);
-              },
-            ),
+            // ListView.builder(
+            //   shrinkWrap: true,
+            //   physics: const NeverScrollableScrollPhysics(),
+            //   itemCount: _wallets.length,
+            //   itemBuilder: (context, index) {
+            //     final wallet = _wallets[index];
+            //     return WalletCard(wallet: wallet);
+            //   },
+            // ),
             const SizedBox(height: 24),
 
             // Tez Amallar
-            const Text(
-              'Tez Amallar',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _ActionCard(
-                  icon: Icons.card_giftcard,
-                  label: 'To\'lovni\nUshbu',
-                  color: AppColors.primaryGreen,
-                  onTap: () {},
-                ),
-                _ActionCard(
-                  icon: Icons.compare_arrows,
-                  label: 'Hamyonlar\nO\'rtasida',
-                  color: const Color(0xFF2196F3),
-                  onTap: () {},
-                ),
-                _ActionCard(
-                  icon: Icons.history,
-                  label: 'O\'tkazma\nTarixi',
-                  color: const Color(0xFFFF9800),
-                  onTap: () {},
-                ),
-                _ActionCard(
-                  icon: Icons.settings,
-                  label: 'Hamyon\nSozlamalari',
-                  color: const Color(0xFF9C27B0),
-                  onTap: () {},
-                ),
-              ],
-            ),
+            // const Text(
+            //   'Tez Amallar',
+            //   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            // ),
+            // const SizedBox(height: 12),
+            // Row(
+            //   mainAxisAlignment: MainAxisAlignment.spaceAround,
+            //   children: [
+            //     _ActionCard(
+            //       icon: Icons.card_giftcard,
+            //       label: 'To\'lovni\nUshbu',
+            //       color: AppColors.primaryGreen,
+            //       onTap: () {},
+            //     ),
+            //     _ActionCard(
+            //       icon: Icons.compare_arrows,
+            //       label: 'Hamyonlar\nO\'rtasida',
+            //       color: const Color(0xFF2196F3),
+            //       onTap: () {},
+            //     ),
+            //     _ActionCard(
+            //       icon: Icons.history,
+            //       label: 'O\'tkazma\nTarixi',
+            //       color: const Color(0xFFFF9800),
+            //       onTap: () {},
+            //     ),
+            //     _ActionCard(
+            //       icon: Icons.settings,
+            //       label: 'Hamyon\nSozlamalari',
+            //       color: const Color(0xFF9C27B0),
+            //       onTap: () {},
+            //     ),
+            //   ],
+            // ),
           ],
         ),
       ),
@@ -250,7 +250,7 @@ class WalletCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              '${wallet.balance.toStringAsFixed(0)}',
+              wallet.balance.toStringAsFixed(0),
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             Text(

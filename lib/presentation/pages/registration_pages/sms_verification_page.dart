@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../theme/app_colors.dart';
+import '../../theme/app_colors.dart';
 
 class SmsVerificationPage extends StatefulWidget {
   final String phoneNumber;
@@ -85,22 +85,26 @@ class _SmsVerificationPageState extends State<SmsVerificationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('SMS Tasdiqlamalash'), elevation: 0),
+      appBar: AppBar(title: const Text('SMS Tasdiqlash'), elevation: 0),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 32),
-              Text(
-                'Kodni Kiriting',
-                style: Theme.of(context).textTheme.displayMedium,
+              const SizedBox(height: 100),
+              Center(
+                child: Text(
+                  'Kodni Kiriting',
+                  style: Theme.of(context).textTheme.displayMedium,
+                ),
               ),
               const SizedBox(height: 12),
-              Text(
-                '${widget.phoneNumber} raqamiga yuborilgan 6 xonali kodni kiriting',
-                style: Theme.of(context).textTheme.bodyMedium,
+              Center(
+                child: Text(
+                  '${widget.phoneNumber} raqamiga yuborilgan 6 xonali kodni kiriting',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
               ),
               const SizedBox(height: 48),
               Row(
@@ -164,7 +168,10 @@ class _SmsVerificationPageState extends State<SmsVerificationPage> {
                             ),
                           ),
                         )
-                      : const Text('Tasdiqlash'),
+                      : const Text(
+                          'Tasdiqlash',
+                          style: TextStyle(fontSize: 18),
+                        ),
                 ),
               ),
               const SizedBox(height: 24),

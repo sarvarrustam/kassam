@@ -27,15 +27,15 @@ class _StatsPageState extends State<StatsPage> {
   Widget build(BuildContext context) {
     final totalIncome = _dataService.getTotalIncome();
     final totalExpense = _dataService.getTotalExpense();
-    final monthlyStats = _dataService.getMonthlyStats(_selectedMonth, _selectedYear);
+    final monthlyStats = _dataService.getMonthlyStats(
+      _selectedMonth,
+      _selectedYear,
+    );
     final categoryTotals = _dataService.getCategoryTotals();
     final mostExpensive = _dataService.getMostExpensiveCategory();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Statistika'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Statistika'), elevation: 0),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -59,9 +59,7 @@ class _StatsPageState extends State<StatsPage> {
                           const SizedBox(height: 8),
                           Text(
                             '${totalIncome.toStringAsFixed(0)} UZS',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyLarge
+                            style: Theme.of(context).textTheme.bodyLarge
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: AppColors.successGreen,
@@ -87,9 +85,7 @@ class _StatsPageState extends State<StatsPage> {
                           const SizedBox(height: 8),
                           Text(
                             '${totalExpense.toStringAsFixed(0)} UZS',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyLarge
+                            style: Theme.of(context).textTheme.bodyLarge
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: AppColors.errorRed,
@@ -119,9 +115,14 @@ class _StatsPageState extends State<StatsPage> {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                            color: AppColors.primaryGreen.withValues(
+                              alpha: 0.1,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -140,19 +141,23 @@ class _StatsPageState extends State<StatsPage> {
                       children: [
                         _StatItem(
                           label: 'Oylik Kirim',
-                          amount: (monthlyStats['income'] ?? 0).toStringAsFixed(0),
+                          amount: (monthlyStats['income'] ?? 0).toStringAsFixed(
+                            0,
+                          ),
                           color: AppColors.successGreen,
                           icon: Icons.arrow_downward,
                         ),
                         _StatItem(
                           label: 'Oylik Xarajat',
-                          amount: (monthlyStats['expense'] ?? 0).toStringAsFixed(0),
+                          amount: (monthlyStats['expense'] ?? 0)
+                              .toStringAsFixed(0),
                           color: AppColors.errorRed,
                           icon: Icons.arrow_upward,
                         ),
                         _StatItem(
                           label: 'Net Balans',
-                          amount: (monthlyStats['balance'] ?? 0).toStringAsFixed(0),
+                          amount: (monthlyStats['balance'] ?? 0)
+                              .toStringAsFixed(0),
                           color: (monthlyStats['balance'] ?? 0) >= 0
                               ? AppColors.successGreen
                               : AppColors.errorRed,
@@ -166,186 +171,179 @@ class _StatsPageState extends State<StatsPage> {
             ),
             const SizedBox(height: 24),
 
-            // Kategoriya Bo'yicha Analiz
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Kategoriya Bo\'yicha',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    if (categoryTotals.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          child: Text(
-                            'Hali Kategoriya Ma\'lumoti Yo\'q',
-                            style: TextStyle(color: Colors.grey.shade600),
-                          ),
-                        ),
-                      )
-                    else
-                      Column(
-                        children: categoryTotals.entries.map((entry) {
-                          final total = entry.value;
-                          final percentage = (total / totalExpense * 100).clamp(0.0, 100.0);
-                          final transaction = Transaction(
-                            id: '',
-                            title: '',
-                            amount: 0,
-                            type: TransactionType.expense,
-                            category: entry.key,
-                            date: DateTime.now(),
-                          );
+            // // Kategoriya Bo'yicha Analiz
+            // Card(
+            //   child: Padding(
+            //     padding: const EdgeInsets.all(16),
+            //     child: Column(
+            //       crossAxisAlignment: CrossAxisAlignment.start,
+            //       children: [
+            //         Text(
+            //           'Kategoriya Bo\'yicha',
+            //           style: Theme.of(context).textTheme.titleMedium,
+            //         ),
+            //         const SizedBox(height: 16),
+            //         if (categoryTotals.isEmpty)
+            //           Center(
+            //             child: Padding(
+            //               padding: const EdgeInsets.symmetric(vertical: 20),
+            //               child: Text(
+            //                 'Hali Kategoriya Ma\'lumoti Yo\'q',
+            //                 style: TextStyle(color: Colors.grey.shade600),
+            //               ),
+            //             ),
+            //           )
+            //         else
+            //           Column(
+            //             children: categoryTotals.entries.map((entry) {
+            //               final total = entry.value;
+            //               final percentage = (total / totalExpense * 100).clamp(0.0, 100.0);
+            //               final transaction = Transaction(
+            //                 id: '',
+            //                 title: '',
+            //                 amount: 0,
+            //                 type: TransactionType.expense,
+            //                 category: entry.key,
+            //                 date: DateTime.now(),
+            //               );
 
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      transaction.getCategoryEmoji(),
-                                      style: const TextStyle(fontSize: 20),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            transaction.getCategoryName(),
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                          Text(
-                                            '${percentage.toStringAsFixed(1)}%',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.grey.shade600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Text(
-                                      '${total.toStringAsFixed(0)} UZS',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: percentage / 100,
-                                    minHeight: 6,
-                                    backgroundColor: Colors.grey.shade200,
-                                    valueColor: AlwaysStoppedAnimation(
-                                      Color(
-                                        int.parse(
-                                          'FF${transaction.getCategoryColor()}',
-                                          radix: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
+            //               return Padding(
+            //                 padding: const EdgeInsets.only(bottom: 12),
+            //                 child: Column(
+            //                   crossAxisAlignment: CrossAxisAlignment.start,
+            //                   children: [
+            //                     Row(
+            //                       children: [
+            //                         Text(
+            //                           transaction.getCategoryEmoji(),
+            //                           style: const TextStyle(fontSize: 20),
+            //                         ),
+            //                         const SizedBox(width: 12),
+            //                         Expanded(
+            //                           child: Column(
+            //                             crossAxisAlignment: CrossAxisAlignment.start,
+            //                             children: [
+            //                               Text(
+            //                                 transaction.getCategoryName(),
+            //                                 style: const TextStyle(
+            //                                   fontWeight: FontWeight.w600,
+            //                                   fontSize: 13,
+            //                                 ),
+            //                               ),
+            //                               Text(
+            //                                 '${percentage.toStringAsFixed(1)}%',
+            //                                 style: TextStyle(
+            //                                   fontSize: 11,
+            //                                   color: Colors.grey.shade600,
+            //                                 ),
+            //                               ),
+            //                             ],
+            //                           ),
+            //                         ),
+            //                         Text(
+            //                           '${total.toStringAsFixed(0)} UZS',
+            //                           style: const TextStyle(
+            //                             fontWeight: FontWeight.bold,
+            //                             fontSize: 13,
+            //                           ),
+            //                         ),
+            //                       ],
+            //                     ),
+            //                     const SizedBox(height: 8),
+            //                     ClipRRect(
+            //                       borderRadius: BorderRadius.circular(4),
+            //                       child: LinearProgressIndicator(
+            //                         value: percentage / 100,
+            //                         minHeight: 6,
+            //                         backgroundColor: Colors.grey.shade200,
+            //                         valueColor: AlwaysStoppedAnimation(
+            //                           Color(
+            //                             int.parse(
+            //                               'FF${transaction.getCategoryColor()}',
+            //                               radix: 16,
+            //                             ),
+            //                           ),
+            //                         ),
+            //                       ),
+            //                     ),
+            //                   ],
+            //                 ),
+            //               );
+            //             }).toList(),
+            //           ),
+            //       ],
+            //     ),
+            //   ),
+            // ),
+            // const SizedBox(height: 24),
 
             // Eng Ko'p Xarajat Kategoriyasi
-            if (mostExpensive != null)
-              Card(
-                color: Color(
-                  int.parse(
-                    'FF${Transaction(
-                      id: '',
-                      title: '',
-                      amount: 0,
-                      type: TransactionType.expense,
-                      category: mostExpensive,
-                      date: DateTime.now(),
-                    ).getCategoryColor()}',
-                    radix: 16,
-                  ),
-                ).withValues(alpha: 0.1),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Eng Ko\'p Xarajat',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Text(
-                            Transaction(
-                              id: '',
-                              title: '',
-                              amount: 0,
-                              type: TransactionType.expense,
-                              category: mostExpensive,
-                              date: DateTime.now(),
-                            ).getCategoryEmoji(),
-                            style: const TextStyle(fontSize: 32),
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                Transaction(
-                                  id: '',
-                                  title: '',
-                                  amount: 0,
-                                  type: TransactionType.expense,
-                                  category: mostExpensive,
-                                  date: DateTime.now(),
-                                ).getCategoryName(),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                '${categoryTotals[mostExpensive]?.toStringAsFixed(0) ?? 0} UZS',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            // if (mostExpensive != null)
+            //   Card(
+            //     color: Color(
+            //       int.parse(
+            //         'FF${Transaction(id: '', title: '', amount: 0, type: TransactionType.expense, category: mostExpensive, date: DateTime.now()).getCategoryColor()}',
+            //         radix: 16,
+            //       ),
+            //     ).withValues(alpha: 0.1),
+            //     child: Padding(
+            //       padding: const EdgeInsets.all(16),
+            //       child: Column(
+            //         crossAxisAlignment: CrossAxisAlignment.start,
+            //         children: [
+            //           Text(
+            //             'Eng Ko\'p Xarajat',
+            //             style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            //               color: Colors.grey.shade600,
+            //             ),
+            //           ),
+            //           const SizedBox(height: 12),
+            //           Row(
+            //             children: [
+            //               Text(
+            //                 Transaction(
+            //                   id: '',
+            //                   title: '',
+            //                   amount: 0,
+            //                   type: TransactionType.expense,
+            //                   category: mostExpensive,
+            //                   date: DateTime.now(),
+            //                 ).getCategoryEmoji(),
+            //                 style: const TextStyle(fontSize: 32),
+            //               ),
+            //               const SizedBox(width: 12),
+            //               Column(
+            //                 crossAxisAlignment: CrossAxisAlignment.start,
+            //                 children: [
+            //                   Text(
+            //                     Transaction(
+            //                       id: '',
+            //                       title: '',
+            //                       amount: 0,
+            //                       type: TransactionType.expense,
+            //                       category: mostExpensive,
+            //                       date: DateTime.now(),
+            //                     ).getCategoryName(),
+            //                     style: const TextStyle(
+            //                       fontWeight: FontWeight.bold,
+            //                       fontSize: 16,
+            //                     ),
+            //                   ),
+            //                   Text(
+            //                     '${categoryTotals[mostExpensive]?.toStringAsFixed(0) ?? 0} UZS',
+            //                     style: TextStyle(
+            //                       color: Colors.grey.shade600,
+            //                       fontSize: 12,
+            //                     ),
+            //                   ),
+            //                 ],
+            //               ),
+            //             ],
+            //           ),
+            //         ],
+            //       ),
+            //     ),
+            //   ),
           ],
         ),
       ),

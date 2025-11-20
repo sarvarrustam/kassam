@@ -53,29 +53,10 @@ class _HomePageState extends State<HomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                const SizedBox(height: 40),
+                Column(
+                  // crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Assalomu Alaykum,',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: Colors.white70),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Abdulaziz',
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                      ],
-                    ),
                     Container(
                       width: 50,
                       height: 50,
@@ -85,7 +66,15 @@ class _HomePageState extends State<HomePage> {
                       ),
                       child: const Icon(Icons.person, color: Colors.white),
                     ),
+                    SizedBox(height: 10),
                   ],
+                ),
+                Text(
+                  'Abdulaziz',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 32),
                 // Balance Card (Swipeable UZS <-> USD)
@@ -101,7 +90,8 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     children: [
                       SizedBox(
-                        height: 120,
+                        height: 100,
+
                         child: PageView.builder(
                           controller: _pageController,
                           itemCount: 2,
@@ -118,6 +108,7 @@ class _HomePageState extends State<HomePage> {
                                 '${_balanceSom.toStringAsFixed(0)} UZS',
                               );
                             }
+
                             return _buildBalanceCard(
                               'Mening Dollarim',
                               '${(_balanceSom / _exchangeRate).toStringAsFixed(2)} USD',
@@ -172,7 +163,7 @@ class _HomePageState extends State<HomePage> {
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -187,24 +178,25 @@ class _HomePageState extends State<HomePage> {
                     final w = _dataService.getWallets()[i];
                     return GestureDetector(
                       onTap: () => context.push('/stats'),
+
                       child: Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              Color(int.parse('FF${w.color}', radix: 16)),
+                              Color(int.parse('AA${w.color}', radix: 16)),
                               Color(
-                                int.parse('FF${w.color}', radix: 16),
-                              ).withOpacity(0.7),
+                                int.parse('AA${w.color}', radix: 16),
+                              ).withOpacity(0.1),
                             ],
-                            begin: Alignment.topLeft,
+                            //begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
+                              color: Colors.greenAccent.withOpacity(1),
+                              // blurRadius: 10,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
@@ -218,12 +210,12 @@ class _HomePageState extends State<HomePage> {
                               children: [
                                 Text(
                                   w.getTypeIcon(),
-                                  style: const TextStyle(fontSize: 24),
+                                  style: const TextStyle(fontSize: 32),
                                 ),
                                 if (w.isDefault)
                                   const Icon(
-                                    Icons.star,
-                                    color: Colors.amber,
+                                    Icons.wallet_rounded,
+                                    // color: Colors.amber,
                                     size: 16,
                                   ),
                               ],
@@ -264,6 +256,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 32),
+
           // Padding(
           //   padding: const EdgeInsets.symmetric(horizontal: 24),
           //   child: Column(
@@ -369,9 +362,10 @@ class _HomePageState extends State<HomePage> {
   Widget _buildBalanceCard(String title, String amount) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+        color: Colors.white.withOpacity(0.25),
+        borderRadius: BorderRadius.circular(20),
+
+        border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
       ),
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
       child: Column(
@@ -384,7 +378,7 @@ class _HomePageState extends State<HomePage> {
               context,
             ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 20),
           Text(
             amount,
             style: Theme.of(context).textTheme.displayMedium?.copyWith(

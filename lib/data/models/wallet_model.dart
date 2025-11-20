@@ -76,7 +76,7 @@ class Wallet extends Equatable {
   String getTypeIcon() {
     switch (type) {
       case WalletType.checking:
-        return '🏦';
+        return ' 💳';
       case WalletType.savings:
         return '🏧';
       case WalletType.cash:

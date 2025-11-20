@@ -540,7 +540,10 @@ class _StatsPageState extends State<StatsPage> {
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF00BCD4), Color(0xFF009688)],
+                  colors: [
+                    Color.fromARGB(255, 61, 212, 149),
+                    Color.fromARGB(255, 61, 212, 149),
+                  ],
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -598,12 +601,18 @@ class _StatsPageState extends State<StatsPage> {
                         final isExpense = t.type == TransactionType.expense;
                         final bgGradient = isExpense
                             ? const LinearGradient(
-                                colors: [Color(0xFFEF5350), Color(0xFFE53935)],
+                                colors: [
+                                  Color.fromARGB(255, 209, 105, 103),
+                                  Color(0xFFE53935),
+                                ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               )
                             : const LinearGradient(
-                                colors: [Color(0xFF66BB6A), Color(0xFF43A047)],
+                                colors: [
+                                  Color.fromARGB(255, 61, 212, 149),
+                                  Color.fromARGB(255, 61, 212, 149),
+                                ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               );

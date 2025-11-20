@@ -7,7 +7,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      primaryColor: AppColors.primaryGreen,
+      primaryColor: const Color.fromRGBO(31, 181, 132, 1),
       scaffoldBackgroundColor: AppColors.lightBackground,
 
       colorScheme: const ColorScheme.light(

@@ -10,6 +10,7 @@ import '../pages/settings_page.dart';
 import '../pages/add_transaction_page.dart';
 import '../pages/transactions_list_page.dart';
 import '../pages/wallet_page.dart';
+import '../../data/services/app_preferences_service.dart';
 
 // RootLayout - Bottom Navigation Bar va Floating Action Button bilan
 class RootLayout extends StatefulWidget {
@@ -112,6 +113,25 @@ class _RootLayoutState extends State<RootLayout> {
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/entry',
+  redirect: (context, state) async {
+    final prefs = AppPreferencesService();
+    final hasCompleted = await prefs.hasCompletedOnboarding();
+    final isAuthRoute =
+        state.matchedLocation == '/entry' ||
+        state.matchedLocation == '/phone-input' ||
+        state.matchedLocation == '/sms-verification' ||
+        state.matchedLocation == '/create-user';
+
+    if (!hasCompleted && !isAuthRoute) {
+      return '/entry';
+    }
+
+    if (hasCompleted && isAuthRoute) {
+      return '/home';
+    }
+
+    return null;
+  },
   routes: <RouteBase>[
     // Auth Routes (Entry Pages - without Bottom Navigation)
     GoRoute(
@@ -169,7 +189,10 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/stats',
           name: 'stats',
-          builder: (context, state) => const StatsPage(),
+          builder: (context, state) {
+            final walletId = state.uri.queryParameters['walletId'];
+            return StatsPage(walletId: walletId);
+          },
         ),
         GoRoute(
           path: '/wallet',

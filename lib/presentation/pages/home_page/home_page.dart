@@ -11,9 +11,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final double _balanceSom = 125000.0;
   final double _exchangeRate = 11500.0;
-  bool _showSomPrimary = true;
   late final PageController _pageController;
   int _currentPage = 0;
   final _dataService = MockDataService();
@@ -54,21 +52,6 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 40),
-                Column(
-                  // crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.3),
-                      ),
-                      child: const Icon(Icons.person, color: Colors.white),
-                    ),
-                    SizedBox(height: 10),
-                  ],
-                ),
                 Text(
                   'Abdulaziz',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -91,27 +74,28 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       SizedBox(
                         height: 100,
-
                         child: PageView.builder(
                           controller: _pageController,
                           itemCount: 2,
                           onPageChanged: (index) {
                             setState(() {
                               _currentPage = index;
-                              _showSomPrimary = index == 0;
                             });
                           },
                           itemBuilder: (context, index) {
+                            final totalBalance = _dataService
+                                .getTotalWalletBalance();
+
                             if (index == 0) {
                               return _buildBalanceCard(
                                 'Mening Pulim',
-                                '${_balanceSom.toStringAsFixed(0)} UZS',
+                                '${_formatNumber(totalBalance.toInt())} UZS',
                               );
                             }
 
                             return _buildBalanceCard(
                               'Mening Dollarim',
-                              '${(_balanceSom / _exchangeRate).toStringAsFixed(2)} USD',
+                              '${_formatNumber((totalBalance / _exchangeRate).toInt())} USD',
                             );
                           },
                         ),
@@ -177,8 +161,7 @@ class _HomePageState extends State<HomePage> {
                   itemBuilder: (ctx, i) {
                     final w = _dataService.getWallets()[i];
                     return GestureDetector(
-                      onTap: () => context.push('/stats'),
-
+                      onTap: () => context.push('/stats?walletId=${w.id}'),
                       child: Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -188,14 +171,12 @@ class _HomePageState extends State<HomePage> {
                                 int.parse('AA${w.color}', radix: 16),
                               ).withOpacity(0.1),
                             ],
-                            //begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.greenAccent.withOpacity(1),
-                              // blurRadius: 10,
                               offset: const Offset(0, 3),
                             ),
                           ],
@@ -213,16 +194,11 @@ class _HomePageState extends State<HomePage> {
                                   style: const TextStyle(fontSize: 32),
                                 ),
                                 if (w.isDefault)
-                                  const Icon(
-                                    Icons.wallet_rounded,
-                                    // color: Colors.amber,
-                                    size: 16,
-                                  ),
+                                  const Icon(Icons.wallet_rounded, size: 16),
                               ],
                             ),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-
                               children: [
                                 Text(
                                   w.name,
@@ -236,10 +212,20 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${w.balance.toStringAsFixed(0)} ${w.currency}',
+                                  '${_formatNumber(w.balance.toInt())} ${w.currency}',
                                   style: const TextStyle(
                                     color: Colors.white70,
-                                    fontSize: 12,
+                                    fontSize: 11,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${_formatNumber((w.balance / _exchangeRate).toInt())} USD',
+                                  style: const TextStyle(
+                                    color: Colors.white60,
+                                    fontSize: 10,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -256,104 +242,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 32),
-
-          // Padding(
-          //   padding: const EdgeInsets.symmetric(horizontal: 24),
-          //   child: Column(
-          //     crossAxisAlignment: CrossAxisAlignment.start,
-          //     children: [
-          //       Text(
-          //         ' Amallar',
-          //         style: Theme.of(
-          //           context,
-          //         ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-          //       ),
-          //       const SizedBox(height: 16),
-          //       Row(
-          //         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          //         children: [
-          //           _buildActionButton(
-          //             context,
-          //             icon: Icons.arrow_upward_rounded,
-          //             label: 'Xarajat',
-          //             color: AppColors.errorRed,
-          //           ),
-          //           _buildActionButton(
-          //             context,
-          //             icon: Icons.arrow_downward_rounded,
-          //             label: 'Daromad',
-          //             color: AppColors.successGreen,
-          //           ),
-
-          //           _buildActionButton(
-          //             context,
-          //             icon: Icons.add,
-          //             label: 'Boshqa',
-          //             color: AppColors.warningOrange,
-          //           ),
-          //         ],
-          //       ),
-          //     ],
-          //   ),
-          // ),
-          // const SizedBox(height: 32),
-          // // Recent Transactions
-          // Padding(
-          //   padding: const EdgeInsets.symmetric(horizontal: 24),
-          //   child: Column(
-          //     crossAxisAlignment: CrossAxisAlignment.start,
-          //     children: [
-          //       Row(
-          //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          //         children: [
-          //           Text(
-          //             'So\'nggi Tranzaksiyalar',
-          //             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-          //               fontWeight: FontWeight.w700,
-          //             ),
-          //           ),
-          //           GestureDetector(
-          //             onTap: () => context.push('/transactions-list'),
-          //             child: Text(
-          //               'Barchasi',
-          //               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          //                 color: AppColors.primaryGreen,
-          //                 fontWeight: FontWeight.w600,
-          //               ),
-          //             ),
-          //           ),
-          //         ],
-          //       ),
-          //       const SizedBox(height: 16),
-          //       // Empty State
-          //       Container(
-          //         decoration: BoxDecoration(
-          //           border: Border.all(color: AppColors.borderGrey),
-          //           borderRadius: BorderRadius.circular(12),
-          //         ),
-          //         padding: const EdgeInsets.all(32),
-          //         child: Center(
-          //           child: Column(
-          //             children: [
-          //               Icon(
-          //                 Icons.history,
-          //                 size: 48,
-          //                 color: AppColors.textSecondary.withOpacity(0.5),
-          //               ),
-          //               const SizedBox(height: 16),
-          //               Text(
-          //                 'Hali Tranzaksiya Yo\'q',
-          //                 style: Theme.of(context).textTheme.bodyLarge
-          //                     ?.copyWith(color: AppColors.textSecondary),
-          //               ),
-          //             ],
-          //           ),
-          //         ),
-          //       ),
-          //     ],
-          //   ),
-          // ),
-          // const SizedBox(height: 32),
         ],
       ),
     );
@@ -364,7 +252,6 @@ class _HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.25),
         borderRadius: BorderRadius.circular(20),
-
         border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
       ),
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
@@ -391,35 +278,20 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildActionButton(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
-    return GestureDetector(
-      onTap: () {},
-      child: Column(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withOpacity(0.2),
-            ),
-            child: Center(child: Icon(icon, color: color, size: 28)),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
+  String _formatNumber(int number) {
+    // Uzbek number format: spaces as thousands separator
+    // Example: 1 234 567 instead of 1,234,567
+    final str = number.toString();
+    final reversed = str.split('').reversed.toList();
+    final parts = <String>[];
+
+    for (int i = 0; i < reversed.length; i++) {
+      if (i > 0 && i % 3 == 0) {
+        parts.add(' '); // Space instead of comma for Uzbek format
+      }
+      parts.add(reversed[i]);
+    }
+
+    return parts.reversed.join('');
   }
 }

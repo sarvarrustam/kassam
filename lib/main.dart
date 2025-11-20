@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kassam/presentation/routes/app_routes.dart';
 import 'package:kassam/data/services/mock_data_service.dart';
+import 'package:kassam/data/services/app_preferences_service.dart';
 import 'package:kassam/presentation/theme/app_theme.dart';
 import 'package:kassam/arch/bloc/theme_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await MockDataService().init();
+  await AppPreferencesService().initialize();
   runApp(const MyApp());
 }
 

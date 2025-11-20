@@ -4,7 +4,9 @@ import 'package:kassam/data/services/mock_data_service.dart';
 import 'package:kassam/data/models/transaction_model.dart';
 
 class StatsPage extends StatefulWidget {
-  const StatsPage({super.key});
+  final String? walletId;
+
+  const StatsPage({super.key, this.walletId});
 
   @override
   State<StatsPage> createState() => _StatsPageState();
@@ -14,6 +16,15 @@ class _StatsPageState extends State<StatsPage> {
   final _dataService = MockDataService();
   // month/year selection removed for simplified stats view
   String? _selectedWalletId;
+
+  @override
+  void initState() {
+    super.initState();
+    // Set selected wallet from route parameter
+    if (widget.walletId != null) {
+      _selectedWalletId = widget.walletId;
+    }
+  }
 
   void _showAddTransactionSheet() {
     // Centered dialog instead of bottom sheet
@@ -505,12 +516,6 @@ class _StatsPageState extends State<StatsPage> {
         );
       },
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedWalletId = _dataService.getDefaultWallet()?.id;
   }
 
   @override

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../theme/app_colors.dart';
+import '../../../data/services/app_preferences_service.dart';
 
 class CreateUserPage extends StatefulWidget {
   final String phoneNumber;
@@ -20,7 +20,6 @@ class _CreateUserPageState extends State<CreateUserPage> {
   final TextEditingController _fullnameController = TextEditingController();
 
   bool _isLoading = false;
-  final String _selectedCurrency = 'UZS';
 
   @override
   void dispose() {
@@ -34,7 +33,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
     super.dispose();
   }
 
-  void _createAccount() {
+  void _createAccount() async {
     if (_nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Iltimos, ismingizni kiriting')),
@@ -69,10 +68,18 @@ class _CreateUserPageState extends State<CreateUserPage> {
     setState(() => _isLoading = true);
 
     // Simulate account creation
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 2), () async {
       if (mounted) {
         setState(() => _isLoading = false);
-        context.go('/home');
+
+        // Save user name and mark onboarding as completed
+        final prefs = AppPreferencesService();
+        await prefs.setUserName(_nameController.text);
+        await prefs.setOnboardingCompleted();
+
+        if (mounted) {
+          context.go('/home');
+        }
       }
     });
   }

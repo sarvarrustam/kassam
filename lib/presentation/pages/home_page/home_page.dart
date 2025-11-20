@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kassam/data/services/mock_data_service.dart';
+import 'package:kassam/core/constants/exchange_rates.dart';
 import '../../theme/app_colors.dart';
 
 class HomePage extends StatefulWidget {
@@ -11,7 +12,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final double _exchangeRate = 11500.0;
   late final PageController _pageController;
   int _currentPage = 0;
   final _dataService = MockDataService();
@@ -95,7 +95,7 @@ class _HomePageState extends State<HomePage> {
 
                             return _buildBalanceCard(
                               'Mening Dollarim',
-                              '${_formatNumber((totalBalance / _exchangeRate).toInt())} USD',
+                              '${_formatNumber((totalBalance / ExchangeRates.usdToUzs).toInt())} USD',
                             );
                           },
                         ),
@@ -222,7 +222,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${_formatNumber((w.balance / _exchangeRate).toInt())} USD',
+                                  '${_formatNumber((w.balance / ExchangeRates.usdToUzs).toInt())} USD',
                                   style: const TextStyle(
                                     color: Colors.white60,
                                     fontSize: 10,

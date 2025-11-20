@@ -147,9 +147,11 @@ class _StatsPageState extends State<StatsPage> {
                                 date: DateTime.now(),
                                 walletId: _selectedWalletId,
                               );
-                              _dataService.addTransaction(transaction);
-                              setState(() {});
-                              Navigator.of(dialogCtx).pop();
+                              () async {
+                                await _dataService.addTransaction(transaction);
+                                setState(() {});
+                                Navigator.of(dialogCtx).pop();
+                              }();
                             },
                             child: const Text('OK'),
                           ),
@@ -295,9 +297,14 @@ class _StatsPageState extends State<StatsPage> {
                                 date: DateTime.now(),
                                 walletId: t.walletId ?? _selectedWalletId,
                               );
-                              _dataService.updateTransaction(t.id, updated);
-                              setState(() {});
-                              Navigator.of(dialogCtx).pop();
+                              () async {
+                                await _dataService.updateTransaction(
+                                  t.id,
+                                  updated,
+                                );
+                                setState(() {});
+                                Navigator.of(dialogCtx).pop();
+                              }();
                             },
                             child: const Text('Saqlash'),
                           ),
@@ -384,10 +391,9 @@ class _StatsPageState extends State<StatsPage> {
                                                 ),
                                               ),
                                               ElevatedButton(
-                                                onPressed: () {
-                                                  _dataService.deleteWallet(
-                                                    w.id,
-                                                  );
+                                                onPressed: () async {
+                                                  await _dataService
+                                                      .deleteWallet(w.id);
                                                   setState(() {});
                                                   setStateSB(() {});
                                                   Navigator.of(dctx).pop();
@@ -668,8 +674,10 @@ class _StatsPageState extends State<StatsPage> {
                                       ),
                                       const SizedBox(width: 8),
                                       GestureDetector(
-                                        onTap: () {
-                                          _dataService.deleteTransaction(t.id);
+                                        onTap: () async {
+                                          await _dataService.deleteTransaction(
+                                            t.id,
+                                          );
                                           setState(() {});
                                         },
                                         child: const Icon(

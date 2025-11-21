@@ -107,26 +107,25 @@ class _HomePageState extends State<HomePage> {
                               );
                             }
 
-                            // 3-chi tab: Jami (hammasini USD + hammasini UZS)
+                            // 3-chi tab: Jami (umumiy)
                             final totalUZSBalance = _dataService
                                 .getTotalUZSBalance();
                             final totalUSDBalance = _dataService
                                 .getTotalUSDBalance();
 
-                            // Barcha pulni DOLLAR cinsida
+                            // Umumiy jami USD da
                             final totalInUSD =
-                                (totalUSDBalance +
-                                        (totalUZSBalance / _exchangeRate))
-                                    .toInt();
-                            // Barcha pulni UZS cinsida
+                                totalUSDBalance +
+                                (totalUZSBalance / _exchangeRate);
+
+                            // Umumiy jami UZS da
                             final totalInUZS =
-                                (totalUZSBalance +
-                                        (totalUSDBalance * _exchangeRate))
-                                    .toInt();
+                                totalUZSBalance +
+                                (totalUSDBalance * _exchangeRate);
 
                             return _buildTotalBalanceCard(
-                              totalInUZS,
-                              totalInUSD,
+                              totalInUZS.toInt(),
+                              totalInUSD.toInt(),
                             );
                           },
                         ),
@@ -372,11 +371,11 @@ class _HomePageState extends State<HomePage> {
             ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
           ),
           const SizedBox(height: 8),
-          // Ikki column: Hammasini UZS (chap) va hammasini USD (o'ng)
+          // Ikki column: UZS (chap) va USD (o'ng)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Chap: Barcha pulni UZS cinsida
+              // Chap: UZS jami
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,7 +392,7 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-              // O'ng: Barcha pulni USD cinsida
+              // O'ng: USD jami
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

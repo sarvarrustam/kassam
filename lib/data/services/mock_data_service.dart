@@ -251,14 +251,14 @@ class MockDataService {
   }
 
   // Yangi hamyon qo'shish
-  Future<Wallet> addWallet(String name) async {
+  Future<Wallet> addWallet(String name, {String currency = 'UZS'}) async {
     final id = DateTime.now().millisecondsSinceEpoch.toString();
     final wallet = Wallet(
       id: id,
       name: name,
       type: WalletType.checking,
       balance: 0,
-      currency: 'UZS',
+      currency: currency,
       color: '9E9E9E',
       createdAt: DateTime.now(),
     );
@@ -325,6 +325,20 @@ class MockDataService {
   // Jami hamyon balansa
   double getTotalWalletBalance() {
     return _wallets.fold(0, (sum, w) => sum + w.balance);
+  }
+
+  // Faqat som hamyonlarining jami balansa
+  double getTotalUZSBalance() {
+    return _wallets
+        .where((w) => w.currency == 'UZS')
+        .fold(0.0, (sum, w) => sum + w.balance);
+  }
+
+  // Faqat dollar hamyonlarining jami balansa
+  double getTotalUSDBalance() {
+    return _wallets
+        .where((w) => w.currency == 'USD')
+        .fold(0.0, (sum, w) => sum + w.balance);
   }
 
   // O'tgan oyning kirim/chiqimi

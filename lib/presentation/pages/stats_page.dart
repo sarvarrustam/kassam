@@ -16,6 +16,8 @@ class _StatsPageState extends State<StatsPage> {
   final _dataService = MockDataService();
   // month/year selection removed for simplified stats view
   String? _selectedWalletId;
+  DateTime? _filterStartDate;
+  DateTime? _filterEndDate;
 
   @override
   void initState() {
@@ -26,6 +28,98 @@ class _StatsPageState extends State<StatsPage> {
     }
   }
 
+  void _showDateRangePickerDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        DateTime tempStartDate =
+            _filterStartDate ??
+            DateTime.now().subtract(const Duration(days: 30));
+        DateTime tempEndDate = _filterEndDate ?? DateTime.now();
+
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Sana oralığini tanlang'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Boshlanish sanasi
+                  ListTile(
+                    title: const Text('Boshlanish sanasi'),
+                    subtitle: Text(
+                      '${tempStartDate.day.toString().padLeft(2, '0')}.${tempStartDate.month.toString().padLeft(2, '0')}.${tempStartDate.year}',
+                    ),
+                    onTap: () async {
+                      final pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: tempStartDate,
+                        firstDate: DateTime(2020),
+                        lastDate: tempEndDate,
+                      );
+                      if (pickedDate != null) {
+                        setStateDialog(() {
+                          tempStartDate = pickedDate;
+                        });
+                      }
+                    },
+                  ),
+                  const Divider(),
+                  // Tugallash sanasi
+                  ListTile(
+                    title: const Text('Tugallash sanasi'),
+                    subtitle: Text(
+                      '${tempEndDate.day.toString().padLeft(2, '0')}.${tempEndDate.month.toString().padLeft(2, '0')}.${tempEndDate.year}',
+                    ),
+                    onTap: () async {
+                      final pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: tempEndDate,
+                        firstDate: tempStartDate,
+                        lastDate: DateTime.now(),
+                      );
+                      if (pickedDate != null) {
+                        setStateDialog(() {
+                          tempEndDate = pickedDate;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _filterStartDate = null;
+                      _filterEndDate = null;
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Tozalash'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Bekor qilish'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _filterStartDate = tempStartDate;
+                      _filterEndDate = tempEndDate;
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Qo\'llash'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showAddTransactionSheet() {
     // Centered dialog instead of bottom sheet
     showDialog(
@@ -33,8 +127,10 @@ class _StatsPageState extends State<StatsPage> {
       barrierDismissible: true,
       builder: (dialogCtx) {
         TransactionType type = TransactionType.expense;
+        TransactionCategory? selectedCategory;
         final titleCtrl = TextEditingController();
         final amountCtrl = TextEditingController();
+        final titleFocusNode = FocusNode();
 
         return Dialog(
           shape: RoundedRectangleBorder(
@@ -45,6 +141,12 @@ class _StatsPageState extends State<StatsPage> {
               padding: const EdgeInsets.all(16),
               child: StatefulBuilder(
                 builder: (context, setStateSB) {
+                  // Get categories based on transaction type
+                  final categories = _getCategories(type);
+                  if (selectedCategory == null && categories.isNotEmpty) {
+                    selectedCategory = categories.first;
+                  }
+
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,9 +188,12 @@ class _StatsPageState extends State<StatsPage> {
                                   ? Colors.white
                                   : Colors.black87,
                             ),
-                            onSelected: (v) => setStateSB(
-                              () => type = TransactionType.expense,
-                            ),
+                            onSelected: (v) {
+                              setStateSB(() {
+                                type = TransactionType.expense;
+                                selectedCategory = null; // Reset category
+                              });
+                            },
                           ),
                           const SizedBox(width: 8),
                           ChoiceChip(
@@ -101,24 +206,116 @@ class _StatsPageState extends State<StatsPage> {
                                   ? Colors.white
                                   : Colors.black87,
                             ),
-                            onSelected: (v) =>
-                                setStateSB(() => type = TransactionType.income),
+                            onSelected: (v) {
+                              setStateSB(() {
+                                type = TransactionType.income;
+                                selectedCategory = null; // Reset category
+                              });
+                            },
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
+                      // Chiqim/Kirim turi sarlavhasi
+                      Text(
+                        type == TransactionType.income
+                            ? 'Kirim turi'
+                            : 'Chiqim turi',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       TextField(
+                        controller: amountCtrl,
+                        decoration: const InputDecoration(labelText: 'Summa'),
+                        keyboardType: TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        onChanged: (value) {
+                          // Ko'rinishda formatting
+                          final clean = value.replaceAll(' ', '');
+                          if (clean.isEmpty) return;
+                          try {
+                            final parts = clean.split('.');
+                            final intPart = int.parse(parts[0]);
+                            final formatted = _formatNumber(intPart);
+                            final decimal = parts.length > 1
+                                ? '.${parts[1]}'
+                                : '';
+                            final newText = formatted + decimal;
+
+                            if (amountCtrl.text != newText) {
+                              amountCtrl.value = TextEditingValue(
+                                text: newText,
+                                selection: TextSelection.collapsed(
+                                  offset: newText.length,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            // Noto'g'ri format
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      // Kategoriya tanlash dropdown - "Chiqim turi" / "Kirim turi"
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: DropdownButton<String>(
+                          value: null,
+                          isExpanded: true,
+                          underline: const SizedBox.shrink(),
+                          hint: Text(
+                            type == TransactionType.income
+                                ? 'Kirim turi'
+                                : 'Chiqim turi',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          items: categories.map((cat) {
+                            final categoryName = _getCategoryName(cat);
+                            return DropdownMenuItem<String>(
+                              value: categoryName,
+                              child: Text(categoryName),
+                            );
+                          }).toList(),
+                          onChanged: (selectedName) {
+                            if (selectedName != null) {
+                              if (selectedName == 'Boshqa') {
+                                // "Boshqa" bo'lsa
+                                titleCtrl.clear();
+                                // Cursor sarlavhaga o'tadi
+                                Future.delayed(
+                                  const Duration(milliseconds: 50),
+                                  () {
+                                    FocusScope.of(
+                                      context,
+                                    ).requestFocus(titleFocusNode);
+                                  },
+                                );
+                              } else {
+                                // Boshqa kategoriya - avtomatik sarlavhaga yoz
+                                setStateSB(() {
+                                  titleCtrl.text = selectedName;
+                                  selectedCategory = null;
+                                });
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Sarlavha TextField
+                      TextField(
+                        focusNode: titleFocusNode,
                         controller: titleCtrl,
                         decoration: const InputDecoration(
                           labelText: 'Sarlavha',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: amountCtrl,
-                        decoration: const InputDecoration(labelText: 'Summа'),
-                        keyboardType: TextInputType.numberWithOptions(
-                          decimal: true,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -132,6 +329,17 @@ class _StatsPageState extends State<StatsPage> {
                           const SizedBox(width: 8),
                           ElevatedButton(
                             onPressed: () {
+                              // Avval hamyon tanlanganligini tekshir
+                              if (_selectedWalletId == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Avval hamyon tanlang!'),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                                return;
+                              }
+
                               final title = titleCtrl.text.trim().isEmpty
                                   ? (type == TransactionType.income
                                         ? 'Kirim'
@@ -139,16 +347,20 @@ class _StatsPageState extends State<StatsPage> {
                                   : titleCtrl.text.trim();
                               final amount =
                                   double.tryParse(
-                                    amountCtrl.text.replaceAll(',', '.'),
+                                    amountCtrl.text
+                                        .replaceAll(' ', '')
+                                        .replaceAll(',', '.'),
                                   ) ??
                                   0.0;
                               if (amount <= 0) return;
 
                               final id = DateTime.now().millisecondsSinceEpoch
                                   .toString();
-                              final category = type == TransactionType.income
-                                  ? TransactionCategory.salary
-                                  : TransactionCategory.grocery;
+                              final category =
+                                  selectedCategory ??
+                                  (type == TransactionType.income
+                                      ? TransactionCategory.salary
+                                      : TransactionCategory.grocery);
                               final transaction = Transaction(
                                 id: id,
                                 title: title,
@@ -340,7 +552,6 @@ class _StatsPageState extends State<StatsPage> {
       ),
       builder: (ctx) {
         final wallets = _dataService.getWallets();
-        final nameCtrl = TextEditingController();
 
         return StatefulBuilder(
           builder: (context, setStateSB) {
@@ -369,9 +580,9 @@ class _StatsPageState extends State<StatsPage> {
                               leading: const Icon(
                                 Icons.account_balance_wallet_outlined,
                               ),
-                              title: Text(w.name),
+                              title: Text('${w.currency} - ${w.name}'),
                               subtitle: Text(
-                                '${w.balance.toStringAsFixed(0)} so\'m',
+                                '${_formatNumber(w.balance.toInt())} ${w.currency == 'UZS' ? 'so\'m' : '\$'}',
                               ),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -405,9 +616,11 @@ class _StatsPageState extends State<StatsPage> {
                                                 onPressed: () async {
                                                   await _dataService
                                                       .deleteWallet(w.id);
-                                                  setState(() {});
-                                                  setStateSB(() {});
+                                                  setState(() {
+                                                    _selectedWalletId = null;
+                                                  });
                                                   Navigator.of(dctx).pop();
+                                                  Navigator.of(ctx).pop();
                                                 },
                                                 child: const Text('OK'),
                                               ),
@@ -443,6 +656,7 @@ class _StatsPageState extends State<StatsPage> {
                         barrierDismissible: false,
                         builder: (dctx) {
                           return Dialog(
+                            alignment: Alignment.center,
                             insetAnimationDuration: const Duration(
                               milliseconds: 300,
                             ),
@@ -461,11 +675,73 @@ class _StatsPageState extends State<StatsPage> {
                                       ),
                                     ),
                                     const SizedBox(height: 16),
-                                    TextField(
-                                      controller: nameCtrl,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Hamyon nomi',
-                                        border: OutlineInputBorder(),
+                                    DefaultTabController(
+                                      length: 2,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          TabBar(
+                                            tabs: const [
+                                              Tab(text: 'UZS'),
+                                              Tab(text: 'USD'),
+                                            ],
+                                            labelColor: Colors.green,
+                                            unselectedLabelColor: Colors.grey,
+                                            indicatorColor: Colors.green,
+                                          ),
+                                          const SizedBox(height: 16),
+                                          SizedBox(
+                                            height: 160,
+                                            child: TabBarView(
+                                              children: [
+                                                // UZS Tab
+                                                _buildWalletInputTab('so\'m', (
+                                                  name,
+                                                ) {
+                                                  if (name.isEmpty) return;
+                                                  _dataService
+                                                      .addWallet(
+                                                        name,
+                                                        currency: 'UZS',
+                                                      )
+                                                      .then((newWallet) {
+                                                        setState(() {
+                                                          _selectedWalletId =
+                                                              newWallet.id;
+                                                        });
+                                                        Navigator.of(
+                                                          dctx,
+                                                        ).pop();
+                                                        Navigator.of(ctx).pop();
+                                                        setState(() {});
+                                                      });
+                                                }),
+                                                // USD Tab
+                                                _buildWalletInputTab('\$', (
+                                                  name,
+                                                ) {
+                                                  if (name.isEmpty) return;
+                                                  _dataService
+                                                      .addWallet(
+                                                        name,
+                                                        currency: 'USD',
+                                                      )
+                                                      .then((newWallet) {
+                                                        setState(() {
+                                                          _selectedWalletId =
+                                                              newWallet.id;
+                                                        });
+                                                        Navigator.of(
+                                                          dctx,
+                                                        ).pop();
+                                                        Navigator.of(ctx).pop();
+                                                        setState(() {});
+                                                      });
+                                                }),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     const SizedBox(height: 24),
@@ -476,25 +752,6 @@ class _StatsPageState extends State<StatsPage> {
                                           onPressed: () =>
                                               Navigator.of(dctx).pop(),
                                           child: const Text('Bekor qilish'),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        ElevatedButton(
-                                          onPressed: () {
-                                            final name = nameCtrl.text.trim();
-                                            if (name.isEmpty) return;
-                                            _dataService.addWallet(name).then((
-                                              newWallet,
-                                            ) {
-                                              setState(() {
-                                                _selectedWalletId =
-                                                    newWallet.id;
-                                              });
-                                              Navigator.of(dctx).pop();
-                                              Navigator.of(ctx).pop();
-                                              setState(() {});
-                                            });
-                                          },
-                                          child: const Text('OK'),
                                         ),
                                       ],
                                     ),
@@ -557,16 +814,34 @@ class _StatsPageState extends State<StatsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    _dataService.getWalletById(_selectedWalletId ?? '')?.name ??
-                        'Umumiy Hisob',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                  Stack(
+                    alignment: Alignment.centerRight,
+                    children: [
+                      Center(
+                        child: Text(
+                          _dataService
+                                  .getWalletById(_selectedWalletId ?? '')
+                                  ?.name ??
+                              'Umumiy Hisob',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: Colors.white70),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _showDateRangePickerDialog,
+                        icon: Icon(
+                          Icons.filter_list,
+                          color: Colors.white.withOpacity(0.9),
+                          size: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '${(_dataService.getWalletById(_selectedWalletId ?? '')?.balance ?? _dataService.getNetBalance()).toStringAsFixed(0)} so\'m',
+                    '${_formatNumber((_dataService.getWalletById(_selectedWalletId ?? '')?.balance ?? _dataService.getNetBalance()).toInt())} ${_dataService.getWalletById(_selectedWalletId ?? '')?.currency == 'USD' ? '\$' : 'so\'m'}',
                     style: Theme.of(context).textTheme.displayMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -600,7 +875,20 @@ class _StatsPageState extends State<StatsPage> {
                     children: () {
                       final transactions = _dataService
                           .getTransactionsByWalletId(_selectedWalletId);
-                      final sorted = List<Transaction>.from(transactions)
+
+                      // Filter by date range if filter is active
+                      final filtered = transactions.where((t) {
+                        if (_filterStartDate == null ||
+                            _filterEndDate == null) {
+                          return true; // No filter
+                        }
+                        // Check if transaction date is within the range
+                        return t.date.isAfter(_filterStartDate!) &&
+                            t.date.isBefore(
+                              _filterEndDate!.add(const Duration(days: 1)),
+                            );
+                      }).toList();
+                      final sorted = List<Transaction>.from(filtered)
                         ..sort((a, b) => b.date.compareTo(a.date));
                       return sorted.map((t) {
                         final isExpense = t.type == TransactionType.expense;
@@ -667,7 +955,7 @@ class _StatsPageState extends State<StatsPage> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    '${t.amount.toStringAsFixed(0)} so\'m',
+                                    '${_formatNumber(t.amount.toInt())} ${_dataService.getWalletById(_selectedWalletId ?? '')?.currency == 'USD' ? '\$' : 'so\'m'}',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -892,6 +1180,114 @@ class _StatsPageState extends State<StatsPage> {
       ),
     );
   }
-}
 
-// _StatItem removed — simplified stats page does not use small stat items
+  Widget _buildWalletInputTab(String currency, Function(String) onSubmit) {
+    final nameCtrl = TextEditingController();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          TextField(
+            controller: nameCtrl,
+            decoration: InputDecoration(
+              labelText: 'Hamyon nomi',
+              hintText: 'Masalan: Asosiy hamyon',
+              border: const OutlineInputBorder(),
+              suffix: Text(
+                currency,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.green,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: () {
+              final name = nameCtrl.text.trim();
+              onSubmit(name);
+            },
+            child: const Text('Hamyon yaratish'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<TransactionCategory> _getCategories(TransactionType type) {
+    if (type == TransactionType.income) {
+      return [
+        TransactionCategory.salary,
+        TransactionCategory.gift,
+        TransactionCategory.investment,
+        TransactionCategory.loan,
+        TransactionCategory.other,
+      ];
+    } else {
+      return [
+        TransactionCategory.grocery,
+        TransactionCategory.restaurant,
+        TransactionCategory.transport,
+        TransactionCategory.utilities,
+        TransactionCategory.entertainment,
+        TransactionCategory.healthcare,
+        TransactionCategory.shopping,
+        TransactionCategory.education,
+        TransactionCategory.subscription,
+        TransactionCategory.other,
+      ];
+    }
+  }
+
+  String _getCategoryName(TransactionCategory category) {
+    switch (category) {
+      case TransactionCategory.salary:
+        return 'Oylik';
+      case TransactionCategory.gift:
+        return 'Sovg\'a';
+      case TransactionCategory.investment:
+        return 'Investitsiya';
+      case TransactionCategory.loan:
+        return 'Kredit';
+      case TransactionCategory.grocery:
+        return 'Bozor/Oziq-ovqat';
+      case TransactionCategory.restaurant:
+        return 'Restoran';
+      case TransactionCategory.transport:
+        return 'Transport/Benzin';
+      case TransactionCategory.utilities:
+        return 'Kommunal xizmatlar';
+      case TransactionCategory.entertainment:
+        return 'Ko\'ngilochar';
+      case TransactionCategory.healthcare:
+        return 'Sog\'liq saqlash';
+      case TransactionCategory.shopping:
+        return 'Xarid-sotish';
+      case TransactionCategory.education:
+        return 'Ta\'lim';
+      case TransactionCategory.subscription:
+        return 'Obuna xizmatlari';
+      case TransactionCategory.other:
+        return 'Boshqa';
+    }
+  }
+
+  String _formatNumber(int number) {
+    // Uzbek number format: spaces as thousands separator
+    // Example: 100 000 instead of 100000
+    final str = number.toString();
+    final reversed = str.split('').reversed.toList();
+    final parts = <String>[];
+
+    for (int i = 0; i < reversed.length; i++) {
+      if (i > 0 && i % 3 == 0) {
+        parts.add(' '); // Space instead of comma for Uzbek format
+      }
+      parts.add(reversed[i]);
+    }
+
+    return parts.reversed.join('');
+  }
+}

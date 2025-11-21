@@ -78,9 +78,9 @@ class Wallet extends Equatable {
       case WalletType.checking:
         return ' 💳';
       case WalletType.savings:
-        return '🏧';
+        return '💳';
       case WalletType.cash:
-        return '💵';
+        return '💳';
       case WalletType.card:
         return '💳';
     }

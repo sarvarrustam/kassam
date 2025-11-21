@@ -91,14 +91,14 @@ class _RootLayoutState extends State<RootLayout> {
             label: 'Bosh',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_outlined),
-            activeIcon: Icon(Icons.bar_chart),
-            label: 'Statistika',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.wallet_outlined),
             activeIcon: Icon(Icons.wallet),
             label: 'Hamyon',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart_outlined),
+            activeIcon: Icon(Icons.bar_chart),
+            label: 'Statistika',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),

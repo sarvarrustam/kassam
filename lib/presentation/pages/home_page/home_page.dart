@@ -15,6 +15,7 @@ class _HomePageState extends State<HomePage> {
   late final PageController _pageController;
   int _currentPage = 0;
   final _dataService = MockDataService();
+  bool _showBalance = true; // Balance visibility toggle
 
   @override
   void initState() {
@@ -258,7 +259,9 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${_formatNumber(w.balance.toInt())} ${w.currency}',
+                                  _showBalance
+                                      ? '${_formatNumber(w.balance.toInt())} ${w.currency}'
+                                      : '•••••• ${w.currency}',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 11,
@@ -307,15 +310,32 @@ class _HomePageState extends State<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+              ),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showBalance = !_showBalance;
+                  });
+                },
+                child: Icon(
+                  _showBalance ? Icons.visibility : Icons.visibility_off,
+                  color: Colors.white.withOpacity(0.7),
+                  size: 16,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           Text(
-            amount,
+            _showBalance ? amount : '••••••',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -324,7 +344,7 @@ class _HomePageState extends State<HomePage> {
           if (subtitle != null) ...[
             // const SizedBox(height: 4),
             Text(
-              subtitle,
+              _showBalance ? subtitle : '••••••',
               style: const TextStyle(color: Colors.white70, fontSize: 11),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -364,11 +384,28 @@ class _HomePageState extends State<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            'Jami',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Jami',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+              ),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showBalance = !_showBalance;
+                  });
+                },
+                child: Icon(
+                  _showBalance ? Icons.visibility : Icons.visibility_off,
+                  color: Colors.white.withOpacity(0.7),
+                  size: 16,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           // Ikki column: UZS (chap) va USD (o'ng)
@@ -381,7 +418,9 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${_formatNumber(totalInUZS)} UZS',
+                      _showBalance
+                          ? '${_formatNumber(totalInUZS)} UZS'
+                          : '••••••',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
@@ -398,7 +437,9 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${_formatNumber(totalInUSD)} USD',
+                      _showBalance
+                          ? '${_formatNumber(totalInUSD)} USD'
+                          : '••••••',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,

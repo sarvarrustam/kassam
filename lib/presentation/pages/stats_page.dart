@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-// import 'package:kassam/presentation/theme/app_colors.dart';
+import 'package:kassam/presentation/theme/app_colors.dart';
 import 'package:kassam/data/services/mock_data_service.dart';
 import 'package:kassam/data/models/transaction_model.dart';
 
@@ -18,6 +18,7 @@ class _StatsPageState extends State<StatsPage> {
   String? _selectedWalletId;
   DateTime? _filterStartDate;
   DateTime? _filterEndDate;
+  bool _showBalance = true; // Balance visibility toggle
 
   @override
   void initState() {
@@ -121,7 +122,7 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   void _showAddTransactionSheet() {
-    // Centered dialog instead of bottom sheet
+    // Main dialog for transaction
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -130,24 +131,17 @@ class _StatsPageState extends State<StatsPage> {
         TransactionCategory? selectedCategory;
         final titleCtrl = TextEditingController();
         final amountCtrl = TextEditingController();
-        final titleFocusNode = FocusNode();
 
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: StatefulBuilder(
-                builder: (context, setStateSB) {
-                  // Get categories based on transaction type
-                  final categories = _getCategories(type);
-                  if (selectedCategory == null && categories.isNotEmpty) {
-                    selectedCategory = categories.first;
-                  }
-
-                  return Column(
+        return StatefulBuilder(
+          builder: (context, setStateSB) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -176,6 +170,7 @@ class _StatsPageState extends State<StatsPage> {
                         ],
                       ),
                       const SizedBox(height: 8),
+                      // Chiqim/Kirim tanlash
                       Row(
                         children: [
                           ChoiceChip(
@@ -191,7 +186,7 @@ class _StatsPageState extends State<StatsPage> {
                             onSelected: (v) {
                               setStateSB(() {
                                 type = TransactionType.expense;
-                                selectedCategory = null; // Reset category
+                                selectedCategory = null;
                               });
                             },
                           ),
@@ -209,32 +204,24 @@ class _StatsPageState extends State<StatsPage> {
                             onSelected: (v) {
                               setStateSB(() {
                                 type = TransactionType.income;
-                                selectedCategory = null; // Reset category
+                                selectedCategory = null;
                               });
                             },
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      // Chiqim/Kirim turi sarlavhasi
-                      Text(
-                        type == TransactionType.income
-                            ? 'Kirim turi'
-                            : 'Chiqim turi',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
+                      // Summa kiritish
                       TextField(
                         controller: amountCtrl,
-                        decoration: const InputDecoration(labelText: 'Summa'),
+                        decoration: const InputDecoration(
+                          labelText: 'Summa',
+                          border: OutlineInputBorder(),
+                        ),
                         keyboardType: TextInputType.numberWithOptions(
                           decimal: true,
                         ),
                         onChanged: (value) {
-                          // Ko'rinishda formatting
                           final clean = value.replaceAll(' ', '');
                           if (clean.isEmpty) return;
                           try {
@@ -255,70 +242,48 @@ class _StatsPageState extends State<StatsPage> {
                               );
                             }
                           } catch (e) {
-                            // Noto'g'ri format
+                            // Invalid format
                           }
                         },
                       ),
                       const SizedBox(height: 12),
-                      // Kategoriya tanlash dropdown - "Chiqim turi" / "Kirim turi"
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: DropdownButton<String>(
-                          value: null,
-                          isExpanded: true,
-                          underline: const SizedBox.shrink(),
-                          hint: Text(
-                            type == TransactionType.income
-                                ? 'Kirim turi'
-                                : 'Chiqim turi',
-                            style: Theme.of(context).textTheme.bodyMedium,
+                      // Chiqim/Kirim turi tugmasi
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryGreen,
                           ),
-                          items: categories.map((cat) {
-                            final categoryName = _getCategoryName(cat);
-                            return DropdownMenuItem<String>(
-                              value: categoryName,
-                              child: Text(categoryName),
-                            );
-                          }).toList(),
-                          onChanged: (selectedName) {
-                            if (selectedName != null) {
-                              if (selectedName == 'Boshqa') {
-                                // "Boshqa" bo'lsa
-                                titleCtrl.clear();
-                                // Cursor sarlavhaga o'tadi
-                                Future.delayed(
-                                  const Duration(milliseconds: 50),
-                                  () {
-                                    FocusScope.of(
-                                      context,
-                                    ).requestFocus(titleFocusNode);
-                                  },
-                                );
-                              } else {
-                                // Boshqa kategoriya - avtomatik sarlavhaga yoz
-                                setStateSB(() {
-                                  titleCtrl.text = selectedName;
-                                  selectedCategory = null;
-                                });
-                              }
-                            }
+                          onPressed: () {
+                            // Bottom sheet ochish kategoriya tanlash uchun
+                            _showCategorySelectionSheet(type, (selectedCat) {
+                              setStateSB(() {
+                                selectedCategory = selectedCat;
+                                titleCtrl.text = _getCategoryName(selectedCat);
+                              });
+                            });
                           },
+                          child: Text(
+                            selectedCategory != null
+                                ? _getCategoryName(selectedCategory!)
+                                : (type == TransactionType.income
+                                      ? 'Kirim turi tanlang'
+                                      : 'Chiqim turi tanlang'),
+                            style: const TextStyle(color: Colors.white),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // Sarlavha TextField
+                      // Sarlavha kiritish
                       TextField(
-                        focusNode: titleFocusNode,
                         controller: titleCtrl,
                         decoration: const InputDecoration(
                           labelText: 'Sarlavha',
+                          border: OutlineInputBorder(),
                         ),
                       ),
                       const SizedBox(height: 16),
+                      // OK va Bekor qilish tugmalari
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -329,7 +294,6 @@ class _StatsPageState extends State<StatsPage> {
                           const SizedBox(width: 8),
                           ElevatedButton(
                             onPressed: () {
-                              // Avval hamyon tanlanganligini tekshir
                               if (_selectedWalletId == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -372,8 +336,10 @@ class _StatsPageState extends State<StatsPage> {
                               );
                               () async {
                                 await _dataService.addTransaction(transaction);
-                                setState(() {});
-                                Navigator.of(dialogCtx).pop();
+                                if (mounted) {
+                                  setState(() {});
+                                  Navigator.of(dialogCtx).pop();
+                                }
                               }();
                             },
                             child: const Text('OK'),
@@ -381,11 +347,119 @@ class _StatsPageState extends State<StatsPage> {
                         ],
                       ),
                     ],
-                  );
-                },
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showCategorySelectionSheet(
+    TransactionType type,
+    Function(TransactionCategory) onSelected,
+  ) {
+    String searchQuery = '';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (context, setStateSB) {
+            final allCategories = _getCategories(type);
+            final categories = searchQuery.isEmpty
+                ? allCategories
+                : allCategories
+                      .where(
+                        (cat) => _getCategoryName(
+                          cat,
+                        ).toLowerCase().contains(searchQuery.toLowerCase()),
+                      )
+                      .toList();
+
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 16,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      type == TransactionType.income
+                          ? 'Kirim turi tanlang'
+                          : 'Chiqim turi tanlang',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Search qismi
+                    TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Kategoriasini izlash...',
+                        prefixIcon: const Icon(Icons.search),
+                        border: const OutlineInputBorder(),
+                      ),
+                      onChanged: (value) {
+                        setStateSB(() {
+                          searchQuery = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Kategoriyalar ro'yxati
+                    if (categories.isEmpty)
+                      Center(
+                        child: Text(
+                          'Kategoriya topilmadi',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: categories.length,
+                        itemBuilder: (ctx, index) {
+                          final cat = categories[index];
+                          return ListTile(
+                            leading: Icon(_getCategoryIcon(cat)),
+                            title: Text(_getCategoryName(cat)),
+                            onTap: () {
+                              onSelected(cat);
+                              Navigator.of(sheetCtx).pop();
+                            },
+                          );
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -695,49 +769,57 @@ class _StatsPageState extends State<StatsPage> {
                                             child: TabBarView(
                                               children: [
                                                 // UZS Tab
-                                                _buildWalletInputTab('so\'m', (
-                                                  name,
-                                                ) {
-                                                  if (name.isEmpty) return;
-                                                  _dataService
-                                                      .addWallet(
-                                                        name,
-                                                        currency: 'UZS',
-                                                      )
-                                                      .then((newWallet) {
-                                                        setState(() {
-                                                          _selectedWalletId =
-                                                              newWallet.id;
+                                                _buildWalletInputTab(
+                                                  'so\'m',
+                                                  'UZS',
+                                                  (name) {
+                                                    if (name.isEmpty) return;
+                                                    _dataService
+                                                        .addWallet(
+                                                          name,
+                                                          currency: 'UZS',
+                                                        )
+                                                        .then((newWallet) {
+                                                          setState(() {
+                                                            _selectedWalletId =
+                                                                newWallet.id;
+                                                          });
+                                                          Navigator.of(
+                                                            dctx,
+                                                          ).pop();
+                                                          Navigator.of(
+                                                            ctx,
+                                                          ).pop();
+                                                          setState(() {});
                                                         });
-                                                        Navigator.of(
-                                                          dctx,
-                                                        ).pop();
-                                                        Navigator.of(ctx).pop();
-                                                        setState(() {});
-                                                      });
-                                                }),
+                                                  },
+                                                ),
                                                 // USD Tab
-                                                _buildWalletInputTab('\$', (
-                                                  name,
-                                                ) {
-                                                  if (name.isEmpty) return;
-                                                  _dataService
-                                                      .addWallet(
-                                                        name,
-                                                        currency: 'USD',
-                                                      )
-                                                      .then((newWallet) {
-                                                        setState(() {
-                                                          _selectedWalletId =
-                                                              newWallet.id;
+                                                _buildWalletInputTab(
+                                                  '\$',
+                                                  'USD',
+                                                  (name) {
+                                                    if (name.isEmpty) return;
+                                                    _dataService
+                                                        .addWallet(
+                                                          name,
+                                                          currency: 'USD',
+                                                        )
+                                                        .then((newWallet) {
+                                                          setState(() {
+                                                            _selectedWalletId =
+                                                                newWallet.id;
+                                                          });
+                                                          Navigator.of(
+                                                            dctx,
+                                                          ).pop();
+                                                          Navigator.of(
+                                                            ctx,
+                                                          ).pop();
+                                                          setState(() {});
                                                         });
-                                                        Navigator.of(
-                                                          dctx,
-                                                        ).pop();
-                                                        Navigator.of(ctx).pop();
-                                                        setState(() {});
-                                                      });
-                                                }),
+                                                  },
+                                                ),
                                               ],
                                             ),
                                           ),
@@ -785,6 +867,15 @@ class _StatsPageState extends State<StatsPage> {
           _dataService.getWalletById(_selectedWalletId ?? '')?.name ?? 'Hamyon',
         ),
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.primaryGreen, AppColors.primaryGreenLight],
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             onPressed: _showWalletsSheet,
@@ -799,13 +890,10 @@ class _StatsPageState extends State<StatsPage> {
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color.fromARGB(255, 61, 212, 149),
-                    Color.fromARGB(255, 61, 212, 149),
-                  ],
+                  colors: [AppColors.primaryGreen, AppColors.primaryGreenLight],
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -823,8 +911,9 @@ class _StatsPageState extends State<StatsPage> {
                                   .getWalletById(_selectedWalletId ?? '')
                                   ?.name ??
                               'Umumiy Hisob',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: Colors.white70),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(color: Colors.white),
                         ),
                       ),
                       IconButton(
@@ -839,26 +928,114 @@ class _StatsPageState extends State<StatsPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '${_formatNumber((_dataService.getWalletById(_selectedWalletId ?? '')?.balance ?? _dataService.getNetBalance()).toInt())} ${_dataService.getWalletById(_selectedWalletId ?? '')?.currency == 'USD' ? '\$' : 'so\'m'}',
-                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  const SizedBox(height: 16),
+                  // Jami suma with eye icon toggle
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(width: 36), // Space for icon alignment
+                      Expanded(
+                        child: Text(
+                          _showBalance
+                              ? '${_formatNumber((_dataService.getWalletById(_selectedWalletId ?? '')?.balance ?? _dataService.getNetBalance()).toInt())} ${_dataService.getWalletById(_selectedWalletId ?? '')?.currency == 'USD' ? '\$' : 'so\'m'}'
+                              : '••••••',
+                          style: Theme.of(context).textTheme.displayMedium
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _showBalance = !_showBalance;
+                          });
+                        },
+                        child: Icon(
+                          _showBalance
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: Colors.white.withOpacity(0.7),
+                          size: 24,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 18),
-                  Icon(
-                    Icons.insert_chart_outlined,
-                    color: Colors.white.withOpacity(0.9),
-                    size: 28,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Xisobot',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.white70),
+                  const SizedBox(height: 20),
+                  // Chiqim va Kirim statistikasi
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Chap: Chiqim (Qizil)
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Chiqim',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: Colors.white, fontSize: 11),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${_formatNumber(_calculateExpenseTotal().toInt())} ${_getCurrencySymbol()}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Colors.red.shade300,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Markaziy: Xisobot icon
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.insert_chart_outlined,
+                            color: Colors.white.withOpacity(0.7),
+                            size: 22,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Xisobot',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Colors.white70, fontSize: 9),
+                          ),
+                        ],
+                      ),
+                      // O'ng: Kirim (Yashil)
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Kirim',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                  ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${_formatNumber(_calculateIncomeTotal().toInt())} ${_getCurrencySymbol()}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1181,7 +1358,11 @@ class _StatsPageState extends State<StatsPage> {
     );
   }
 
-  Widget _buildWalletInputTab(String currency, Function(String) onSubmit) {
+  Widget _buildWalletInputTab(
+    String displayCurrency,
+    String actualCurrency,
+    Function(String) onSubmit,
+  ) {
     final nameCtrl = TextEditingController();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -1195,7 +1376,7 @@ class _StatsPageState extends State<StatsPage> {
               hintText: 'Masalan: Asosiy hamyon',
               border: const OutlineInputBorder(),
               suffix: Text(
-                currency,
+                displayCurrency,
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   color: Colors.green,
@@ -1272,6 +1453,81 @@ class _StatsPageState extends State<StatsPage> {
       case TransactionCategory.other:
         return 'Boshqa';
     }
+  }
+
+  IconData _getCategoryIcon(TransactionCategory category) {
+    switch (category) {
+      case TransactionCategory.salary:
+        return Icons.work;
+      case TransactionCategory.gift:
+        return Icons.card_giftcard;
+      case TransactionCategory.investment:
+        return Icons.trending_up;
+      case TransactionCategory.loan:
+        return Icons.account_balance;
+      case TransactionCategory.grocery:
+        return Icons.shopping_cart;
+      case TransactionCategory.restaurant:
+        return Icons.restaurant;
+      case TransactionCategory.transport:
+        return Icons.directions_car;
+      case TransactionCategory.utilities:
+        return Icons.home;
+      case TransactionCategory.entertainment:
+        return Icons.movie;
+      case TransactionCategory.healthcare:
+        return Icons.health_and_safety;
+      case TransactionCategory.shopping:
+        return Icons.shopping_bag;
+      case TransactionCategory.education:
+        return Icons.school;
+      case TransactionCategory.subscription:
+        return Icons.subscriptions;
+      case TransactionCategory.other:
+        return Icons.more_horiz;
+    }
+  }
+
+  double _calculateExpenseTotal() {
+    final transactions = _dataService.getTransactionsByWalletId(
+      _selectedWalletId,
+    );
+    final filtered = transactions.where((t) {
+      if (_filterStartDate == null || _filterEndDate == null) {
+        return true;
+      }
+      return t.date.isAfter(_filterStartDate!) &&
+          t.date.isBefore(_filterEndDate!.add(const Duration(days: 1)));
+    }).toList();
+
+    return filtered
+        .where((t) => t.type == TransactionType.expense)
+        .fold(0.0, (sum, t) => sum + t.amount);
+  }
+
+  double _calculateIncomeTotal() {
+    final transactions = _dataService.getTransactionsByWalletId(
+      _selectedWalletId,
+    );
+    final filtered = transactions.where((t) {
+      if (_filterStartDate == null || _filterEndDate == null) {
+        return true;
+      }
+      return t.date.isAfter(_filterStartDate!) &&
+          t.date.isBefore(_filterEndDate!.add(const Duration(days: 1)));
+    }).toList();
+
+    return filtered
+        .where((t) => t.type == TransactionType.income)
+        .fold(0.0, (sum, t) => sum + t.amount);
+  }
+
+  String _getCurrencySymbol() {
+    final wallet = _dataService.getWalletById(_selectedWalletId ?? '');
+    if (wallet?.currency == 'USD') {
+      return '\$';
+    }
+    return 'so\'m';
   }
 
   String _formatNumber(int number) {

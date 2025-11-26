@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:kassam/presentation/theme/app_colors.dart';
 import 'package:kassam/data/services/mock_data_service.dart';
 import 'package:kassam/data/models/transaction_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class StatsPage extends StatefulWidget {
   final String? walletId;
@@ -19,6 +21,7 @@ class _StatsPageState extends State<StatsPage> {
   DateTime? _filterStartDate;
   DateTime? _filterEndDate;
   bool _showBalance = true; // Balance visibility toggle
+  List<Map<String, String>> _customCategories = [];
 
   @override
   void initState() {
@@ -27,6 +30,84 @@ class _StatsPageState extends State<StatsPage> {
     if (widget.walletId != null) {
       _selectedWalletId = widget.walletId;
     }
+    _loadCustomCategories();
+  }
+
+  Future<void> _loadCustomCategories() async {
+    final sp = await SharedPreferences.getInstance();
+    final raw = sp.getString('custom_categories');
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final list = jsonDecode(raw) as List<dynamic>;
+        _customCategories = list
+            .map((e) => Map<String, String>.from(e as Map))
+            .toList();
+      } catch (e) {
+        _customCategories = [];
+      }
+    } else {
+      _customCategories = [];
+    }
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _saveCustomCategories() async {
+    final sp = await SharedPreferences.getInstance();
+    final raw = jsonEncode(_customCategories);
+    await sp.setString('custom_categories', raw);
+  }
+
+  Future<void> _showAddCustomCategoryDialog(
+    TransactionType type,
+    Function(Map<String, String>) onSaved,
+  ) async {
+    final nameCtrl = TextEditingController();
+    final emojiCtrl = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Yangi kategoriya qo\'shish'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Nomi'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: emojiCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Emoji (masalan: 🍎)',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Bekor qilish'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = nameCtrl.text.trim();
+              final emoji = emojiCtrl.text.trim();
+              if (name.isEmpty) return;
+              final item = {
+                'name': name,
+                'emoji': emoji.isEmpty ? '📝' : emoji,
+                'type': type == TransactionType.income ? 'income' : 'expense',
+              };
+              _customCategories.add(item);
+              _saveCustomCategories();
+              onSaved(item);
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Saqlash'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showDateRangePickerDialog() {
@@ -129,6 +210,7 @@ class _StatsPageState extends State<StatsPage> {
       builder: (dialogCtx) {
         TransactionType type = TransactionType.expense;
         TransactionCategory? selectedCategory;
+        Map<String, String>? selectedCustomCategory;
         final titleCtrl = TextEditingController();
         final amountCtrl = TextEditingController();
 
@@ -159,9 +241,48 @@ class _StatsPageState extends State<StatsPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Yangi Tranzaksiya',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                if (selectedCustomCategory != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: Text(
+                                      selectedCustomCategory!['emoji'] ?? '',
+                                      style: const TextStyle(fontSize: 24),
+                                    ),
+                                  )
+                                else if (selectedCategory != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: Text(
+                                      Transaction(
+                                        id: '',
+                                        title: '',
+                                        amount: 0,
+                                        type: type,
+                                        category: selectedCategory!,
+                                        date: DateTime.now(),
+                                      ).getCategoryEmoji(),
+                                      style: const TextStyle(fontSize: 24),
+                                    ),
+                                  ),
+                                Text(
+                                  selectedCustomCategory != null
+                                      ? (selectedCustomCategory!['name'] ??
+                                            'Yangi Tranzaksiya')
+                                      : (selectedCategory != null
+                                            ? _getCategoryName(
+                                                selectedCategory!,
+                                              )
+                                            : 'Yangi Tranzaksiya'),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                           IconButton(
                             onPressed: () => Navigator.of(dialogCtx).pop(),
@@ -256,19 +377,28 @@ class _StatsPageState extends State<StatsPage> {
                           ),
                           onPressed: () {
                             // Bottom sheet ochish kategoriya tanlash uchun
-                            _showCategorySelectionSheet(type, (selectedCat) {
+                            _showCategorySelectionSheet(type, (selected) {
                               setStateSB(() {
-                                selectedCategory = selectedCat;
-                                titleCtrl.text = _getCategoryName(selectedCat);
+                                if (selected is TransactionCategory) {
+                                  selectedCategory = selected;
+                                  selectedCustomCategory = null;
+                                  titleCtrl.text = _getCategoryName(selected);
+                                } else if (selected is Map<String, String>) {
+                                  selectedCategory = TransactionCategory.other;
+                                  selectedCustomCategory = selected;
+                                  titleCtrl.text = selected['name'] ?? '';
+                                }
                               });
                             });
                           },
                           child: Text(
-                            selectedCategory != null
-                                ? _getCategoryName(selectedCategory!)
-                                : (type == TransactionType.income
-                                      ? 'Kirim turi tanlang'
-                                      : 'Chiqim turi tanlang'),
+                            selectedCustomCategory != null
+                                ? (selectedCustomCategory!['name'] ?? 'Boshqa')
+                                : (selectedCategory != null
+                                      ? _getCategoryName(selectedCategory!)
+                                      : (type == TransactionType.income
+                                            ? 'Kirim turi tanlang'
+                                            : 'Chiqim turi tanlang')),
                             style: const TextStyle(color: Colors.white),
                           ),
                         ),
@@ -320,11 +450,12 @@ class _StatsPageState extends State<StatsPage> {
 
                               final id = DateTime.now().millisecondsSinceEpoch
                                   .toString();
-                              final category =
-                                  selectedCategory ??
-                                  (type == TransactionType.income
-                                      ? TransactionCategory.salary
-                                      : TransactionCategory.grocery);
+                              final category = selectedCustomCategory != null
+                                  ? TransactionCategory.other
+                                  : (selectedCategory ??
+                                        (type == TransactionType.income
+                                            ? TransactionCategory.salary
+                                            : TransactionCategory.grocery));
                               final transaction = Transaction(
                                 id: id,
                                 title: title,
@@ -333,6 +464,14 @@ class _StatsPageState extends State<StatsPage> {
                                 category: category,
                                 date: DateTime.now(),
                                 walletId: _selectedWalletId,
+                                customCategoryName:
+                                    selectedCustomCategory != null
+                                    ? selectedCustomCategory!['name']
+                                    : null,
+                                customCategoryEmoji:
+                                    selectedCustomCategory != null
+                                    ? selectedCustomCategory!['emoji']
+                                    : null,
                               );
                               () async {
                                 await _dataService.addTransaction(transaction);
@@ -359,19 +498,14 @@ class _StatsPageState extends State<StatsPage> {
 
   void _showCategorySelectionSheet(
     TransactionType type,
-    Function(TransactionCategory) onSelected,
+    Function(dynamic) onSelected,
   ) {
-    String searchQuery = '';
-
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetCtx) {
+      builder: (dialogCtx) {
         return StatefulBuilder(
           builder: (context, setStateSB) {
+            String searchQuery = '';
             final allCategories = _getCategories(type);
             final categories = searchQuery.isEmpty
                 ? allCategories
@@ -383,79 +517,143 @@ class _StatsPageState extends State<StatsPage> {
                       )
                       .toList();
 
-            return SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  top: 16,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2),
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        type == TransactionType.income
+                            ? 'Kirim turi tanlang'
+                            : 'Chiqim turi tanlang',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      type == TransactionType.income
-                          ? 'Kirim turi tanlang'
-                          : 'Chiqim turi tanlang',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Search qismi
-                    TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Kategoriasini izlash...',
-                        prefixIcon: const Icon(Icons.search),
-                        border: const OutlineInputBorder(),
-                      ),
-                      onChanged: (value) {
-                        setStateSB(() {
-                          searchQuery = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // Kategoriyalar ro'yxati
-                    if (categories.isEmpty)
-                      Center(
-                        child: Text(
-                          'Kategoriya topilmadi',
-                          style: TextStyle(color: Colors.grey[600]),
+                      const SizedBox(height: 16),
+                      // Search qismi
+                      TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Kategoriasini izlash...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: const OutlineInputBorder(),
                         ),
-                      )
-                    else
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: categories.length,
-                        itemBuilder: (ctx, index) {
-                          final cat = categories[index];
-                          return ListTile(
-                            leading: Icon(_getCategoryIcon(cat)),
-                            title: Text(_getCategoryName(cat)),
-                            onTap: () {
-                              onSelected(cat);
-                              Navigator.of(sheetCtx).pop();
-                            },
-                          );
+                        onChanged: (value) {
+                          setStateSB(() {
+                            searchQuery = value;
+                          });
                         },
                       ),
-                  ],
+                      const SizedBox(height: 16),
+                      // Custom categories for this type
+                      if (_customCategories
+                          .where(
+                            (c) =>
+                                c['type'] ==
+                                (type == TransactionType.income
+                                    ? 'income'
+                                    : 'expense'),
+                          )
+                          .isNotEmpty) ...[
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: ListView(
+                            shrinkWrap: true,
+                            children: _customCategories
+                                .where(
+                                  (c) =>
+                                      c['type'] ==
+                                      (type == TransactionType.income
+                                          ? 'income'
+                                          : 'expense'),
+                                )
+                                .map(
+                                  (item) => ListTile(
+                                    leading: Text(item['emoji'] ?? ''),
+                                    title: Text(item['name'] ?? ''),
+                                    onTap: () {
+                                      onSelected(item);
+                                      Navigator.of(dialogCtx).pop();
+                                    },
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+
+                      // Kategoriyalar ro'yxati (static)
+                      if (categories.isEmpty)
+                        Center(
+                          child: Text(
+                            'Kategoriya topilmadi',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        )
+                      else
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: categories.length,
+                            itemBuilder: (ctx, index) {
+                              final cat = categories[index];
+                              return ListTile(
+                                leading: Icon(_getCategoryIcon(cat)),
+                                title: Text(_getCategoryName(cat)),
+                                onTap: () {
+                                  onSelected(cat);
+                                  Navigator.of(dialogCtx).pop();
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            await _showAddCustomCategoryDialog(type, (item) {
+                              onSelected(item);
+                            });
+                            // after adding, close selector
+                            Navigator.of(dialogCtx).pop();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blueGrey,
+                          ),
+                          child: const Text(
+                            'Yangi kategoriya qo\'shish',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(dialogCtx).pop(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey[300],
+                          ),
+                          child: const Text(
+                            'Yopish',
+                            style: TextStyle(color: Colors.black87),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -779,7 +977,14 @@ class _StatsPageState extends State<StatsPage> {
                                                           name,
                                                           currency: 'UZS',
                                                         )
-                                                        .then((newWallet) {
+                                                        .then((
+                                                          newWallet,
+                                                        ) async {
+                                                          // Mark new wallet as selected/default and refresh UI
+                                                          await _dataService
+                                                              .setDefaultWallet(
+                                                                newWallet.id,
+                                                              );
                                                           setState(() {
                                                             _selectedWalletId =
                                                                 newWallet.id;
@@ -805,7 +1010,14 @@ class _StatsPageState extends State<StatsPage> {
                                                           name,
                                                           currency: 'USD',
                                                         )
-                                                        .then((newWallet) {
+                                                        .then((
+                                                          newWallet,
+                                                        ) async {
+                                                          // Mark new wallet as selected/default and refresh UI
+                                                          await _dataService
+                                                              .setDefaultWallet(
+                                                                newWallet.id,
+                                                              );
                                                           setState(() {
                                                             _selectedWalletId =
                                                                 newWallet.id;

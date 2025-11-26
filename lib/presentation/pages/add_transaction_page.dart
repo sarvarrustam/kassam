@@ -41,96 +41,125 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Kirim yoki Chiqim?',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() => _selectedType = TransactionType.income);
-                    Navigator.pop(context);
-                  },
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: AppColors.successGreen.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Kirim yoki Chiqim?',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setModalState(
+                        () => _selectedType = TransactionType.income,
+                      );
+                      setState(() {});
+                    },
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: AppColors.successGreen.withValues(
+                              alpha: 0.1,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: AppColors.successGreen,
+                              width: _selectedType == TransactionType.income
+                                  ? 3
+                                  : 1,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.arrow_downward,
                             color: AppColors.successGreen,
-                            width: _selectedType == TransactionType.income
-                                ? 3
-                                : 1,
+                            size: 40,
                           ),
                         ),
-                        child: Icon(
-                          Icons.arrow_downward,
-                          color: AppColors.successGreen,
-                          size: 40,
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Kirim',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Kirim',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    setState(() => _selectedType = TransactionType.expense);
-                    Navigator.pop(context);
-                  },
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: AppColors.errorRed.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
+                  GestureDetector(
+                    onTap: () {
+                      setModalState(
+                        () => _selectedType = TransactionType.expense,
+                      );
+                      setState(() {});
+                    },
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: AppColors.errorRed.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: AppColors.errorRed,
+                              width: _selectedType == TransactionType.expense
+                                  ? 3
+                                  : 1,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.arrow_upward,
                             color: AppColors.errorRed,
-                            width: _selectedType == TransactionType.expense
-                                ? 3
-                                : 1,
+                            size: 40,
                           ),
                         ),
-                        child: Icon(
-                          Icons.arrow_upward,
-                          color: AppColors.errorRed,
-                          size: 40,
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Chiqim',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Chiqim',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Davom et',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -143,91 +172,116 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Kategoriya Tanlang',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                ),
-                itemCount: TransactionCategory.values.length,
-                itemBuilder: (context, index) {
-                  final category = TransactionCategory.values[index];
-                  final isSelected = _selectedCategory == category;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() => _selectedCategory = category);
-                      Navigator.pop(context);
-                    },
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primaryGreen.withValues(alpha: 0.2)
-                                : Colors.grey.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected
-                                  ? AppColors.primaryGreen
-                                  : Colors.transparent,
-                              width: 2,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              Transaction(
-                                id: '',
-                                title: '',
-                                amount: 0,
-                                type: TransactionType.expense,
-                                category: category,
-                                date: DateTime.now(),
-                              ).getCategoryEmoji(),
-                              style: const TextStyle(fontSize: 32),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          Transaction(
-                            id: '',
-                            title: '',
-                            amount: 0,
-                            type: TransactionType.expense,
-                            category: category,
-                            date: DateTime.now(),
-                          ).getCategoryName(),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  );
-                },
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Kategoriya Tanlang',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                  ),
+                  itemCount: TransactionCategory.values.length,
+                  itemBuilder: (context, index) {
+                    final category = TransactionCategory.values[index];
+                    final isSelected = _selectedCategory == category;
+                    return GestureDetector(
+                      onTap: () {
+                        setModalState(() => _selectedCategory = category);
+                        setState(() {});
+                      },
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primaryGreen.withValues(
+                                      alpha: 0.2,
+                                    )
+                                  : Colors.grey.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppColors.primaryGreen
+                                    : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                Transaction(
+                                  id: '',
+                                  title: '',
+                                  amount: 0,
+                                  type: TransactionType.expense,
+                                  category: category,
+                                  date: DateTime.now(),
+                                ).getCategoryEmoji(),
+                                style: const TextStyle(fontSize: 32),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            Transaction(
+                              id: '',
+                              title: '',
+                              amount: 0,
+                              type: TransactionType.expense,
+                              category: category,
+                              date: DateTime.now(),
+                            ).getCategoryName(),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Davom et',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

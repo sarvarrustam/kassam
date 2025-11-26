@@ -32,6 +32,8 @@ class Transaction extends Equatable {
       description: json['description'] as String?,
       notes: json['notes'] as String?,
       paymentMethod: json['paymentMethod'] as String?,
+      customCategoryName: json['customCategoryName'] as String?,
+      customCategoryEmoji: json['customCategoryEmoji'] as String?,
     );
   }
 
@@ -46,6 +48,8 @@ class Transaction extends Equatable {
     'description': description,
     'notes': notes,
     'paymentMethod': paymentMethod,
+    'customCategoryName': customCategoryName,
+    'customCategoryEmoji': customCategoryEmoji,
   };
   final String id;
   final String title;
@@ -57,6 +61,8 @@ class Transaction extends Equatable {
   final String? description;
   final String? notes;
   final String? paymentMethod;
+  final String? customCategoryName;
+  final String? customCategoryEmoji;
 
   const Transaction({
     required this.id,
@@ -69,6 +75,8 @@ class Transaction extends Equatable {
     this.description,
     this.notes,
     this.paymentMethod,
+    this.customCategoryName,
+    this.customCategoryEmoji,
   });
 
   @override
@@ -83,6 +91,8 @@ class Transaction extends Equatable {
     description,
     notes,
     paymentMethod,
+    customCategoryName,
+    customCategoryEmoji,
   ];
 
   // Kirim yoki chiqimni aniqlash
@@ -120,6 +130,13 @@ class Transaction extends Equatable {
 
   // Kategoriya nomi (Uzbek)
   String getCategoryName() {
+    // If category is 'other' but a custom name was provided, return it
+    if (category == TransactionCategory.other &&
+        customCategoryName != null &&
+        customCategoryName!.isNotEmpty) {
+      return customCategoryName!;
+    }
+
     switch (category) {
       case TransactionCategory.salary:
         return 'Oylik Maosh';
@@ -154,6 +171,13 @@ class Transaction extends Equatable {
 
   // Kategoriya emoji
   String getCategoryEmoji() {
+    // If category is 'other' but a custom emoji was provided, return it
+    if (category == TransactionCategory.other &&
+        customCategoryEmoji != null &&
+        customCategoryEmoji!.isNotEmpty) {
+      return customCategoryEmoji!;
+    }
+
     switch (category) {
       case TransactionCategory.salary:
         return '💼';

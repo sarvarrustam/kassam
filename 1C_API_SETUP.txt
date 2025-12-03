@@ -1,0 +1,35 @@
+═══════════════════════════════════════════════════════
+  1C API NI ULASH - QISQA QO'LLANMA
+═══════════════════════════════════════════════════════
+
+1. lib/data/services/api_service.dart faylini oching
+
+2. 1C chilar bergan ma'lumotlarni yozing:
+
+   /// Server manzili
+   static const String baseUrl = 'http://192.168.1.50:8080';
+   
+   /// Login va Parol
+   static const String? basicAuthUsername = 'administrator';
+   static const String? basicAuthPassword = 'SecurePass123';
+
+3. Terminal da ishga tushiring:
+   
+   flutter pub get
+   flutter run
+
+4. TAYYOR! ✅
+
+═══════════════════════════════════════════════════════
+
+ISHLATISH:
+
+final api = ApiService();
+
+// GET
+await api.get('/users');
+
+// POST
+await api.post('/get-sms', body: {'phone': '...'});
+
+═══════════════════════════════════════════════════════

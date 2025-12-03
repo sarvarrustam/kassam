@@ -1,0 +1,25 @@
+{
+    "configurations": [
+        {
+            "name": "CMake: CMake Script",
+            "type": "cmake",
+            "request": "launch",
+            "cmakeDebugType": "script",
+            "scriptPath": "${file}"
+        },
+        {
+            "name": "kassam (Flutter iPhone 16 Pro)",
+            "program": "lib/main.dart",
+            "deviceId": "33E5742E-A72C-4714-8B8F-3D2546E64DEF",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "kassam (Flutter iPhone 16 Pro)",
+            "program": "lib/main.dart",
+            "deviceId": "33E5742E-A72C-4714-8B8F-3D2546E64DEF",
+            "request": "launch",
+            "type": "dart"
+        }
+    ]
+}

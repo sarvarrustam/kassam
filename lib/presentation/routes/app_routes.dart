@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../pages/entry_pages/entry_page.dart';
-import '../pages/registration_pages/phone_registration_page.dart';
-import '../pages/registration_pages/sms_verification_page.dart';
-import '../pages/registration_pages/create_user_page.dart';
+import '../pages/entry_pages/registration_pages/phone_registration_page.dart';
+import '../pages/entry_pages/registration_pages/sms_verification_page.dart';
+import '../pages/entry_pages/registration_pages/create_user_page.dart';
 import '../pages/home_page/home_page.dart';
 import '../pages/stats_page.dart';
 import '../pages/settings_page.dart';
@@ -116,20 +116,39 @@ final GoRouter appRouter = GoRouter(
   redirect: (context, state) async {
     final prefs = AppPreferencesService();
     final hasCompleted = await prefs.hasCompletedOnboarding();
+
+   
+
+    // Auth route larni aniqlash
     final isAuthRoute =
         state.matchedLocation == '/entry' ||
         state.matchedLocation == '/phone-input' ||
         state.matchedLocation == '/sms-verification' ||
         state.matchedLocation == '/create-user';
 
+    // Agar onboarding tugallanmagan bo'lsa va auth route emas bo'lsa
+    // Entry sahifasiga yo'naltirish
     if (!hasCompleted && !isAuthRoute) {
+     
       return '/entry';
     }
 
-    if (hasCompleted && isAuthRoute) {
+    // YANGI: SMS verification va create-user'dan keyin home/register'ga o'tishga ruxsat berish
+    // Bu route'lardan redirect qilmaslik
+    if (state.matchedLocation == '/sms-verification' || 
+        state.matchedLocation == '/create-user') {
+      
+      return null;
+    }
+
+    // Agar onboarding tugallangan bo'lsa va entry/phone-input'da bo'lsa
+    // Home sahifasiga yo'naltirish
+    if (hasCompleted && (state.matchedLocation == '/entry' || state.matchedLocation == '/phone-input')) {
+     
       return '/home';
     }
 
+    
     return null;
   },
   routes: <RouteBase>[

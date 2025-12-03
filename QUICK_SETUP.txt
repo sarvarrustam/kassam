@@ -1,0 +1,49 @@
+/// QISQA QO'LLANMA
+/// lib/core/config/api_config.dart faylini oching
+
+/*
+═══════════════════════════════════════════════════════
+  1C MA'LUMOTLARINI YOZISH
+═══════════════════════════════════════════════════════
+
+1C CHILAR BERDI:
+  Server: http://192.168.1.50:8080
+  Username: administrator
+  Password: SecurePass123
+
+───────────────────────────────────────────────────────
+
+API_CONFIG.DART DA YOZING:
+
+// SERVER MANZILI
+static const String baseUrl = 'http://192.168.1.50:8080';
+
+// LOGIN VA PAROL
+static const String? basicAuthUsername = 'administrator';
+static const String? basicAuthPassword = 'SecurePass123';
+
+───────────────────────────────────────────────────────
+
+SHUNDAN KEYIN:
+
+1. flutter pub get - ishga tushiring (dio o'rnatish uchun)
+2. Dasturni ishga tushiring
+3. Telefon raqam kiriting
+4. API avtomatik ishlaydi!
+
+═══════════════════════════════════════════════════════
+
+ENDPOINT NOMLARI:
+
+Agar 1C boshqa nom bersa, o'zgartirasiz:
+
+// HOZIRGI:
+static const String getSms = '/get-sms';
+
+// AGAR 1C BERSA: /api/v1/send-sms
+static const String getSms = '/api/v1/send-sms';
+
+═══════════════════════════════════════════════════════
+
+TAYYOR! ✅
+*/

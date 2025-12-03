@@ -4,6 +4,8 @@ class AppPreferencesService {
   static const String _hasCompletedOnboardingKey = 'has_completed_onboarding';
   static const String _userNameKey = 'user_name';
   static const String _lastLoginDateKey = 'last_login_date';
+  static const String _authTokenKey = 'auth_token';
+  static const String _phoneNumberKey = 'phone_number';
 
   static final AppPreferencesService _instance =
       AppPreferencesService._internal();
@@ -71,6 +73,30 @@ class AppPreferencesService {
   Future<void> resetOnboarding() async {
     await _ensureInitialized();
     await _prefs.remove(_hasCompletedOnboardingKey);
+  }
+
+  // Save auth token
+  Future<void> setAuthToken(String token) async {
+    await _ensureInitialized();
+    await _prefs.setString(_authTokenKey, token);
+  }
+
+  // Get auth token
+  Future<String?> getAuthToken() async {
+    await _ensureInitialized();
+    return _prefs.getString(_authTokenKey);
+  }
+
+  // Save phone number
+  Future<void> setPhoneNumber(String phoneNumber) async {
+    await _ensureInitialized();
+    await _prefs.setString(_phoneNumberKey, phoneNumber);
+  }
+
+  // Get phone number
+  Future<String?> getPhoneNumber() async {
+    await _ensureInitialized();
+    return _prefs.getString(_phoneNumberKey);
   }
 
   // Ensure preferences are initialized

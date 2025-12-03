@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../theme/app_colors.dart';
 import '../../arch/bloc/theme_bloc.dart';
+import '../../data/services/app_preferences_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -198,9 +200,15 @@ class _SettingsPageState extends State<SettingsPage> {
                                   child: const Text('Bekor qilish'),
                                 ),
                                 TextButton(
-                                  onPressed: () {
+                                  onPressed: () async {
                                     Navigator.pop(ctx);
-                                    // Navigate to entry page
+                                    // Onboarding ni reset qilish
+                                    final prefs = AppPreferencesService();
+                                    await prefs.resetOnboarding();
+                                    // Entry sahifasiga o'tish
+                                    if (context.mounted) {
+                                      context.go('/entry');
+                                    }
                                   },
                                   child: const Text(
                                     'Chiqish',

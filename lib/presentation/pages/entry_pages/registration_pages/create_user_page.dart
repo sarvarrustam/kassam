@@ -260,45 +260,6 @@ class _CreateUserPageState extends State<CreateUserPage> {
     );
   }
 
-  // Future<void> _loadRegions(String countryId) async {
-  //   try {
-  //     final apiService = ApiService();
-  //     final response = await apiService.get(
-  //       apiService.getRegions,
-  //       queryParams: {'countryId': countryId},
-  //     );
-      
-  //     if (response['success'] == true) {
-  //       setState(() {
-  //         _regions = List<Map<String, dynamic>>.from(response['data'] ?? []);
-  //         _districts = []; // Viloyat o'zgarganda tumanlarni tozalash
-  //         _regionController.clear();
-  //         _districtController.clear();
-  //       });
-  //     }
-  //   } catch (e) {
-  //     print('Error loading regions: $e');
-  //   }
-  // }
-
-  // Future<void> _loadDistricts(String regionId) async {
-  //   try {
-  //     final apiService = ApiService();
-  //     final response = await apiService.get(
-  //       apiService.getDistricts,
-  //       queryParams: {'regionId': regionId},
-  //     );
-      
-  //     if (response['success'] == true) {
-  //       setState(() {
-  //         _districts = List<Map<String, dynamic>>.from(response['data'] ?? []);
-  //         _districtController.clear();
-  //       });
-  //     }
-  //   } catch (e) {
-  //     print('Error loading districts: $e');
-  //   }
-  // }
 
   
   void _createAccount() {
@@ -379,66 +340,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              
-              // Center(
-              //   child: Text(
-              //     'Profilingizni To\'ldiring',
-              //     style: Theme.of(context).textTheme.displayMedium,
-              //   ),
-              // ),
-
-              // const SizedBox(height: 12),
-              // Text(
-              //   'Shaxsiy ma\'lumotlaringizni to\'ldirish orqali ro\'yxatdan o\'tin',
-              //   style: Theme.of(context).textTheme.bodyMedium,
-              // ),
-              // //const SizedBox(height: 40),
-              // // Avatar
-              // // Center(
-              // // child: Column(
-              // //   children: [
-              // //     // Container(
-              // //     //   width: 100,
-              // //     //   height: 100,
-              // //     //   decoration: BoxDecoration(
-              // //     //     shape: BoxShape.circle,
-              // //     //     gradient: LinearGradient(
-              // //     //       begin: Alignment.topLeft,
-              // //     //       end: Alignment.bottomRight,
-              // //     //       colors: [
-              // //     //         AppColors.primaryGreen.withOpacity(0.3),
-              // //     //         AppColors.primaryGreenLight.withOpacity(0.3),
-              // //     //       ],
-              // //     //     ),
-              // //     //   ),
-              // //     //   child: const Icon(
-              // //     //     Icons.person,
-              // //     //     size: 50,
-              // //     //     color: AppColors.primaryGreen,
-              // //     //   ),
-              // //     // ),
-              // //     //const SizedBox(height: 16),
-              // //     // GestureDetector(
-              // //     //   onTap: () {
-              // //     //     ScaffoldMessenger.of(context).showSnackBar(
-              // //     //       const SnackBar(
-              // //     //         content: Text(
-              // //     //           'Rasm yuklash tez orada mavjud bo\'ladi',
-              // //     //         ),
-              // //     //       ),
-              // //     //     );
-              // //     //   },
-              // //     //   child: Text(
-              // //     //     'Rasim Yukla',
-              // //     //     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              // //     //       color: AppColors.primaryGreen,
-              // //     //       fontWeight: FontWeight.w600,
-              // //     //     ),
-              // //     //   ),
-              // //     // ),
-              // //   ],
-              // // ),
-              // // ),
+            
               const SizedBox(height: 40),
 
               Text('Ism', style: Theme.of(context).textTheme.titleLarge),

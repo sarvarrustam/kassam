@@ -111,6 +111,8 @@ class _RootLayoutState extends State<RootLayout> {
   }
 }
 
+
+
 final GoRouter appRouter = GoRouter(
   initialLocation: '/entry',
   redirect: (context, state) async {

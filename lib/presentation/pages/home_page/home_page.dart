@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kassam/data/services/app_preferences_service.dart';
 import 'package:kassam/data/services/mock_data_service.dart';
 import '../../theme/app_colors.dart';
 
@@ -15,12 +16,24 @@ class _HomePageState extends State<HomePage> {
   late final PageController _pageController;
   int _currentPage = 0;
   final _dataService = MockDataService();
+  final _prefsService = AppPreferencesService();
   bool _showBalance = true; // Balance visibility toggle
+  String _userName = 'Foydalanuvchi'; // Default value
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final name = await _prefsService.getUserName();
+    if (name != null && name.isNotEmpty) {
+      setState(() {
+        _userName = name;
+      });
+    }
   }
 
   @override
@@ -54,7 +67,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 const SizedBox(height: 40),
                 Text(
-                  'Abdulaziz',
+                  _userName,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,

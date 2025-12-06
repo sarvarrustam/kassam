@@ -20,7 +20,8 @@ class ApiService {
   //final String getSms = 'Agrowide/hs/KassamUrl/getSms';
   final String getSms = 'Kassam/hs/KassamUrl/getSms';
   final String checkSms = 'Kassam/hs/KassamUrl/getCheckSms';
-  final String  profileSave = 'Kassam/hs/KassamUrl/profileSave2';
+  final String profileSave = 'Kassam/hs/KassamUrl/profileSave';
+  final String getUser = 'Kassam/hs/KassamUrl/getUser';
   
   // Location endpoints
   final String getState = 'Kassam/hs/KassamUrl/getState';
@@ -100,14 +101,23 @@ class ApiService {
   Future<Map<String, dynamic>> get(
     String endpoint, {
     Map<String, dynamic>? queryParams,
+    String? token,
   }) async {
     try {
       print('GET Request: $baseUrl$endpoint');
       print('Query Params: $queryParams');
+      if (token != null) print('Token: $token');
+      
+      // Headers
+      final headers = <String, dynamic>{};
+      if (token != null) {
+        headers['token'] = token;
+      }
       
       final response = await _dio.get(
         endpoint,
         queryParameters: queryParams,
+        options: Options(headers: headers),
       );
 
       print('Response Status: ${response.statusCode}');

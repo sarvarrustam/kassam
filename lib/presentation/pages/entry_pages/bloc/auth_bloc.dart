@@ -56,7 +56,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final isRegistered = data['isRegistered'] ?? false;
         final token = data['token'] ?? '';
 
-        print('🔍 isRegistered: $isRegistered');
+        print('🔍 Full response data: $data');
+        print('🔍 isRegistered: $isRegistered (type: ${isRegistered.runtimeType})');
         print('🔍 Token: $token');
 
         // Token va telefon raqamni saqlash
@@ -64,7 +65,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await _prefsService.setPhoneNumber(event.phoneNumber);
 
         if (isRegistered == true) {
-          // User bazada BOR
+          // User bazada BOR - ma'lumotlarni yuklash
+          try {
+            final userResponse = await apiService.get(
+              apiService.getUser,
+              token: token,
+            );
+            
+            if (userResponse['success'] == true) {
+              final userData = userResponse['data'];
+              final userName = userData['name'] ?? '';
+              
+              // Ismni saqlash
+              if (userName.isNotEmpty) {
+                await _prefsService.setUserName(userName);
+                print('💾 User name saved: $userName');
+              }
+            }
+          } catch (e) {
+            print('⚠️ getUser error: $e');
+          }
+          
           await _prefsService.setOnboardingCompleted();
           emit(AuthVerifiedUserExists());
         } else {
@@ -152,8 +173,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       print('✅ Response: $response');
 
       if (response['success'] == true) {
+        // Token'ni saqlash
+        final newToken = response['data']['token']?.toString();
+        if (newToken != null) {
+          await _prefsService.setAuthToken(newToken);
+        }
+        
         // Profil muvaffaqiyatli yaratildi
         await _prefsService.setUserName(event.name);
+        print('💾 Registration: User name saved: ${event.name}');
+        
         await _prefsService.setOnboardingCompleted();
         emit(AuthProfileCreated());
       } else {

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:kassam/data/services/app_preferences_service.dart';
 import 'package:kassam/data/services/mock_data_service.dart';
 import '../../theme/app_colors.dart';
+import 'bloc/home_bloc.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,24 +17,14 @@ class _HomePageState extends State<HomePage> {
   late final PageController _pageController;
   int _currentPage = 0;
   final _dataService = MockDataService();
-  final _prefsService = AppPreferencesService();
   bool _showBalance = true; // Balance visibility toggle
-  String _userName = 'Foydalanuvchi'; // Default value
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
-    _loadUserName();
-  }
-
-  Future<void> _loadUserName() async {
-    final name = await _prefsService.getUserName();
-    if (name != null && name.isNotEmpty) {
-      setState(() {
-        _userName = name;
-      });
-    }
+    // BLoC orqali user ma'lumotlarini yuklash
+    context.read<HomeBloc>().add(HomeLoadUserData());
   }
 
   @override
@@ -44,35 +35,52 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Card
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppColors.primaryGreen, AppColors.primaryGreenLight],
-              ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
-            ),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 40),
-                Text(
-                  _userName,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
+    return BlocBuilder<HomeBloc, HomeState>(
+      builder: (context, state) {
+          // Username ni state dan olish
+          String displayName = 'Foydalanuvchi'; // Default
+          double totalUZS = 0;
+          double totalUSD = 0;
+          List<Map<String, dynamic>> wallets = [];
+          
+          if (state is HomeLoaded) {
+            displayName = state.userName;
+            totalUZS = state.totalUZS ?? 0;
+            totalUSD = state.totalUSD ?? 0;
+            wallets = state.wallets ?? [];
+          } else if (state is HomeLoading) {
+            displayName = 'Yuklanmoqda...';
+          }
+
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Card
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.primaryGreen, AppColors.primaryGreenLight],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
                   ),
                 ),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 40),
+                    Text(
+                      displayName,
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                 const SizedBox(height: 32),
                 // Balance Card (Swipeable UZS <-> USD)
                 GestureDetector(
@@ -98,48 +106,31 @@ class _HomePageState extends State<HomePage> {
                           },
                           itemBuilder: (context, index) {
                             if (index == 0) {
-                              final totalUZSBalance = _dataService
-                                  .getTotalUZSBalance();
+                              // API dan kelgan UZS balansi
                               final uzsToUsdConversion =
-                                  (totalUZSBalance / _exchangeRate).toInt();
+                                  (totalUZS / _exchangeRate).toInt();
                               return _buildBalanceCard(
                                 'Mening Pulim',
-                                '${_formatNumber(totalUZSBalance.toInt())} UZS',
+                                '${_formatNumber(totalUZS.toInt())} UZS',
                                 subtitle:
                                     '≈ ${_formatNumber(uzsToUsdConversion)} USD',
                               );
                             } else if (index == 1) {
-                              final totalUSDBalance = _dataService
-                                  .getTotalUSDBalance();
+                              // API dan kelgan USD balansi
                               final usdToUzsConversion =
-                                  (totalUSDBalance * _exchangeRate).toInt();
+                                  (totalUSD * _exchangeRate).toInt();
                               return _buildBalanceCard(
                                 'Mening Dollarim',
-                                '${_formatNumber(totalUSDBalance.toInt())} USD',
+                                '${_formatNumber(totalUSD.toInt())} USD',
                                 subtitle:
                                     '≈ ${_formatNumber(usdToUzsConversion)} UZS',
                               );
                             }
 
-                            // 3-chi tab: Jami (umumiy)
-                            final totalUZSBalance = _dataService
-                                .getTotalUZSBalance();
-                            final totalUSDBalance = _dataService
-                                .getTotalUSDBalance();
-
-                            // Umumiy jami USD da
-                            final totalInUSD =
-                                totalUSDBalance +
-                                (totalUZSBalance / _exchangeRate);
-
-                            // Umumiy jami UZS da
-                            final totalInUZS =
-                                totalUZSBalance +
-                                (totalUSDBalance * _exchangeRate);
-
+                            // 3-chi tab: Jami (umumiy) - API dan
                             return _buildTotalBalanceCard(
-                              totalInUZS.toInt(),
-                              totalInUSD.toInt(),
+                              totalUZS.toInt(),
+                              totalUSD.toInt(),
                             );
                           },
                         ),
@@ -208,15 +199,35 @@ class _HomePageState extends State<HomePage> {
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 1.1,
+                    childAspectRatio: 1.2,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
-                  itemCount: _dataService.getWallets().length,
+                  itemCount: wallets.length,
                   itemBuilder: (ctx, i) {
-                    final w = _dataService.getWallets()[i];
+                    final w = wallets[i];
+                    // API dan kelgan ma'lumotlarni olish
+                    final walletName = w['name'] ?? 'Hamyon';
+                    final walletBalance = (w['value'] ?? 0).toDouble(); // 'balance' emas, 'value'
+                    final walletType = (w['type'] ?? 'som').toString().toLowerCase();
+                    
+                    // Type ni valyuta kodiga o'tkazish
+                    String walletCurrency;
+                    if (walletType == 'dollar') {
+                      walletCurrency = 'USD';
+                    } else if (walletType == 'som') {
+                      walletCurrency = 'UZS';
+                    } else {
+                      walletCurrency = 'UZS'; // Default
+                    }
+                    
+                    final walletId = w['id'] ?? '';
+                    final isDefault = (w['isDefault'] ?? false) || i == 0; // Birinchi hamyon default
+                    
+                    print('👛 Wallet #$i: name=$walletName, value=$walletBalance, type=$walletType -> currency=$walletCurrency');
+                    
                     return GestureDetector(
-                      onTap: () => context.push('/stats?walletId=${w.id}'),
+                      onTap: () => context.push('/stats?walletId=$walletId'),
                       child: Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -249,7 +260,7 @@ class _HomePageState extends State<HomePage> {
                                   size: 32,
                                   color: Colors.white,
                                 ),
-                                if (w.isDefault)
+                                if (isDefault)
                                   const Icon(
                                     Icons.check_circle,
                                     size: 16,
@@ -257,27 +268,29 @@ class _HomePageState extends State<HomePage> {
                                   ),
                               ],
                             ),
+                            const SizedBox(height: 15),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  w.name,
+                                  walletName,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 14,
+                                    fontSize: 18,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 8),
                                 Text(
                                   _showBalance
-                                      ? '${_formatNumber(w.balance.toInt())} ${w.currency}'
-                                      : '•••••• ${w.currency}',
+                                      ? '${_formatNumber(walletBalance.toInt())} $walletCurrency'
+                                      : '•••••• $walletCurrency',
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 11,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -307,8 +320,10 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 32),
         ],
-      ),
-    );
+            ),
+          );
+        },
+      );
   }
 
   Widget _buildBalanceCard(String title, String amount, {String? subtitle}) {

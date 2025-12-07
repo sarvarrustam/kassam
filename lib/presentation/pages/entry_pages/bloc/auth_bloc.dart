@@ -118,9 +118,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       print('   Birthday: ${event.birthday}');
       print('   Address: ${event.address}');
 
-      // Telefon raqam formatini to'g'rilash: 998995160075 (+ va bo'shliqsiz)
+      // Telefon raqam formatini to'g'rilash: +998995160075 (+ belgisi bilan, bo'shliqsiz)
       final formattedPhone = (phoneNumber ?? '')
-          .replaceAll('+', '')
           .replaceAll(' ', '')
           .replaceAll('-', '');
 

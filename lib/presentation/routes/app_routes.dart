@@ -90,11 +90,11 @@ class _RootLayoutState extends State<RootLayout> {
             activeIcon: Icon(Icons.home),
             label: 'Bosh',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.wallet_outlined),
-            activeIcon: Icon(Icons.wallet),
-            label: 'Hamyon',
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.wallet_outlined),
+          //   activeIcon: Icon(Icons.wallet),
+          //   label: 'Hamyon',
+          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart_outlined),
             activeIcon: Icon(Icons.bar_chart),
@@ -215,11 +215,11 @@ final GoRouter appRouter = GoRouter(
             return StatsPage(walletId: walletId);
           },
         ),
-        GoRoute(
-          path: '/wallet',
-          name: 'wallet',
-          builder: (context, state) => const WalletPage(),
-        ),
+        // GoRoute(
+        //   path: '/wallet',
+        //   name: 'wallet',
+        //   builder: (context, state) => const WalletPage(),
+        // ),
         GoRoute(
           path: '/settings',
           name: 'settings',

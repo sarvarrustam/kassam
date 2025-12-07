@@ -27,6 +27,10 @@ class ApiService {
   final String getState = 'Kassam/hs/KassamUrl/getState';
   final String getRegion = 'Kassam/hs/KassamUrl/getRegion';
   final String getDistricts = 'Kassam/hs/KassamUrl/getDistricts';
+  
+  // Wallet endpoints
+  final String getWalletsTotalBalans = 'Kassam/hs/KassamUrl/getWalletsTotalBalans';
+  final String getWalletsBalans = 'Kassam/hs/KassamUrl/getWalletsBalans';
 
 
 

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 class ApiService {
@@ -31,6 +32,15 @@ class ApiService {
   // Wallet endpoints
   final String getWalletsTotalBalans = 'Kassam/hs/KassamUrl/getWalletsTotalBalans';
   final String getWalletsBalans = 'Kassam/hs/KassamUrl/getWalletsBalans';
+  final String walletCreate = 'Kassam/hs/KassamUrl/walletCreate';
+  final String getKurs = 'Kassam/hs/KassamUrl/getKurs';
+  final String kursCreate = 'Kassam/hs/KassamUrl/kursCreate';
+  
+  // Transaction endpoints
+  final String transactionCreate = 'Kassam/hs/KassamUrl/transactionCreate';
+  final String getTransaction = 'Kassam/hs/KassamUrl/getTransaction';
+  final String getTransactionTypes = 'Kassam/hs/KassamUrl/getTransactionTypes';
+  final String transactionTypesCreate = 'Kassam/hs/KassamUrl/transactionTypesCreate';
 
 
 
@@ -60,11 +70,26 @@ class ApiService {
     // JSON Interceptor - String bo'lsa parse qilish
     _dio.interceptors.add(InterceptorsWrapper(
       onResponse: (response, handler) {
-        if (response.data is String && response.data.toString().trim().startsWith('{')) {
-          try {
-            response.data = jsonDecode(response.data);
-          } catch (e) {
-            print('JSON parse error: $e');
+        if (response.data is String) {
+          final dataStr = response.data.toString().trim();
+          // HTML response ni tekshirish
+          if (dataStr.startsWith('<!DOCTYPE') || dataStr.startsWith('<html')) {
+            print('⚠️ Server HTML qaytardi (500 error)');
+            // HTML ni error ga o'tkazish
+            throw DioException(
+              requestOptions: response.requestOptions,
+              response: response,
+              type: DioExceptionType.badResponse,
+              message: 'Server ichki xatolik (500)',
+            );
+          }
+          // JSON parse qilish
+          if (dataStr.startsWith('{')) {
+            try {
+              response.data = jsonDecode(response.data);
+            } catch (e) {
+              print('JSON parse error: $e');
+            }
           }
         }
         handler.next(response);
@@ -217,10 +242,18 @@ class ApiService {
   Future<Map<String, dynamic>> post(
     String endpoint, {
     Map<String, dynamic>? body,
+    String? token,
   }) async {
     try {
       print('🔵 POST Request: $baseUrl$endpoint');
       print('🔵 POST Body: $body');
+      if (token != null) print('🔵 Token: $token');
+      
+      // Headers
+      final headers = <String, dynamic>{};
+      if (token != null) {
+        headers['token'] = token;
+      }
       
       Response response;
       try {
@@ -228,6 +261,7 @@ class ApiService {
           endpoint,
           data: body,
           options: Options(
+            headers: headers,
             validateStatus: (status) {
               // Barcha status kodlarni qabul qilamiz (200-599)
               return status != null && status >= 200 && status < 600;
@@ -368,4 +402,217 @@ class ApiService {
         return 'Kutilmagan xatolik yuz berdi';
     }
   }
+
+  /// Kurs yangilash
+  Future<Map<String, dynamic>> updateExchangeRate(double kurs) async {
+    try {
+      // SharedPreferences'dan token olish
+      final sp = await SharedPreferences.getInstance();
+      final token = sp.getString('auth_token') ?? _authToken;
+      
+      print('💵 Token: $token');
+      
+      final body = {
+        'kurs': kurs.toInt(),
+        'currency': 'usd',
+      };
+
+      final response = await post(
+        kursCreate,
+        body: body,
+        token: token,
+      );
+      return response;
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Kurs yangilashda xatolik: $e',
+        'errorCode': 0,
+        'data': {},
+      };
+    }
+  }
+
+  /// Transaction qo'shish (yangi API format)
+  Future<Map<String, dynamic>> createTransaction({
+    required String walletId,
+    required String transactionTypesId,
+    required String type, // 'chiqim' yoki 'kirim'
+    required String comment,
+    required double amount,
+  }) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final token = sp.getString('auth_token') ?? _authToken;
+      
+      print('📝 Creating transaction: type=$type, amount=$amount');
+      print('📝 Token: $token');
+      
+      final body = {
+        'walletId': walletId,
+        'transactionTypesId': transactionTypesId,
+        'type': type,
+        'comment': comment,
+        'amount': amount,
+      };
+
+      final response = await post(
+        transactionCreate,
+        body: body,
+        token: token,
+      );
+      
+      print('📝 Transaction response: $response');
+      return response;
+    } catch (e) {
+      print('❌ Transaction error: $e');
+      return {
+        'success': false,
+        'error': 'Tranzaksiya qo\'shishda xatolik: $e',
+        'errorCode': 0,
+        'data': {},
+      };
+    }
+  }
+
+  /// Transaction qo'shish (eski format)
+  Future<Map<String, dynamic>> createTransactionOld({
+    required String walletId,
+    required double amount,
+    required String type, // 'expense' yoki 'income'
+    required String category,
+    String? description,
+    String? date,
+  }) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final token = sp.getString('auth_token') ?? _authToken;
+      
+      print('📝 Transaction creating: type=$type, amount=$amount, category=$category');
+      print('📝 Token: $token');
+      
+      final body = {
+        'walletId': walletId,
+        'amount': amount,
+        'type': type,
+        'category': category,
+        'description': description ?? '',
+        'date': date ?? DateTime.now().toIso8601String(),
+      };
+
+      final response = await post(
+        transactionCreate,
+        body: body,
+        token: token,
+      );
+      return response;
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Tranzaksiya qo\'shishda xatolik: $e',
+        'errorCode': 0,
+        'data': {},
+      };
+    }
+  }
+
+  /// Transaction turlarini olish
+  Future<Map<String, dynamic>> getTransactionTypesData(String type) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final token = sp.getString('auth_token') ?? _authToken;
+      
+      print('📊 Getting transaction types: $type...');
+      print('📊 Token: $token');
+
+      final queryParams = {'type': type};
+      
+      final response = await get(
+        getTransactionTypes,
+        queryParams: queryParams,
+        token: token,
+      );
+      return response;
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Tranzaksiya turlarini olishda xatolik: $e',
+        'errorCode': 0,
+        'data': {},
+      };
+    }
+  }
+
+  /// Transaction turini yaratish
+  Future<Map<String, dynamic>> createTransactionType({
+    required String name,
+    required String type,
+  }) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final token = sp.getString('auth_token') ?? _authToken;
+
+      print('➕ Creating transaction type: name=$name, type=$type');
+
+      final body = {
+        'name': name,
+        'type': type,
+      };
+
+      final response = await post(
+        transactionTypesCreate,
+        body: body,
+        token: token,
+      );
+
+      return response;
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Tranzaksiya turini qo\'shishda xatolik: $e',
+        'errorCode': 0,
+        'data': {},
+      };
+    }
+  }
+
+  /// Tranzaksiyalarni olish
+  Future<Map<String, dynamic>> getTransactions({
+    required String walletId,
+    required String fromDate, // Format: dd.MM.yyyy
+    required String toDate,   // Format: dd.MM.yyyy
+  }) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final token = sp.getString('auth_token') ?? _authToken;
+
+      print('📊 Getting transactions: walletId=$walletId, from=$fromDate, to=$toDate');
+      print('📊 Token: $token');
+
+      final queryParams = {
+        'walletId': walletId,
+        'fromDate': fromDate,
+        'toDate': toDate,
+      };
+
+      final response = await get(
+        getTransaction,
+        queryParams: queryParams,
+        token: token,
+      );
+
+      print('📊 Transactions response: $response');
+      return response;
+    } catch (e) {
+      print('❌ Get transactions error: $e');
+      return {
+        'success': false,
+        'error': 'Tranzaksiyalarni yuklashda xatolik: $e',
+        'errorCode': 0,
+        'data': [],
+      };
+    }
+  }
 }
+
+

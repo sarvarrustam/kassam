@@ -5,11 +5,11 @@ import '../pages/entry_pages/registration_pages/phone_registration_page.dart';
 import '../pages/entry_pages/registration_pages/sms_verification_page.dart';
 import '../pages/entry_pages/registration_pages/create_user_page.dart';
 import '../pages/home_page/home_page.dart';
-import '../pages/stats_page.dart';
-import '../pages/settings_page.dart';
-import '../pages/add_transaction_page.dart';
+import '../pages/wallet_page/stats_page.dart';
+import '../pages/profile_setings/settings_page.dart';
+import '../pages/diagram_page.dart';
+import '../pages/wallet_page/add_transaction_page.dart';
 import '../pages/transactions_list_page.dart';
-import '../pages/wallet_page.dart';
 import '../../data/services/app_preferences_service.dart';
 
 // RootLayout - Bottom Navigation Bar va Floating Action Button bilan
@@ -49,22 +49,19 @@ class _RootLayoutState extends State<RootLayout> {
       case '/home':
         _selectedIndex = 0;
         break;
-      case '/stats':
+      case '/diagram':
         _selectedIndex = 1;
         break;
-      case '/wallet':
+      case '/settings':
         _selectedIndex = 2;
         break;
-      case '/settings':
-        _selectedIndex = 3;
-        break;
       default:
-        _selectedIndex = 0;
+        _selectedIndex = 3;
     }
   }
 
   void _onItemTapped(int index) {
-    final routes = ['/home', '/stats', '/wallet', '/settings'];
+    final routes = ['/home', '/diagram', '/settings'];
     context.go(routes[index]);
   }
 
@@ -90,15 +87,10 @@ class _RootLayoutState extends State<RootLayout> {
             activeIcon: Icon(Icons.home),
             label: 'Bosh',
           ),
-          // BottomNavigationBarItem(
-          //   icon: Icon(Icons.wallet_outlined),
-          //   activeIcon: Icon(Icons.wallet),
-          //   label: 'Hamyon',
-          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart_outlined),
             activeIcon: Icon(Icons.bar_chart),
-            label: 'Statistika',
+            label: 'Diagramma',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),
@@ -208,24 +200,26 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) => const HomePage(),
         ),
         GoRoute(
-          path: '/stats',
-          name: 'stats',
-          builder: (context, state) {
-            final walletId = state.uri.queryParameters['walletId'];
-            return StatsPage(walletId: walletId);
-          },
+          path: '/diagram',
+          name: 'diagram',
+          builder: (context, state) => const DiagramPage(),
         ),
-        // GoRoute(
-        //   path: '/wallet',
-        //   name: 'wallet',
-        //   builder: (context, state) => const WalletPage(),
-        // ),
         GoRoute(
           path: '/settings',
           name: 'settings',
           builder: (context, state) => const SettingsPage(),
         ),
       ],
+    ),
+
+    // Stats Page Route (Modal - without Bottom Navigation)
+    GoRoute(
+      path: '/stats',
+      name: 'stats',
+      builder: (context, state) {
+        final walletId = state.uri.queryParameters['walletId'];
+        return StatsPage(walletId: walletId);
+      },
     ),
   ],
 );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kassam/presentation/blocs/user/user_bloc.dart';
 import '../../../theme/app_colors.dart';
 import '../bloc/auth_bloc.dart';
 
@@ -91,6 +92,8 @@ class _SmsVerificationPageState extends State<SmsVerificationPage> {
               backgroundColor: Colors.green,
             ),
           );
+          // User ma'lumotlarini yuklash
+          context.read<UserBloc>().add(UserGetDataEvent());
           context.go('/home');
         } else if (state is AuthVerifiedUserNew) {
          

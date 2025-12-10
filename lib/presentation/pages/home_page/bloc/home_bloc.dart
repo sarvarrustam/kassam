@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:kassam/data/models/wallet_balance_model.dart';
 import 'package:kassam/data/services/api_service.dart';
 import 'package:kassam/data/services/app_preferences_service.dart';
 
@@ -11,138 +12,44 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final AppPreferencesService _prefsService = AppPreferencesService();
 
   HomeBloc() : super(HomeInitial()) {
-    on<HomeLoadUserData>(_onHomeLoadUserData);
-    on<HomeRefreshData>(_onHomeRefreshData);
-    on<HomeLoadWalletBalances>(_onHomeLoadWalletBalances);
-    on<HomeLoadWallets>(_onHomeLoadWallets);
+    on<HomeGetWalletsEvent>(_onHomeGetWallets);
+    on<HomeGetTotalBalancesEvent>(_onHomeGetTotalBalances);
+    on<HomeGetInitialDataEvent>(_onHomeGetInitialData);
+    on<HomeCreateWalletEvent>(_onHomeCreateWallet);
+    on<HomeGetExchangeRateEvent>(_onHomeGetExchangeRate);
+    on<HomeUpdateExchangeRateEvent>(_onHomeUpdateExchangeRate);
   }
 
-  Future<void> _onHomeLoadUserData(
-      HomeLoadUserData event, Emitter<HomeState> emit) async {
+  // Initial data - barcha ma'lumotlarni yuklash
+  Future<void> _onHomeGetInitialData(
+    HomeGetInitialDataEvent event,
+    Emitter<HomeState> emit,
+  ) async {
     emit(HomeLoading());
-    try {
-      // SharedPreferences dan ma'lumotlarni olish
-      final userName = await _prefsService.getUserName();
-      final phoneNumber = await _prefsService.getPhoneNumber();
-      final token = await _prefsService.getAuthToken();
-
-      print('🏠 Home: Loading user data');
-      print('   Username: $userName');
-      print('   Phone: $phoneNumber');
-      print('   Token: $token');
-
-      if (userName != null && userName.isNotEmpty) {
-        emit(HomeLoaded(
-          userName: userName,
-          phoneNumber: phoneNumber ?? '',
-        ));
-        
-        // User yuklangandan keyin wallet balanslarini yuklash
-        if (token != null && token.isNotEmpty) {
-          await _loadWalletBalances(token, emit);
-          // Wallet balanslar yuklangandan keyin hamyonlar ro'yxatini yuklash
-          await _loadWalletsList(token, emit);
-        }
-      } else {
-        // Agar username bo'lmasa, API dan olishga harakat qilish
-        if (token != null && token.isNotEmpty) {
-          await _fetchUserFromApi(token, emit);
-          // API dan user yuklangandan keyin walletlarni yuklash
-          await _loadWalletBalances(token, emit);
-          await _loadWalletsList(token, emit);
-        } else {
-          emit(const HomeError('Foydalanuvchi ma\'lumotlari topilmadi'));
-        }
-      }
-    } catch (e) {
-      print('❌ Home error: $e');
-      emit(HomeError('Xatolik: ${e.toString()}'));
-    }
+    
+    // Hamyonlarni yuklash
+    add(HomeGetWalletsEvent());
+ 
+    // Total balanslarni yuklash
+    add(HomeGetTotalBalancesEvent());
   }
 
-  Future<void> _onHomeRefreshData(
-      HomeRefreshData event, Emitter<HomeState> emit) async {
+  // Hamyonlar ro'yxatini yuklash
+  Future<void> _onHomeGetWallets(
+    HomeGetWalletsEvent event,
+    Emitter<HomeState> emit,
+  ) async {
     try {
+      emit(HomeWalletsLoading());
+      
       final token = await _prefsService.getAuthToken();
-
-      if (token != null && token.isNotEmpty) {
-        await _fetchUserFromApi(token, emit);
-      } else {
-        emit(const HomeError('Token topilmadi'));
-      }
-    } catch (e) {
-      print('❌ Home refresh error: $e');
-      emit(HomeError('Yangilashda xatolik: ${e.toString()}'));
-    }
-  }
-
-  Future<void> _onHomeLoadWalletBalances(
-      HomeLoadWalletBalances event, Emitter<HomeState> emit) async {
-    try {
-      final token = await _prefsService.getAuthToken();
-
+      
       if (token == null || token.isEmpty) {
         emit(const HomeError('Token topilmadi'));
         return;
       }
 
-      print('💰 Loading wallet balances...');
-      final response = await _apiService.get(
-        _apiService.getWalletsTotalBalans,
-        token: token,
-      );
-
-      print('💰 Wallet response: $response');
-
-      if (response['success'] == true) {
-        final data = response['data'];
-        
-        // API dan UZS va USD balanslarini olish
-        final totalUZS = (data['totalUZS'] ?? 0).toDouble();
-        final totalUSD = (data['totalUSD'] ?? 0).toDouble();
-
-        print('✅ Wallet balances loaded: UZS=$totalUZS, USD=$totalUSD');
-
-        // Agar hozirgi state HomeLoaded bo'lsa, uni yangilaymiz
-        if (state is HomeLoaded) {
-          final currentState = state as HomeLoaded;
-          emit(currentState.copyWith(
-            totalUZS: totalUZS,
-            totalUSD: totalUSD,
-          ));
-        } else {
-          // Aks holda username bilan birga emit qilamiz
-          final userName = await _prefsService.getUserName() ?? 'Foydalanuvchi';
-          final phoneNumber = await _prefsService.getPhoneNumber() ?? '';
-          
-          emit(HomeLoaded(
-            userName: userName,
-            phoneNumber: phoneNumber,
-            totalUZS: totalUZS,
-            totalUSD: totalUSD,
-          ));
-        }
-      } else {
-        print('❌ Wallet API error: ${response['error']}');
-        emit(HomeError(response['error'] ?? 'Wallet ma\'lumotlarini olishda xatolik'));
-      }
-    } catch (e) {
-      print('❌ Wallet fetch error: $e');
-      emit(HomeError('Wallet balanslarini olishda xatolik: ${e.toString()}'));
-    }
-  }
-
-  Future<void> _onHomeLoadWallets(
-      HomeLoadWallets event, Emitter<HomeState> emit) async {
-    try {
-      final token = await _prefsService.getAuthToken();
-
-      if (token == null || token.isEmpty) {
-        emit(const HomeError('Token topilmadi'));
-        return;
-      }
-
-      print('👛 Loading wallets list...');
+      print('👛 Loading wallets...');
       final response = await _apiService.get(
         _apiService.getWalletsBalans,
         token: token,
@@ -153,157 +60,193 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       if (response['success'] == true) {
         final data = response['data'];
         
-        // API dan hamyonlar ro'yxatini olish
-        List<Map<String, dynamic>> walletsList = [];
+        List<WalletBalance> walletsList = [];
         
         if (data is List) {
-          walletsList = data.map((wallet) => wallet as Map<String, dynamic>).toList();
+          walletsList = data
+              .map((wallet) => WalletBalance.fromJson(wallet as Map<String, dynamic>))
+              .toList();
         } else if (data is Map && data.containsKey('wallets')) {
           final wallets = data['wallets'];
           if (wallets is List) {
-            walletsList = wallets.map((wallet) => wallet as Map<String, dynamic>).toList();
+            walletsList = wallets
+                .map((wallet) => WalletBalance.fromJson(wallet as Map<String, dynamic>))
+                .toList();
           }
         }
 
         print('✅ Wallets loaded: ${walletsList.length} hamyonlar');
-        
-        // Har bir hamyon ma'lumotini chop etish
-        for (var i = 0; i < walletsList.length; i++) {
-          final wallet = walletsList[i];
-          print('   Wallet #$i: ${wallet['name']} - ${wallet['value']} (type: ${wallet['type']})');
-        }
+        walletsList.asMap().forEach((index, wallet) {
+          print('   👛 Wallet #$index: $wallet');
+        });
 
-        // Agar hozirgi state HomeLoaded bo'lsa, uni yangilaymiz
-        if (state is HomeLoaded) {
-          final currentState = state as HomeLoaded;
-          emit(currentState.copyWith(wallets: walletsList));
-        } else {
-          // Aks holda username bilan birga emit qilamiz
-          final userName = await _prefsService.getUserName() ?? 'Foydalanuvchi';
-          final phoneNumber = await _prefsService.getPhoneNumber() ?? '';
-          
-          emit(HomeLoaded(
-            userName: userName,
-            phoneNumber: phoneNumber,
-            wallets: walletsList,
-          ));
-        }
+        emit(HomeGetWalletsSuccess(walletsList));
       } else {
-        print('❌ Wallets API error: ${response['error']}');
-        emit(HomeError(response['error'] ?? 'Hamyonlar ma\'lumotlarini olishda xatolik'));
+        final errorMsg = response['error'] ?? 'Server xatosi';
+        print('❌ Wallets API error: $errorMsg');
+        emit(HomeError(errorMsg));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ Wallets fetch error: $e');
-      emit(HomeError('Hamyonlar ro\'yxatini olishda xatolik: ${e.toString()}'));
+      print('Stack trace: $stackTrace');
+      emit(HomeError('Hamyonlarni yuklashda xatolik: ${e.toString()}'));
     }
   }
 
-  Future<void> _fetchUserFromApi(
-      String token, Emitter<HomeState> emit) async {
+  // Total balanslarni yuklash
+  Future<void> _onHomeGetTotalBalances(
+    HomeGetTotalBalancesEvent event,
+    Emitter<HomeState> emit,
+  ) async {
     try {
-      print('📡 Fetching user data from API...');
-      final response = await _apiService.get(
-        _apiService.getUser,
-        token: token,
-      );
-
-      if (response['success'] == true) {
-        final data = response['data'];
-        final userName = data['name'] ?? 'Foydalanuvchi';
-        final phoneNumber = data['telephoneNumber'] ?? '';
-
-        // Ma'lumotlarni saqlash
-        await _prefsService.setUserName(userName);
-        if (phoneNumber.isNotEmpty) {
-          await _prefsService.setPhoneNumber(phoneNumber);
-        }
-
-        print('✅ User data loaded from API');
-        emit(HomeLoaded(
-          userName: userName,
-          phoneNumber: phoneNumber,
-        ));
-      } else {
-        emit(HomeError(response['error'] ?? 'API xatolik'));
+      emit(HomeTotalBalancesLoading());
+      
+      final token = await _prefsService.getAuthToken();
+      
+      if (token == null || token.isEmpty) {
+        emit(const HomeError('Token topilmadi'));
+        return;
       }
-    } catch (e) {
-      print('❌ API fetch error: $e');
-      emit(HomeError('API dan ma\'lumot olishda xatolik: ${e.toString()}'));
-    }
-  }
-  
-  // Helper method: Wallet balanslarini yuklash
-  Future<void> _loadWalletBalances(String token, Emitter<HomeState> emit) async {
-    try {
-      print('💰 Loading wallet balances...');
+
+      print('💰 Loading total balances...');
       final response = await _apiService.get(
         _apiService.getWalletsTotalBalans,
         token: token,
       );
 
-      print('💰 Wallet response: $response');
+      print('💰 Total balances response: $response');
 
       if (response['success'] == true) {
         final data = response['data'];
         
-        // API formatiga mos: som, dollar, somTotal, dollarTotal
-        final totalUZS = (data['somTotal'] ?? data['som'] ?? 0).toDouble();
-        final totalUSD = (data['dollarTotal'] ?? data['dollar'] ?? 0).toDouble();
+        // Yangi API format: uzsTotal va usdTotal
+        final somTotal = (data['uzsTotal'] ?? 0).toDouble();
+        final dollarTotal = (data['usdTotal'] ?? 0).toDouble();
 
-        print('✅ Wallet balances loaded: som=$totalUZS, dollar=$totalUSD');
-        print('   Raw data: som=${data['som']}, dollar=${data['dollar']}, somTotal=${data['somTotal']}, dollarTotal=${data['dollarTotal']}');
+        print('✅ Total balances loaded: som=$somTotal, dollar=$dollarTotal');
 
-        if (state is HomeLoaded) {
-          final currentState = state as HomeLoaded;
-          emit(currentState.copyWith(
-            totalUZS: totalUZS,
-            totalUSD: totalUSD,
-          ));
-        }
+        emit(HomeGetTotalBalancesSuccess(
+          somTotal: somTotal,
+          dollarTotal: dollarTotal,
+        ));
       } else {
-        print('❌ Wallet API error: ${response['error']}');
+        final errorMsg = response['error'] ?? 'Server xatosi';
+        print('❌ Total balances API error: $errorMsg');
+        emit(HomeError(errorMsg));
       }
-    } catch (e) {
-      print('❌ Wallet fetch error: $e');
+    } catch (e, stackTrace) {
+      print('❌ Total balances fetch error: $e');
+      print('Stack trace: $stackTrace');
+      emit(HomeError('Balanslarni yuklashda xatolik: ${e.toString()}'));
     }
   }
-  
-  // Helper method: Hamyonlar ro'yxatini yuklash
-  Future<void> _loadWalletsList(String token, Emitter<HomeState> emit) async {
+
+  // Yangi hamyon yaratish
+  Future<void> _onHomeCreateWallet(
+    HomeCreateWalletEvent event,
+    Emitter<HomeState> emit,
+  ) async {
     try {
-      print('👛 Loading wallets list...');
-      final response = await _apiService.get(
-        _apiService.getWalletsBalans,
+      emit(HomeLoading());
+      
+      final token = await _prefsService.getAuthToken();
+      
+      if (token == null || token.isEmpty) {
+        emit(const HomeError('Token topilmadi'));
+        return;
+      }
+
+      print('🆕 Creating wallet: ${event.name} (${event.currency})');
+      
+      final response = await _apiService.post(
+        _apiService.walletCreate,
+        body: {
+          'name': event.name,
+          'currency': event.currency.toLowerCase(),
+        },
         token: token,
       );
 
-      print('👛 Wallets response: $response');
+      print('🆕 Create wallet response: $response');
+
+      if (response['success'] == true) {
+        print('✅ Wallet created successfully');
+        emit(HomeWalletCreatedSuccess());
+        // Hamyonlarni yangilash
+        add(HomeGetWalletsEvent());
+        add(HomeGetTotalBalancesEvent());
+      } else {
+        final errorMsg = response['error'] ?? 'Hamyon yaratishda xatolik';
+        print('❌ Create wallet API error: $errorMsg');
+        emit(HomeError(errorMsg));
+      }
+    } catch (e, stackTrace) {
+      print('❌ Create wallet error: $e');
+      print('Stack trace: $stackTrace');
+      emit(HomeError('Hamyon yaratishda xatolik: ${e.toString()}'));
+    }
+  }
+
+  // Kurs olish
+  Future<void> _onHomeGetExchangeRate(
+    HomeGetExchangeRateEvent event,
+    Emitter<HomeState> emit,
+  ) async {
+    try {
+      final token = await _prefsService.getAuthToken();
+      
+      if (token == null || token.isEmpty) {
+        emit(const HomeError('Token topilmadi'));
+        return;
+      }
+
+      print('💱 Loading exchange rate...');
+      final response = await _apiService.get(
+        _apiService.getKurs,
+        token: token,
+      );
+
+      print('💱 Exchange rate response: $response');
 
       if (response['success'] == true) {
         final data = response['data'];
-        
-        List<Map<String, dynamic>> walletsList = [];
-        
-        if (data is List) {
-          walletsList = data.map((wallet) => wallet as Map<String, dynamic>).toList();
-        } else if (data is Map && data.containsKey('wallets')) {
-          final wallets = data['wallets'];
-          if (wallets is List) {
-            walletsList = wallets.map((wallet) => wallet as Map<String, dynamic>).toList();
-          }
-        }
+        final kurs = (data['kurs'] ?? 12000).toDouble();
 
-        print('✅ Wallets loaded: ${walletsList.length} hamyonlar');
-
-        if (state is HomeLoaded) {
-          final currentState = state as HomeLoaded;
-          emit(currentState.copyWith(wallets: walletsList));
-        }
+        print('✅ Exchange rate loaded: $kurs');
+        emit(HomeGetExchangeRateSuccess(kurs));
       } else {
-        print('❌ Wallets API error: ${response['error']}');
+        final errorMsg = response['error'] ?? 'Kurs yuklashda xatolik';
+        print('❌ Exchange rate API error: $errorMsg');
+        emit(HomeError(errorMsg));
       }
-    } catch (e) {
-      print('❌ Wallets fetch error: $e');
+    } catch (e, stackTrace) {
+      print('❌ Exchange rate fetch error: $e');
+      print('Stack trace: $stackTrace');
+      emit(HomeError('Kurs yuklashda xatolik: ${e.toString()}'));
+    }
+  }
+
+  // Kurs yangilash
+  Future<void> _onHomeUpdateExchangeRate(
+    HomeUpdateExchangeRateEvent event,
+    Emitter<HomeState> emit,
+  ) async {
+    try {
+      print('💵 Updating exchange rate: ${event.kurs}');
+      final response = await _apiService.updateExchangeRate(event.kurs);
+
+      if (response['success'] == true) {
+        print('✅ Exchange rate updated: ${event.kurs}');
+        emit(HomeGetExchangeRateSuccess(event.kurs));
+      } else {
+        final errorMsg = response['error'] ?? 'Kurs yangilashda xatolik';
+        print('❌ Exchange rate update error: $errorMsg');
+        emit(HomeError(errorMsg));
+      }
+    } catch (e, stackTrace) {
+      print('❌ Exchange rate update error: $e');
+      print('Stack trace: $stackTrace');
+      emit(HomeError('Kurs yangilashda xatolik: ${e.toString()}'));
     }
   }
 }

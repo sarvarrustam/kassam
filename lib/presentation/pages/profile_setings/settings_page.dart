@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../theme/app_colors.dart';
-import '../../arch/bloc/theme_bloc.dart';
-import '../../data/services/app_preferences_service.dart';
+import '../../theme/app_colors.dart';
+import '../../../arch/bloc/theme_bloc.dart';
+import '../../../data/services/app_preferences_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

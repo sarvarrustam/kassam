@@ -7,14 +7,32 @@ class HomeEvent extends Equatable {
   List<Object> get props => [];
 }
 
-// Home page ochilganda user ma'lumotlarini yuklash
-final class HomeLoadUserData extends HomeEvent {}
+class HomeGetWalletsEvent extends HomeEvent {}
 
-// Ma'lumotlarni yangilash (refresh)
-final class HomeRefreshData extends HomeEvent {}
+class HomeGetTotalBalancesEvent extends HomeEvent {}
 
-// Wallet balanslarini yuklash
-final class HomeLoadWalletBalances extends HomeEvent {}
+class HomeGetInitialDataEvent extends HomeEvent {}
 
-// Hamyonlar ro'yxatini yuklash
-final class HomeLoadWallets extends HomeEvent {}
+class HomeCreateWalletEvent extends HomeEvent {
+  final String name;
+  final String currency;
+
+  const HomeCreateWalletEvent({
+    required this.name,
+    required this.currency,
+  });
+
+  @override
+  List<Object> get props => [name, currency];
+}
+
+class HomeGetExchangeRateEvent extends HomeEvent {}
+
+class HomeUpdateExchangeRateEvent extends HomeEvent {
+  final double kurs;
+
+  const HomeUpdateExchangeRateEvent({required this.kurs});
+
+  @override
+  List<Object> get props => [kurs];
+}  

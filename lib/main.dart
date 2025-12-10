@@ -8,6 +8,7 @@ import 'package:kassam/presentation/theme/app_theme.dart';
 import 'package:kassam/arch/bloc/theme_bloc.dart';
 import 'package:kassam/presentation/pages/entry_pages/bloc/auth_bloc.dart';
 import 'package:kassam/presentation/pages/home_page/bloc/home_bloc.dart';
+import 'package:kassam/presentation/blocs/user/user_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => ThemeBloc()),
         BlocProvider(create: (context) => AuthBloc()),
         BlocProvider(create: (context) => HomeBloc()),
+        BlocProvider(create: (context) => UserBloc()),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(
         builder: (context, state) {

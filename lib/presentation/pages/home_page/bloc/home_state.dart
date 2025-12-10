@@ -4,64 +4,52 @@ class HomeState extends Equatable {
   const HomeState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
-// Boshlang'ich holat
-final class HomeInitial extends HomeState {}
+class HomeInitial extends HomeState {}
 
-// Ma'lumotlar yuklanmoqda
-final class HomeLoading extends HomeState {}
+class HomeLoading extends HomeState {}
 
-// Ma'lumotlar yuklandi
-final class HomeLoaded extends HomeState {
-  final String userName;
-  final String phoneNumber;
-  final double? totalUZS;
-  final double? totalUSD;
-  final List<Map<String, dynamic>>? wallets;
+class HomeWalletsLoading extends HomeState {}
 
-  const HomeLoaded({
-    required this.userName,
-    required this.phoneNumber,
-    this.totalUZS,
-    this.totalUSD,
-    this.wallets,
+class HomeTotalBalancesLoading extends HomeState {}
+
+class HomeGetWalletsSuccess extends HomeState {
+  final List<WalletBalance> wallets;
+  const HomeGetWalletsSuccess(this.wallets);
+
+  @override
+  List<Object> get props => [wallets];
+}
+
+class HomeGetTotalBalancesSuccess extends HomeState {
+  final double somTotal;
+  final double dollarTotal;
+  
+  const HomeGetTotalBalancesSuccess({
+    required this.somTotal,
+    required this.dollarTotal,
   });
 
   @override
-  List<Object> get props => [
-    userName, 
-    phoneNumber,
-    totalUZS ?? 0,
-    totalUSD ?? 0,
-    wallets ?? [],
-  ];
-  
-  // copyWith method for updating partial data
-  HomeLoaded copyWith({
-    String? userName,
-    String? phoneNumber,
-    double? totalUZS,
-    double? totalUSD,
-    List<Map<String, dynamic>>? wallets,
-  }) {
-    return HomeLoaded(
-      userName: userName ?? this.userName,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      totalUZS: totalUZS ?? this.totalUZS,
-      totalUSD: totalUSD ?? this.totalUSD,
-      wallets: wallets ?? this.wallets,
-    );
-  }
+  List<Object> get props => [somTotal, dollarTotal];
 }
 
-// Xatolik
-final class HomeError extends HomeState {
+class HomeError extends HomeState {
   final String message;
-
   const HomeError(this.message);
 
   @override
   List<Object> get props => [message];
+}
+
+class HomeWalletCreatedSuccess extends HomeState {}
+
+class HomeGetExchangeRateSuccess extends HomeState {
+  final double rate;
+  const HomeGetExchangeRateSuccess(this.rate);
+
+  @override
+  List<Object> get props => [rate];
 }

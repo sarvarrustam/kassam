@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppPreferencesService {
@@ -6,6 +8,7 @@ class AppPreferencesService {
   static const String _lastLoginDateKey = 'last_login_date';
   static const String _authTokenKey = 'auth_token';
   static const String _phoneNumberKey = 'phone_number';
+  static const String _userDataKey = 'user_data';
 
   static final AppPreferencesService _instance =
       AppPreferencesService._internal();
@@ -97,6 +100,29 @@ class AppPreferencesService {
   Future<String?> getPhoneNumber() async {
     await _ensureInitialized();
     return _prefs.getString(_phoneNumberKey);
+  }
+
+  // Save user data (JSON)
+  Future<void> saveUserData(Map<String, dynamic> userData) async {
+    await _ensureInitialized();
+    final jsonString = jsonEncode(userData);
+    await _prefs.setString(_userDataKey, jsonString);
+  }
+
+  // Get user data (JSON)
+  Future<Map<String, dynamic>?> getUserData() async {
+    await _ensureInitialized();
+    final jsonString = _prefs.getString(_userDataKey);
+    if (jsonString != null) {
+      return jsonDecode(jsonString) as Map<String, dynamic>;
+    }
+    return null;
+  }
+
+  // Clear user data
+  Future<void> clearUserData() async {
+    await _ensureInitialized();
+    await _prefs.remove(_userDataKey);
   }
 
   // Ensure preferences are initialized

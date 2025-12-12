@@ -182,6 +182,12 @@ class MockDataService {
 
   // Yangi transaksiya qo'shish
   Future<void> addTransaction(Transaction transaction) async {
+    // Dublikat tekshiruvi - agar bir xil ID mavjud bo'lsa, qo'shmaslik
+    if (_transactions.any((t) => t.id == transaction.id)) {
+      print('⚠️ Transaction with ID ${transaction.id} already exists, skipping');
+      return;
+    }
+    
     _transactions.add(transaction);
     final targetWalletId = transaction.walletId ?? getDefaultWallet()?.id;
     if (targetWalletId != null) {

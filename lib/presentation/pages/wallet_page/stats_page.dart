@@ -9,8 +9,9 @@ import 'dart:convert';
 
 class StatsPage extends StatefulWidget {
   final String? walletId;
+  final String? walletName;
 
-  const StatsPage({super.key, this.walletId});
+  const StatsPage({super.key, this.walletId, this.walletName});
 
   @override
   State<StatsPage> createState() => _StatsPageState();
@@ -366,48 +367,79 @@ class _StatsPageState extends State<StatsPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      // Chiqim/Kirim tanlash
-                      Row(
-                        children: [
-                          ChoiceChip(
-                            label: const Text('Chiqim'),
-                            selected: type == TransactionType.expense,
-                            selectedColor: Colors.redAccent,
-                            backgroundColor: Colors.grey[200],
-                            labelStyle: TextStyle(
-                              color: type == TransactionType.expense
-                                  ? Colors.white
-                                  : Colors.black87,
+                      const SizedBox(height: 16),
+                      // Chiqim/Kirim tanlash - rasmga o'xshash
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setStateSB(() {
+                                    type = TransactionType.income;
+                                    selectedCategory = null;
+                                    selectedCustomCategory = null;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  decoration: BoxDecoration(
+                                    color: type == TransactionType.income
+                                        ? Colors.green.shade100
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'kirim',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: type == TransactionType.income
+                                          ? Colors.green.shade700
+                                          : Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
-                            onSelected: (v) {
-                              setStateSB(() {
-                                type = TransactionType.expense;
-                                selectedCategory = null;
-                                selectedCustomCategory = null;
-                              });
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          ChoiceChip(
-                            label: const Text('Kirim'),
-                            selected: type == TransactionType.income,
-                            selectedColor: Colors.green,
-                            backgroundColor: Colors.grey[200],
-                            labelStyle: TextStyle(
-                              color: type == TransactionType.income
-                                  ? Colors.white
-                                  : Colors.black87,
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setStateSB(() {
+                                    type = TransactionType.expense;
+                                    selectedCategory = null;
+                                    selectedCustomCategory = null;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  decoration: BoxDecoration(
+                                    color: type == TransactionType.expense
+                                        ? Colors.red.shade100
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'chiqim',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: type == TransactionType.expense
+                                          ? Colors.red.shade700
+                                          : Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
-                            onSelected: (v) {
-                              setStateSB(() {
-                                type = TransactionType.income;
-                                selectedCategory = null;
-                                selectedCustomCategory = null;
-                              });
-                            },
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 12),
                       // Summa kiritish
@@ -775,259 +807,6 @@ class _StatsPageState extends State<StatsPage> {
     );
   }
 
-  void _showWalletsSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      builder: (ctx) {
-        final wallets = _dataService.getWallets();
-
-        return StatefulBuilder(
-          builder: (context, setStateSB) {
-            return Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          ...wallets.map((w) {
-                            final selected = w.id == _selectedWalletId;
-                            return ListTile(
-                              leading: const Icon(
-                                Icons.account_balance_wallet_outlined,
-                              ),
-                              title: Text('${w.currency} - ${w.name}'),
-                              subtitle: Text(
-                                '${_formatNumber(w.balance.toInt())} ${w.currency == 'UZS' ? 'so\'m' : '\$'}',
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (selected)
-                                    const Icon(Icons.check, color: Colors.green)
-                                  else
-                                    const SizedBox.shrink(),
-                                  const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (dctx) {
-                                          return AlertDialog(
-                                            title: const Text(
-                                              'Hamyonni o\'chirish',
-                                            ),
-                                            content: const Text(
-                                              'Siz haqiqatan ham bu hamyonni o\'chirmoqchisiz?',
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () =>
-                                                    Navigator.of(dctx).pop(),
-                                                child: const Text(
-                                                  'Bekor qilish',
-                                                ),
-                                              ),
-                                              ElevatedButton(
-                                                onPressed: () async {
-                                                  await _dataService
-                                                      .deleteWallet(w.id);
-                                                  setState(() {
-                                                    _selectedWalletId = null;
-                                                  });
-                                                  Navigator.of(dctx).pop();
-                                                  Navigator.of(ctx).pop();
-                                                },
-                                                child: const Text('OK'),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      );
-                                    },
-                                    child: const Icon(
-                                      Icons.delete_outline,
-                                      color: Colors.red,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              onTap: () {
-                                setState(() {
-                                  _selectedWalletId = w.id;
-                                });
-                                Navigator.of(ctx).pop();
-                              },
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (dctx) {
-                          return Dialog(
-                            alignment: Alignment.center,
-                            insetAnimationDuration: const Duration(
-                              milliseconds: 300,
-                            ),
-                            insetAnimationCurve: Curves.easeOut,
-                            child: SingleChildScrollView(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24.0),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Text(
-                                      'Yangi Hamyon qo\'shish',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    DefaultTabController(
-                                      length: 2,
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          TabBar(
-                                            tabs: const [
-                                              Tab(text: 'UZS'),
-                                              Tab(text: 'USD'),
-                                            ],
-                                            labelColor: Colors.green,
-                                            unselectedLabelColor: Colors.grey,
-                                            indicatorColor: Colors.green,
-                                          ),
-                                          const SizedBox(height: 16),
-                                          SizedBox(
-                                            height: 160,
-                                            child: TabBarView(
-                                              children: [
-                                                // UZS Tab
-                                                _buildWalletInputTab(
-                                                  'so\'m',
-                                                  'UZS',
-                                                  (name) {
-                                                    if (name.isEmpty) return;
-                                                    _dataService
-                                                        .addWallet(
-                                                          name,
-                                                          currency: 'UZS',
-                                                        )
-                                                        .then((
-                                                          newWallet,
-                                                        ) async {
-                                                          // Mark new wallet as selected/default and refresh UI
-                                                          await _dataService
-                                                              .setDefaultWallet(
-                                                                newWallet.id,
-                                                              );
-                                                          setState(() {
-                                                            _selectedWalletId =
-                                                                newWallet.id;
-                                                          });
-                                                          Navigator.of(
-                                                            dctx,
-                                                          ).pop();
-                                                          Navigator.of(
-                                                            ctx,
-                                                          ).pop();
-                                                          setState(() {});
-                                                        });
-                                                  },
-                                                ),
-                                                // USD Tab
-                                                _buildWalletInputTab(
-                                                  '\$',
-                                                  'USD',
-                                                  (name) {
-                                                    if (name.isEmpty) return;
-                                                    _dataService
-                                                        .addWallet(
-                                                          name,
-                                                          currency: 'USD',
-                                                        )
-                                                        .then((
-                                                          newWallet,
-                                                        ) async {
-                                                          // Mark new wallet as selected/default and refresh UI
-                                                          await _dataService
-                                                              .setDefaultWallet(
-                                                                newWallet.id,
-                                                              );
-                                                          setState(() {
-                                                            _selectedWalletId =
-                                                                newWallet.id;
-                                                          });
-                                                          Navigator.of(
-                                                            dctx,
-                                                          ).pop();
-                                                          Navigator.of(
-                                                            ctx,
-                                                          ).pop();
-                                                          setState(() {});
-                                                        });
-                                                  },
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 24),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(dctx).pop(),
-                                          child: const Text('Bekor qilish'),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                    child: const Text("Yangi Hamyon qo'shish"),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     // simplified stats view uses wallet balance and recent transactions
@@ -1044,11 +823,28 @@ class _StatsPageState extends State<StatsPage> {
                 backgroundColor: Colors.green,
               ),
             );
+            
+            // Tranzaksiya yaratilgandan keyin ro'yxatni yangilash
+            if (_selectedWalletId != null) {
+              final now = DateTime.now();
+              final fromDate = DateTime(now.year, now.month, 1);
+              final toDate = DateTime(now.year, now.month + 1, 0);
+              
+              _statsBloc.add(
+                StatsGetTransactionsEvent(
+                  walletId: _selectedWalletId!,
+                  fromDate: '${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}',
+                  toDate: '${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}',
+                ),
+              );
+            }
           } else if (state is StatsTransactionsLoaded) {
             // API dan kelgan tranzaksiyalarni parse qilish
             if (state.data != null) {
               _parseAndSaveTransactions(state.data);
             }
+            // UI'ni yangilash
+            if (mounted) setState(() {});
           } else if (state is StatsTransactionTypeCreatedSuccess &&
               !_isFetchingTransactionTypes) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -1077,7 +873,7 @@ class _StatsPageState extends State<StatsPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _dataService.getWalletById(_selectedWalletId ?? '')?.name ?? 'Hamyon',
+          widget.walletName ?? 'Hamyon',
         ),
         elevation: 0,
         flexibleSpace: Container(
@@ -1089,14 +885,29 @@ class _StatsPageState extends State<StatsPage> {
             ),
           ),
         ),
-        actions: [
-          IconButton(
-            onPressed: _showWalletsSheet,
-            icon: const Icon(Icons.account_balance_wallet_outlined),
-          ),
-        ],
       ),
-      body: Column(
+      body: RefreshIndicator(
+        color: AppColors.primaryGreen,
+        onRefresh: () async {
+          // Tranzaksiyalarni yangilash
+          if (_selectedWalletId != null) {
+            final now = DateTime.now();
+            final fromDate = DateTime(now.year, now.month, 1);
+            final toDate = DateTime(now.year, now.month + 1, 0);
+            
+            _statsBloc.add(
+              StatsGetTransactionsEvent(
+                walletId: _selectedWalletId!,
+                fromDate: '${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}',
+                toDate: '${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}',
+              ),
+            );
+          }
+          
+          // API chaqiruvini kutish
+          await Future.delayed(const Duration(milliseconds: 500));
+        },
+        child: Column(
         children: [
           // Umumiy Hisob - fixed tepada
           SingleChildScrollView(
@@ -1120,10 +931,7 @@ class _StatsPageState extends State<StatsPage> {
                     children: [
                       Center(
                         child: Text(
-                          _dataService
-                                  .getWalletById(_selectedWalletId ?? '')
-                                  ?.name ??
-                              'Umumiy Hisob',
+                          widget.walletName ?? 'Umumiy Hisob',
                           style: Theme.of(
                             context,
                           ).textTheme.bodyMedium?.copyWith(color: Colors.white),
@@ -1190,16 +998,20 @@ class _StatsPageState extends State<StatsPage> {
                             Text(
                               'Chiqim',
                               style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: Colors.white, fontSize: 11),
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 4),
                             Text(
                               '${_formatNumber(_calculateExpenseTotal().toInt())} ${_getCurrencySymbol()}',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Colors.red.shade300,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 13,
+                                    fontSize: 14,
                                   ),
                             ),
                           ],
@@ -1231,18 +1043,19 @@ class _StatsPageState extends State<StatsPage> {
                               'Kirim',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
-                                    color: Colors.white70,
-                                    fontSize: 11,
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
                                   ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 4),
                             Text(
                               '${_formatNumber(_calculateIncomeTotal().toInt())} ${_getCurrencySymbol()}',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 13,
+                                    fontSize: 14,
                                   ),
                             ),
                           ],
@@ -1291,10 +1104,10 @@ class _StatsPageState extends State<StatsPage> {
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               )
-                            : const LinearGradient(
+                            : LinearGradient(
                                 colors: [
-                                  Color.fromARGB(255, 61, 212, 149),
-                                  Color.fromARGB(255, 61, 212, 149),
+                                  AppColors.primaryGreen,
+                                  AppColors.primaryGreenLight,
                                 ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
@@ -1314,28 +1127,46 @@ class _StatsPageState extends State<StatsPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    // Tranzaksiya turi (customCategoryName)
                                     Text(
-                                      t.title,
+                                      t.customCategoryName ?? 'Boshqa',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
                                     ),
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: 6),
+                                    // Sana
                                     Text(
-                                      'Sana: ${t.date.day.toString().padLeft(2, '0')}.${t.date.month.toString().padLeft(2, '0')}.${t.date.year} ${t.date.hour.toString().padLeft(2, '0')}:${t.date.minute.toString().padLeft(2, '0')}',
+                                      '${t.date.day.toString().padLeft(2, '0')}.${t.date.month.toString().padLeft(2, '0')}.${t.date.year} ${t.date.hour.toString().padLeft(2, '0')}:${t.date.minute.toString().padLeft(2, '0')}',
                                       style: const TextStyle(
-                                        color: Colors.white70,
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                    if (t.type == TransactionType.income)
-                                      const SizedBox(height: 4),
-                                    if (t.type == TransactionType.income)
-                                      Text(
-                                        'Hamyon: ${t.category.name}',
-                                        style: const TextStyle(
-                                          color: Colors.white70,
+                                    const SizedBox(height: 4),
+                                    // Hamyon nomi
+                                    Text(
+                                      'Hamyon: ${t.notes ?? _dataService.getWalletById(t.walletId ?? _selectedWalletId ?? '')?.name ?? 'Noma\'lum'}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    // Komment (agar bo'sh bo'lmasa) - eng pastda
+                                    if (t.title.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 4),
+                                        child: Text(
+                                          'Izoh: ${t.title}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
                                   ],
@@ -1345,7 +1176,9 @@ class _StatsPageState extends State<StatsPage> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    '${_formatNumber(t.amount.toInt())} ${_dataService.getWalletById(_selectedWalletId ?? '')?.currency == 'USD' ? '\$' : 'so\'m'}',
+                                    _showBalance 
+                                      ? '${_formatNumber(t.amount.toInt())} ${_dataService.getWalletById(_selectedWalletId ?? '')?.currency == 'USD' ? '\$' : 'so\'m'}'
+                                      : '••••••',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -1563,49 +1396,11 @@ class _StatsPageState extends State<StatsPage> {
             ),
           ),
         ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddTransactionSheet,
         child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  Widget _buildWalletInputTab(
-    String displayCurrency,
-    String actualCurrency,
-    Function(String) onSubmit,
-  ) {
-    final nameCtrl = TextEditingController();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          TextField(
-            controller: nameCtrl,
-            decoration: InputDecoration(
-              labelText: 'Hamyon nomi',
-              hintText: 'Masalan: Asosiy hamyon',
-              border: const OutlineInputBorder(),
-              suffix: Text(
-                displayCurrency,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.green,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: () {
-              final name = nameCtrl.text.trim();
-              onSubmit(name);
-            },
-            child: const Text('Hamyon yaratish'),
-          ),
-        ],
       ),
     );
   }
@@ -1768,16 +1563,15 @@ class _StatsPageState extends State<StatsPage> {
       
       if (data == null) return;
       
-      // Avval eski tranzaksiyalarni o'chirish (faqat API dan kelganlarini)
-      final currentTransactions = _dataService.getTransactionsByWalletId(_selectedWalletId);
-      for (final oldTransaction in currentTransactions) {
-        // Faqat API dan kelib qo'shilgan tranzaksiyalarni o'chirish
-        // (Mock data da qo'lda qo'shilganlarni saqlab qolish)
-        _dataService.deleteTransaction(oldTransaction.id);
-      }
-      
       // API dan list kelishi kerak
       final List<dynamic> transactionsList = data is List ? data : [data];
+      
+      // Eski tranzaksiyalarni olish
+      final currentTransactions = _dataService.getTransactionsByWalletId(_selectedWalletId);
+      final currentIds = currentTransactions.map((t) => t.id).toSet();
+      
+      // Yangi tranzaksiyalarning ID'lari
+      final newIds = <String>{};
       
       // Sanasiga qarab tartiblash (eskisidan yangisiga, keyin UI da reverse bo'ladi)
       transactionsList.sort((a, b) {
@@ -1789,21 +1583,54 @@ class _StatsPageState extends State<StatsPage> {
       for (final item in transactionsList) {
         if (item is! Map) continue;
         
-        // Parse qilish
-        final id = item['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString();
+        // Parse qilish - documentId'ni ishlatish
+        final id = item['documentId']?.toString() ?? 
+                   item['id']?.toString() ?? 
+                   DateTime.now().millisecondsSinceEpoch.toString();
+        newIds.add(id);
+        
+        // Agar bu tranzaksiya allaqachon mavjud bo'lsa, o'tkazib yuborish
+        if (currentIds.contains(id)) {
+          print('⏭️ Skipping duplicate transaction ID: $id');
+          continue;
+        }
+        
+        print('➕ Adding new transaction ID: $id');
+        
         final amount = double.tryParse(item['amount']?.toString() ?? '0') ?? 0.0;
-        final type = item['type']?.toString().toLowerCase() == 'kirim' 
+        final typeString = item['type']?.toString().toLowerCase() ?? '';
+        print('🔍 Transaction type from API: "${item['type']}" -> parsed: "$typeString"');
+        final type = typeString == 'kirim' 
             ? TransactionType.income 
             : TransactionType.expense;
         final comment = item['comment']?.toString() ?? '';
-        final transactionTypeName = item['transactionTypeName']?.toString() ?? 'Boshqa';
+        final transactionTypeName = item['transactionType']?.toString() ?? 
+                                     item['transactionTypeName']?.toString() ?? 
+                                     'Boshqa';
+        final walletName = item['wallet']?.toString() ?? '';
         
-        // Sana parse qilish
+        // Sana parse qilish - dd.MM.yyyy HH:mm:ss formatidan
         DateTime date = DateTime.now();
         if (item['date'] != null) {
           try {
-            date = DateTime.parse(item['date'].toString());
-            print('📅 Parsed date: $date from ${item['date']}');
+            final dateStr = item['date'].toString();
+            // Format: "12.12.2025 9:25:55" -> DateTime
+            final parts = dateStr.split(' ');
+            if (parts.length >= 2) {
+              final dateParts = parts[0].split('.');
+              final timeParts = parts[1].split(':');
+              if (dateParts.length == 3 && timeParts.length == 3) {
+                date = DateTime(
+                  int.parse(dateParts[2]), // year
+                  int.parse(dateParts[1]), // month
+                  int.parse(dateParts[0]), // day
+                  int.parse(timeParts[0]), // hour
+                  int.parse(timeParts[1]), // minute
+                  int.parse(timeParts[2]), // second
+                );
+                print('📅 Parsed date: $date from $dateStr');
+              }
+            }
           } catch (e) {
             print('❌ Date parse error: $e, using now()');
           }
@@ -1814,20 +1641,29 @@ class _StatsPageState extends State<StatsPage> {
         // Transaction yaratish
         final transaction = Transaction(
           id: id,
-          title: comment.isEmpty ? transactionTypeName : comment,
+          title: comment, // Komment title'da
           amount: amount,
           type: type,
           category: TransactionCategory.other,
           date: date,
           walletId: _selectedWalletId,
-          customCategoryName: transactionTypeName,
+          customCategoryName: transactionTypeName, // Tranzaksiya turi
           customCategoryEmoji: '🏷️',
+          notes: walletName, // Hamyon nomini notes'ga saqlaymiz
         );
         
         // Mock data ga qo'shish
         _dataService.addTransaction(transaction);
-        print('✅ Added transaction: ${transaction.title} at $date');
+        print('✅ Added transaction: $transactionTypeName - $comment at $date');
       }
+      
+      // API'da yo'q bo'lgan eski tranzaksiyalarni o'chirish (agar kerak bo'lsa)
+      // Hozircha bu qismni izohlab qo'yamiz, chunki local qo'shilgan tranzaksiyalarni saqlamoqchimiz
+      // for (final oldTransaction in currentTransactions) {
+      //   if (!newIds.contains(oldTransaction.id)) {
+      //     _dataService.deleteTransaction(oldTransaction.id);
+      //   }
+      // }
       
       print('✅ Transactions parsed and saved (${transactionsList.length} items)');
     } catch (e, stackTrace) {

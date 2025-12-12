@@ -137,48 +137,51 @@ class _SmsVerificationPageState extends State<SmsVerificationPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: List.generate(
                     6,
-                    (index) => SizedBox(
+                    (index) => Container(
                       width: 50,
                       height: 60,
-                      child: TextFormField(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: _otpControllers[index].text.isNotEmpty
+                              ? AppColors.primaryGreen
+                              : AppColors.borderGrey,
+                          width: _otpControllers[index].text.isNotEmpty ? 2 : 1,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: TextField(
                         controller: _otpControllers[index],
                         textAlign: TextAlign.center,
                         keyboardType: TextInputType.number,
                         maxLength: 1,
                         autofocus: index == 0,
+                        obscureText: false,
+                        enableInteractiveSelection: true,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
                         ],
                         onChanged: (value) {
+                          print('Input value: "$value", length: ${value.length}');
+                          setState(() {}); // Border rangini yangilash uchun
                           if (value.isNotEmpty && index < 5) {
                             FocusScope.of(context).nextFocus();
                           } else if (value.isEmpty && index > 0) {
                             FocusScope.of(context).previousFocus();
                           }
                         },
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           counterText: '',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: AppColors.borderGrey,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: AppColors.borderGrey,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: AppColors.primaryGreen,
-                              width: 2,
-                            ),
-                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
                         ),
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                          height: 1.2,
+                        ),
                       ),
                     ),
                   ),

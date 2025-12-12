@@ -218,7 +218,8 @@ final GoRouter appRouter = GoRouter(
       name: 'stats',
       builder: (context, state) {
         final walletId = state.uri.queryParameters['walletId'];
-        return StatsPage(walletId: walletId);
+        final walletName = state.uri.queryParameters['walletName'];
+        return StatsPage(walletId: walletId, walletName: walletName);
       },
     ),
   ],

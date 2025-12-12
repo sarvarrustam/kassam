@@ -99,7 +99,19 @@ class _HomePageState extends State<HomePage> {
               final totalUZS = _cachedSomTotal ?? 0;
               final totalUSD = _cachedDollarTotal ?? 0;
 
-              return SingleChildScrollView(
+              return RefreshIndicator(
+                color: AppColors.primaryGreen,
+                onRefresh: () async {
+                  // Ma'lumotlarni yangilash
+                  context.read<HomeBloc>().add(HomeGetWalletsEvent());
+                  context.read<HomeBloc>().add(HomeGetTotalBalancesEvent());
+                  context.read<HomeBloc>().add(HomeGetExchangeRateEvent());
+                  context.read<UserBloc>().add(UserGetDataEvent());
+                  
+                  // API chaqiruvlari tugashini kutish
+                  await Future.delayed(const Duration(milliseconds: 500));
+                },
+                child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -443,6 +455,7 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 32),
               ],
             ),
+          ),
           );
         },
       ),
@@ -643,7 +656,7 @@ class _HomePageState extends State<HomePage> {
     
     return GestureDetector(
       onTap: () async {
-        await context.push('/stats?walletId=${wallet.id}');
+        await context.push('/stats?walletId=${wallet.id}&walletName=${Uri.encodeComponent(wallet.name)}');
         // Stats page'dan qaytganda hamyonlarni yangilash
         if (mounted) {
           context.read<HomeBloc>().add(HomeGetWalletsEvent());
@@ -851,7 +864,7 @@ class _HomePageState extends State<HomePage> {
 
   void _showUpdateExchangeRateSheet() {
     final TextEditingController kursController = TextEditingController(
-      text: _exchangeRate.toInt().toString(),
+      text: _formatNumber(_exchangeRate.toInt()),
     );
     
     showModalBottomSheet(
@@ -897,11 +910,29 @@ class _HomePageState extends State<HomePage> {
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: 'Kurs (1\$ = ? so\'m)',
-                  hintText: 'Masalan: 12500',
+                  hintText: 'Masalan: 12 500',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                onChanged: (value) {
+                  // Space'larni olib tashlash va formatlab qayta qo'yish
+                  final clean = value.replaceAll(' ', '');
+                  if (clean.isEmpty) return;
+                  
+                  final number = int.tryParse(clean);
+                  if (number != null) {
+                    final formatted = _formatNumber(number);
+                    if (kursController.text != formatted) {
+                      kursController.value = TextEditingValue(
+                        text: formatted,
+                        selection: TextSelection.collapsed(
+                          offset: formatted.length,
+                        ),
+                      );
+                    }
+                  }
+                },
               ),
               const SizedBox(height: 24),
               // Button
@@ -909,7 +940,7 @@ class _HomePageState extends State<HomePage> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    final kurs = kursController.text.trim();
+                    final kurs = kursController.text.trim().replaceAll(' ', '');
                     if (kurs.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

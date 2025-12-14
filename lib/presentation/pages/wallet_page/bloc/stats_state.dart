@@ -63,3 +63,18 @@ class StatsError extends StatsState {
   @override
   List<Object?> get props => [message];
 }
+
+class StatsWalletBalanceLoaded extends StatsState {
+  final double kirimTotal;
+  final double chiqimTotal;
+  final double walletBalance; // API'dan kelgan to'g'ridan-to'g'ri balance
+
+  const StatsWalletBalanceLoaded({
+    required this.kirimTotal,
+    required this.chiqimTotal,
+    required this.walletBalance,
+  });
+
+  @override
+  List<Object?> get props => [kirimTotal, chiqimTotal, walletBalance];
+}

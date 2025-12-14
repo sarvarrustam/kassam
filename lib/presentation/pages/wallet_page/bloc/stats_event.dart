@@ -66,3 +66,19 @@ class StatsGetTransactionsEvent extends StatsEvent {
   @override
   List<Object?> get props => [walletId, fromDate, toDate];
 }
+
+/// Hamyon balansi statistikasini olish event
+class StatsGetWalletBalanceEvent extends StatsEvent {
+  final String walletId;
+  final String fromDate; // Format: dd.MM.yyyy
+  final String toDate;   // Format: dd.MM.yyyy
+
+  const StatsGetWalletBalanceEvent({
+    required this.walletId,
+    required this.fromDate,
+    required this.toDate,
+  });
+
+  @override
+  List<Object?> get props => [walletId, fromDate, toDate];
+}

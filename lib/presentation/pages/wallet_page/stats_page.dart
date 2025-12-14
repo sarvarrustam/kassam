@@ -27,6 +27,12 @@ class _StatsPageState extends State<StatsPage> {
   bool _showBalance = true; // Balance visibility toggle
   bool _isFetchingTransactionTypes = false; // API dan tur yuklash flag
   List<Map<String, String>> _customCategories = [];
+  
+  // API balance data
+  double _kirimTotal = 0.0;
+  double _chiqimTotal = 0.0;
+  double _currentWalletBalance = 0.0; // Joriy hamyon balansi
+  bool _balanceLoaded = false;
 
   @override
   void initState() {
@@ -42,18 +48,37 @@ class _StatsPageState extends State<StatsPage> {
 
   Future<void> _loadInitialTransactions() async {
     // Sahifa ochilganda tranzaksiyalarni yuklash
+    print('🔍 Loading transactions for wallet: $_selectedWalletId');
+    
     if (_selectedWalletId != null) {
       final now = DateTime.now();
       final fromDate = DateTime(now.year, now.month, 1);
       final toDate = DateTime(now.year, now.month + 1, 0);
       
+      final fromDateStr = '${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}';
+      final toDateStr = '${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}';
+      
+      print('🔍 Date range: $fromDateStr - $toDateStr');
+      
       _statsBloc.add(
         StatsGetTransactionsEvent(
           walletId: _selectedWalletId!,
-          fromDate: '${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}',
-          toDate: '${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}',
+          fromDate: fromDateStr,
+          toDate: toDateStr,
         ),
       );
+      
+      // Balance ham yuklash
+      print('🔍 Requesting wallet balance...');
+      _statsBloc.add(
+        StatsGetWalletBalanceEvent(
+          walletId: _selectedWalletId!,
+          fromDate: fromDateStr,
+          toDate: toDateStr,
+        ),
+      );
+    } else {
+      print('❌ Wallet ID is null!');
     }
   }
 
@@ -263,11 +288,23 @@ class _StatsPageState extends State<StatsPage> {
                 final fromDate = DateTime(now.year, now.month, 1);
                 final toDate = DateTime(now.year, now.month + 1, 0);
                 
+                final fromDateStr = '${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}';
+                final toDateStr = '${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}';
+                
                 _statsBloc.add(
                   StatsGetTransactionsEvent(
                     walletId: _selectedWalletId!,
-                    fromDate: '${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}',
-                    toDate: '${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}',
+                    fromDate: fromDateStr,
+                    toDate: toDateStr,
+                  ),
+                );
+                
+                // Balance ham yangilash
+                _statsBloc.add(
+                  StatsGetWalletBalanceEvent(
+                    walletId: _selectedWalletId!,
+                    fromDate: fromDateStr,
+                    toDate: toDateStr,
                   ),
                 );
               }
@@ -281,6 +318,25 @@ class _StatsPageState extends State<StatsPage> {
               }
               // Refresh UI
               if (mounted) setState(() {});
+            } else if (state is StatsWalletBalanceLoaded) {
+              // Balance data kelganda state'ni yangilash
+              print('✅ StatsWalletBalanceLoaded received!');
+              print('✅ Kirim: ${state.kirimTotal}');
+              print('✅ Chiqim: ${state.chiqimTotal}');
+              print('✅ Balance: ${state.walletBalance}');
+              
+              if (mounted) {
+                setState(() {
+                  _kirimTotal = state.kirimTotal;
+                  _chiqimTotal = state.chiqimTotal;
+                  _currentWalletBalance = state.walletBalance; // API'dan kelgan to'g'ridan-to'g'ri balance
+                  _balanceLoaded = true;
+                  
+                  print('📊 Stats page - Kirim: $_kirimTotal');
+                  print('📊 Stats page - Chiqim: $_chiqimTotal');
+                  print('📊 Stats page - Balance (API): $_currentWalletBalance');
+                });
+              }
             } else if (state is StatsError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -870,7 +926,37 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   Widget _buildStatsPage() {
-    return Scaffold(
+    return BlocListener<StatsBloc, StatsState>(
+      bloc: _statsBloc,
+      listener: (context, state) {
+        if (state is StatsWalletBalanceLoaded) {
+          // Balance data kelganda state'ni yangilash
+          print('✅ StatsWalletBalanceLoaded received in main listener!');
+          print('✅ Kirim: ${state.kirimTotal}');
+          print('✅ Chiqim: ${state.chiqimTotal}');
+          print('✅ Balance: ${state.walletBalance}');
+          
+          if (mounted) {
+            setState(() {
+              _kirimTotal = state.kirimTotal;
+              _chiqimTotal = state.chiqimTotal;
+              _currentWalletBalance = state.walletBalance;
+              _balanceLoaded = true;
+              
+              print('📊 Stats page - Kirim updated: $_kirimTotal');
+              print('📊 Stats page - Chiqim updated: $_chiqimTotal');
+              print('📊 Stats page - Balance updated: $_currentWalletBalance');
+            });
+          }
+        } else if (state is StatsTransactionsLoaded) {
+          // API dan kelgan tranzaksiyalarni parse qilib mock data ga qo'shish
+          if (state.data != null) {
+            _parseAndSaveTransactions(state.data);
+          }
+          if (mounted) setState(() {});
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: Text(
           widget.walletName ?? 'Hamyon',
@@ -895,11 +981,23 @@ class _StatsPageState extends State<StatsPage> {
             final fromDate = DateTime(now.year, now.month, 1);
             final toDate = DateTime(now.year, now.month + 1, 0);
             
+            final fromDateStr = '${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}';
+            final toDateStr = '${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}';
+            
             _statsBloc.add(
               StatsGetTransactionsEvent(
                 walletId: _selectedWalletId!,
-                fromDate: '${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}',
-                toDate: '${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}',
+                fromDate: fromDateStr,
+                toDate: toDateStr,
+              ),
+            );
+            
+            // Balance ham yangilash
+            _statsBloc.add(
+              StatsGetWalletBalanceEvent(
+                walletId: _selectedWalletId!,
+                fromDate: fromDateStr,
+                toDate: toDateStr,
               ),
             );
           }
@@ -956,16 +1054,27 @@ class _StatsPageState extends State<StatsPage> {
                     children: [
                       const SizedBox(width: 36), // Space for icon alignment
                       Expanded(
-                        child: Text(
-                          _showBalance
-                              ? '${_formatNumber((_dataService.getWalletById(_selectedWalletId ?? '')?.balance ?? _dataService.getNetBalance()).toInt())} ${_dataService.getWalletById(_selectedWalletId ?? '')?.currency == 'USD' ? '\$' : 'so\'m'}'
-                              : '••••••',
-                          style: Theme.of(context).textTheme.displayMedium
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                          textAlign: TextAlign.center,
+                        child: Builder(
+                          builder: (context) {
+                            print('🎯 Building balance text:');
+                            print('   _balanceLoaded: $_balanceLoaded');
+                            print('   _currentWalletBalance: $_currentWalletBalance');
+                            print('   _showBalance: $_showBalance');
+                            
+                            return Text(
+                              _showBalance
+                                  ? (_balanceLoaded
+                                      ? '${_formatNumber(_currentWalletBalance.toInt())} ${_getCurrencySymbol()}'
+                                      : '${_formatNumber((_dataService.getWalletById(_selectedWalletId ?? '')?.balance ?? _dataService.getNetBalance()).toInt())} ${_dataService.getWalletById(_selectedWalletId ?? '')?.currency == 'USD' ? '\$' : 'so\'m'}')
+                                  : '••••••',
+                              style: Theme.of(context).textTheme.displayMedium
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                              textAlign: TextAlign.center,
+                            );
+                          }
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1006,7 +1115,9 @@ class _StatsPageState extends State<StatsPage> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${_formatNumber(_calculateExpenseTotal().toInt())} ${_getCurrencySymbol()}',
+                              _balanceLoaded
+                                  ? '${_formatNumber(_chiqimTotal.toInt())} ${_getCurrencySymbol()}'
+                                  : '${_formatNumber(_calculateExpenseTotal().toInt())} ${_getCurrencySymbol()}',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Colors.red.shade300,
@@ -1050,7 +1161,9 @@ class _StatsPageState extends State<StatsPage> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${_formatNumber(_calculateIncomeTotal().toInt())} ${_getCurrencySymbol()}',
+                              _balanceLoaded
+                                  ? '${_formatNumber(_kirimTotal.toInt())} ${_getCurrencySymbol()}'
+                                  : '${_formatNumber(_calculateIncomeTotal().toInt())} ${_getCurrencySymbol()}',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Colors.white,
@@ -1402,6 +1515,7 @@ class _StatsPageState extends State<StatsPage> {
         onPressed: _showAddTransactionSheet,
         child: const Icon(Icons.add),
       ),
+    ),
     );
   }
 

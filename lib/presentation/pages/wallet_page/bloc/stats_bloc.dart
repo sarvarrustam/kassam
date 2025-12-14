@@ -13,6 +13,7 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
     on<StatsGetTransactionTypesEvent>(_onGetTransactionTypes);
     on<StatsCreateTransactionTypeEvent>(_onCreateTransactionType);
     on<StatsGetTransactionsEvent>(_onGetTransactions);
+    on<StatsGetWalletBalanceEvent>(_onGetWalletBalance);
   }
 
   Future<void> _onCreateTransaction(
@@ -133,6 +134,50 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
         emit(StatsTransactionsLoaded(data: response['data']));
       } else {
         final errorMsg = response['error'] ?? 'Tranzaksiyalarni yuklashda xatolik';
+        emit(StatsError(errorMsg));
+      }
+    } catch (e, stackTrace) {
+      print('❌ Exception: $e');
+      print('Stack trace: $stackTrace');
+      emit(StatsError('Xatolik: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onGetWalletBalance(
+    StatsGetWalletBalanceEvent event,
+    Emitter<StatsState> emit,
+  ) async {
+    try {
+      print('💰 Getting wallet balance: walletId=${event.walletId}');
+
+      final response = await _apiService.getWalletBalanceData(
+        walletId: event.walletId,
+        fromDate: event.fromDate,
+        toDate: event.toDate,
+      );
+
+      print('💰 Wallet balance response: $response');
+
+      if (response['success'] == true) {
+        final data = response['data'];
+        print('💰 Balance data: $data');
+        
+        // API strukturasi: balance, inflow, outflow
+        final kirimTotal = (data['inflow'] ?? 0).toDouble();
+        final chiqimTotal = (data['outflow'] ?? 0).toDouble();
+        final walletBalance = (data['balance'] ?? 0).toDouble();
+        
+        print('💰 Kirim total (inflow): $kirimTotal');
+        print('💰 Chiqim total (outflow): $chiqimTotal');
+        print('💰 Wallet balance: $walletBalance');
+
+        emit(StatsWalletBalanceLoaded(
+          kirimTotal: kirimTotal,
+          chiqimTotal: chiqimTotal,
+          walletBalance: walletBalance,
+        ));
+      } else {
+        final errorMsg = response['error'] ?? 'Hamyon balansi yuklashda xatolik';
         emit(StatsError(errorMsg));
       }
     } catch (e, stackTrace) {

@@ -41,6 +41,7 @@ class ApiService {
   final String getTransaction = 'Kassam/hs/KassamUrl/getTransaction';
   final String getTransactionTypes = 'Kassam/hs/KassamUrl/getTransactionTypes';
   final String transactionTypesCreate = 'Kassam/hs/KassamUrl/transactionTypesCreate';
+  final String getWalletBalance = 'Kassam/hs/KassamUrl/getWalletBalance';
 
 
 
@@ -610,6 +611,44 @@ class ApiService {
         'error': 'Tranzaksiyalarni yuklashda xatolik: $e',
         'errorCode': 0,
         'data': [],
+      };
+    }
+  }
+
+  /// Hamyon balansi statistikasini olish (chiqim/kirim breakdown)
+  Future<Map<String, dynamic>> getWalletBalanceData({
+    required String walletId,
+    required String fromDate, // Format: dd.MM.yyyy
+    required String toDate,   // Format: dd.MM.yyyy
+  }) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final token = sp.getString('auth_token') ?? _authToken;
+
+      print('💰 Getting wallet balance: walletId=$walletId, from=$fromDate, to=$toDate');
+      print('💰 Token: $token');
+
+      final queryParams = {
+        'walletId': walletId,
+        'fromDate': fromDate,
+        'toDate': toDate,
+      };
+
+      final response = await get(
+        getWalletBalance,
+        queryParams: queryParams,
+        token: token,
+      );
+
+      print('💰 Wallet balance response: $response');
+      return response;
+    } catch (e) {
+      print('❌ Get wallet balance error: $e');
+      return {
+        'success': false,
+        'error': 'Hamyon balansi yuklashda xatolik: $e',
+        'errorCode': 0,
+        'data': {},
       };
     }
   }

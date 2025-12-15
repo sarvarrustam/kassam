@@ -48,94 +48,51 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Kirim yoki Chiqim?',
+                'Tranzaksiya turini tanlang',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      setModalState(
-                        () => _selectedType = TransactionType.income,
-                      );
-                      setState(() {});
-                    },
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: AppColors.successGreen.withValues(
-                              alpha: 0.1,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: AppColors.successGreen,
-                              width: _selectedType == TransactionType.income
-                                  ? 3
-                                  : 1,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.arrow_downward,
-                            color: AppColors.successGreen,
-                            size: 40,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          'Kirim',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+              
+              // Horizontal scroll - 4 ta variant bitta qatorda
+              SizedBox(
+                height: 120,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  children: [
+                    _buildTypeOption(
+                      setModalState,
+                      TransactionType.income,
+                      'Kirim',
+                      Icons.arrow_downward,
+                      AppColors.successGreen,
                     ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      setModalState(
-                        () => _selectedType = TransactionType.expense,
-                      );
-                      setState(() {});
-                    },
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: AppColors.errorRed.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: AppColors.errorRed,
-                              width: _selectedType == TransactionType.expense
-                                  ? 3
-                                  : 1,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.arrow_upward,
-                            color: AppColors.errorRed,
-                            size: 40,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          'Chiqim',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(width: 16),
+                    _buildTypeOption(
+                      setModalState,
+                      TransactionType.expense,
+                      'Chiqim',
+                      Icons.arrow_upward,
+                      AppColors.errorRed,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 16),
+                    _buildTypeOption(
+                      setModalState,
+                      TransactionType.loanTaken,
+                      'Qarz olish',
+                      Icons.account_balance_wallet_outlined,
+                      Colors.blue,
+                    ),
+                    const SizedBox(width: 16),
+                    _buildTypeOption(
+                      setModalState,
+                      TransactionType.loanGiven,
+                      'Qarz berish',
+                      Icons.send_outlined,
+                      Colors.orange,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -559,9 +516,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               child: ElevatedButton(
                 onPressed: _saveTransaction,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _selectedType == TransactionType.income
-                      ? AppColors.successGreen
-                      : AppColors.errorRed,
+                  backgroundColor: _getTypeColor(_selectedType),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -580,5 +535,65 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         ),
       ),
     );
+  }
+
+  // Helper method - tranzaksiya turi uchun widget
+  Widget _buildTypeOption(
+    StateSetter setModalState,
+    TransactionType type,
+    String label,
+    IconData icon,
+    Color color,
+  ) {
+    final isSelected = _selectedType == type;
+    return GestureDetector(
+      onTap: () {
+        setModalState(() => _selectedType = type);
+        setState(() {});
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: color,
+                width: isSelected ? 3 : 1,
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 40,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Tranzaksiya turiga qarab rang berish
+  Color _getTypeColor(TransactionType type) {
+    switch (type) {
+      case TransactionType.income:
+        return AppColors.successGreen;
+      case TransactionType.expense:
+        return AppColors.errorRed;
+      case TransactionType.loanTaken:
+        return Colors.blue;
+      case TransactionType.loanGiven:
+        return Colors.orange;
+    }
   }
 }

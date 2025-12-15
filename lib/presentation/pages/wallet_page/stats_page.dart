@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kassam/presentation/theme/app_colors.dart';
-import 'package:kassam/data/services/mock_data_service.dart';
 import 'package:kassam/data/models/transaction_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kassam/presentation/pages/wallet_page/bloc/stats_bloc.dart';
+import 'package:kassam/core/services/connectivity_service.dart';
+import 'package:kassam/presentation/pages/no_internet_page.dart';
 import 'dart:convert';
 
 class StatsPage extends StatefulWidget {
   final String? walletId;
   final String? walletName;
+  final String? walletCurrency;
 
-  const StatsPage({super.key, this.walletId, this.walletName});
+  const StatsPage({super.key, this.walletId, this.walletName, this.walletCurrency});
 
   @override
   State<StatsPage> createState() => _StatsPageState();
 }
 
 class _StatsPageState extends State<StatsPage> {
-  final _dataService = MockDataService();
   late final StatsBloc _statsBloc;
   // month/year selection removed for simplified stats view
   String? _selectedWalletId;
@@ -27,6 +28,10 @@ class _StatsPageState extends State<StatsPage> {
   bool _showBalance = true; // Balance visibility toggle
   bool _isFetchingTransactionTypes = false; // API dan tur yuklash flag
   List<Map<String, String>> _customCategories = [];
+  final ConnectivityService _connectivityService = ConnectivityService();
+  
+  // API dan kelgan tranzaksiyalar
+  List<Transaction> _transactions = [];
   
   // API balance data
   double _kirimTotal = 0.0;
@@ -840,11 +845,14 @@ class _StatsPageState extends State<StatsPage> {
                                 walletId: t.walletId ?? _selectedWalletId,
                               );
                               () async {
-                                await _dataService.updateTransaction(
-                                  t.id,
-                                  updated,
-                                );
-                                setState(() {});
+                                // API orqali yangilash kerak
+                                // Hozircha local'da yangila ymiz
+                                setState(() {
+                                  final index = _transactions.indexWhere((tx) => tx.id == t.id);
+                                  if (index != -1) {
+                                    _transactions[index] = updated;
+                                  }
+                                });
                                 Navigator.of(dialogCtx).pop();
                               }();
                             },
@@ -975,6 +983,19 @@ class _StatsPageState extends State<StatsPage> {
       body: RefreshIndicator(
         color: AppColors.primaryGreen,
         onRefresh: () async {
+          // Internet ulanishini tekshirish
+          final hasInternet = await _connectivityService.hasInternetConnection();
+          if (!hasInternet) {
+            if (mounted) {
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const NoInternetPage(),
+                ),
+              );
+            }
+            return;
+          }
+          
           // Tranzaksiyalarni yangilash
           if (_selectedWalletId != null) {
             final now = DateTime.now();
@@ -1063,9 +1084,7 @@ class _StatsPageState extends State<StatsPage> {
                             
                             return Text(
                               _showBalance
-                                  ? (_balanceLoaded
-                                      ? '${_formatNumber(_currentWalletBalance.toInt())} ${_getCurrencySymbol()}'
-                                      : '${_formatNumber((_dataService.getWalletById(_selectedWalletId ?? '')?.balance ?? _dataService.getNetBalance()).toInt())} ${_dataService.getWalletById(_selectedWalletId ?? '')?.currency == 'USD' ? '\$' : 'so\'m'}')
+                                  ? '${_formatNumber(_currentWalletBalance.toInt())} ${_getCurrencySymbol()}'
                                   : '••••••',
                               style: Theme.of(context).textTheme.displayMedium
                                   ?.copyWith(
@@ -1189,11 +1208,8 @@ class _StatsPageState extends State<StatsPage> {
                 children: [
                   Column(
                     children: () {
-                      final transactions = _dataService
-                          .getTransactionsByWalletId(_selectedWalletId);
-
                       // Filter by date range if filter is active
-                      final filtered = transactions.where((t) {
+                      final filtered = _transactions.where((t) {
                         if (_filterStartDate == null ||
                             _filterEndDate == null) {
                           return true; // No filter
@@ -1262,7 +1278,7 @@ class _StatsPageState extends State<StatsPage> {
                                     const SizedBox(height: 4),
                                     // Hamyon nomi
                                     Text(
-                                      'Hamyon: ${t.notes ?? _dataService.getWalletById(t.walletId ?? _selectedWalletId ?? '')?.name ?? 'Noma\'lum'}',
+                                      'Hamyon: ${t.notes ?? widget.walletName ?? 'Noma\'lum'}',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 14,
@@ -1290,7 +1306,7 @@ class _StatsPageState extends State<StatsPage> {
                                 children: [
                                   Text(
                                     _showBalance 
-                                      ? '${_formatNumber(t.amount.toInt())} ${_dataService.getWalletById(_selectedWalletId ?? '')?.currency == 'USD' ? '\$' : 'so\'m'}'
+                                      ? '${_formatNumber(t.amount.toInt())} ${_getCurrencySymbol()}'
                                       : '••••••',
                                     style: const TextStyle(
                                       color: Colors.white,
@@ -1313,10 +1329,11 @@ class _StatsPageState extends State<StatsPage> {
                                       const SizedBox(width: 8),
                                       GestureDetector(
                                         onTap: () async {
-                                          await _dataService.deleteTransaction(
-                                            t.id,
-                                          );
-                                          setState(() {});
+                                          // API orqali o'chirish kerak
+                                          // Hozircha local'dan o'chiramiz
+                                          setState(() {
+                                            _transactions.removeWhere((tx) => tx.id == t.id);
+                                          });
                                         },
                                         child: const Icon(
                                           Icons.delete,
@@ -1613,10 +1630,7 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   double _calculateExpenseTotal() {
-    final transactions = _dataService.getTransactionsByWalletId(
-      _selectedWalletId,
-    );
-    final filtered = transactions.where((t) {
+    final filtered = _transactions.where((t) {
       if (_filterStartDate == null || _filterEndDate == null) {
         return true;
       }
@@ -1630,10 +1644,7 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   double _calculateIncomeTotal() {
-    final transactions = _dataService.getTransactionsByWalletId(
-      _selectedWalletId,
-    );
-    final filtered = transactions.where((t) {
+    final filtered = _transactions.where((t) {
       if (_filterStartDate == null || _filterEndDate == null) {
         return true;
       }
@@ -1647,8 +1658,8 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   String _getCurrencySymbol() {
-    final wallet = _dataService.getWalletById(_selectedWalletId ?? '');
-    if (wallet?.currency == 'USD') {
+    // Use widget.walletCurrency from route parameter
+    if (widget.walletCurrency == 'USD' || widget.walletCurrency == 'usd') {
       return '\$';
     }
     return 'so\'m';
@@ -1680,12 +1691,9 @@ class _StatsPageState extends State<StatsPage> {
       // API dan list kelishi kerak
       final List<dynamic> transactionsList = data is List ? data : [data];
       
-      // Eski tranzaksiyalarni olish
-      final currentTransactions = _dataService.getTransactionsByWalletId(_selectedWalletId);
-      final currentIds = currentTransactions.map((t) => t.id).toSet();
-      
-      // Yangi tranzaksiyalarning ID'lari
-      final newIds = <String>{};
+      // Yangi tranzaksiyalar ro'yxati
+      final newTransactions = <Transaction>[];
+      final existingIds = _transactions.map((t) => t.id).toSet();
       
       // Sanasiga qarab tartiblash (eskisidan yangisiga, keyin UI da reverse bo'ladi)
       transactionsList.sort((a, b) {
@@ -1701,10 +1709,9 @@ class _StatsPageState extends State<StatsPage> {
         final id = item['documentId']?.toString() ?? 
                    item['id']?.toString() ?? 
                    DateTime.now().millisecondsSinceEpoch.toString();
-        newIds.add(id);
         
         // Agar bu tranzaksiya allaqachon mavjud bo'lsa, o'tkazib yuborish
-        if (currentIds.contains(id)) {
+        if (existingIds.contains(id)) {
           print('⏭️ Skipping duplicate transaction ID: $id');
           continue;
         }
@@ -1766,18 +1773,14 @@ class _StatsPageState extends State<StatsPage> {
           notes: walletName, // Hamyon nomini notes'ga saqlaymiz
         );
         
-        // Mock data ga qo'shish
-        _dataService.addTransaction(transaction);
+        newTransactions.add(transaction);
         print('✅ Added transaction: $transactionTypeName - $comment at $date');
       }
       
-      // API'da yo'q bo'lgan eski tranzaksiyalarni o'chirish (agar kerak bo'lsa)
-      // Hozircha bu qismni izohlab qo'yamiz, chunki local qo'shilgan tranzaksiyalarni saqlamoqchimiz
-      // for (final oldTransaction in currentTransactions) {
-      //   if (!newIds.contains(oldTransaction.id)) {
-      //     _dataService.deleteTransaction(oldTransaction.id);
-      //   }
-      // }
+      // Yangi tranzaksiyalarni ro'yxatga qo'shish
+      setState(() {
+        _transactions.addAll(newTransactions);
+      });
       
       print('✅ Transactions parsed and saved (${transactionsList.length} items)');
     } catch (e, stackTrace) {

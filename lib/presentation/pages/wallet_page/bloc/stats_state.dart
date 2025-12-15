@@ -78,3 +78,5 @@ class StatsWalletBalanceLoaded extends StatsState {
   @override
   List<Object?> get props => [kirimTotal, chiqimTotal, walletBalance];
 }
+  
+  

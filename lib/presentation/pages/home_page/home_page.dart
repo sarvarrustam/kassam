@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kassam/core/services/connectivity_service.dart';
 import 'package:kassam/data/models/wallet_balance_model.dart';
+import 'package:kassam/data/services/api_service.dart';
+import 'package:kassam/data/services/app_preferences_service.dart';
 import 'package:kassam/presentation/blocs/user/user_bloc.dart';
+import 'package:kassam/presentation/pages/no_internet_page.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../theme/app_colors.dart';
+
 import 'bloc/home_bloc.dart';
 
 class HomePage extends StatefulWidget {
@@ -18,6 +24,7 @@ class _HomePageState extends State<HomePage> {
   int _currentPage = 0;
   bool _showBalance = true;
   bool _showAddMenu = false;
+  final ConnectivityService _connectivityService = ConnectivityService();
 
   // Cache uchun
   List<WalletBalance>? _cachedWallets;
@@ -30,17 +37,72 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
-    // Initial data yuklash
-    context.read<HomeBloc>().add(HomeGetWalletsEvent());
-    context.read<HomeBloc>().add(HomeGetTotalBalancesEvent());
-    context.read<HomeBloc>().add(HomeGetExchangeRateEvent());
-    context.read<UserBloc>().add(UserGetDataEvent());
+    
+    // Frame render bo'lgandan keyin ishga tushirish
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Versiyani tekshirish
+      _checkAppVersion();
+      
+      // Initial data yuklash
+      context.read<HomeBloc>().add(HomeGetWalletsEvent());
+      context.read<HomeBloc>().add(HomeGetTotalBalancesEvent());
+      context.read<HomeBloc>().add(HomeGetExchangeRateEvent());
+      context.read<UserBloc>().add(UserGetDataEvent());
+    });
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkAppVersion() async {
+    try {
+      final prefs = AppPreferencesService();
+      await prefs.initialize();
+      final token = await prefs.getAuthToken();
+      
+      if (token == null || token.isEmpty) return;
+      
+      // Hozirgi app versiyasini olish
+      final packageInfo = await PackageInfo.fromPlatform();
+      final versionParts = packageInfo.version.split('.');
+      final currentVersion = int.tryParse(versionParts.first) ?? 1;
+      
+      print('📱 Home: Current version: ${packageInfo.version} (major: $currentVersion)');
+      
+      // Serverdan versiyani olish
+      final apiService = ApiService();
+      final response = await apiService.get(
+        'Kassam/hs/KassamUrl/getUser',
+        token: token,
+      );
+      
+      if (response['error'] == false && response['data'] != null) {
+        final serverVersion = response['data']['version'] as int?;
+        
+        if (serverVersion != null) {
+          print('📦 Home: Server version: $serverVersion');
+          
+          if (currentVersion < serverVersion) {
+            // Versiya eski - version update sahifasiga o'tkazish
+            print('❌ Home: Version outdated! Showing update page...');
+            if (!mounted) return;
+            
+            // Darhol version update sahifasiga o'tkazish
+            context.go('/version-update', extra: {
+              'currentVersion': currentVersion,
+              'requiredVersion': serverVersion,
+            });
+          } else {
+            print('✅ Home: Version compatible');
+          }
+        }
+      }
+    } catch (e) {
+      print('⚠️ Home: Version check error: $e');
+    }
   }
 
   @override
@@ -102,6 +164,19 @@ class _HomePageState extends State<HomePage> {
               return RefreshIndicator(
                 color: AppColors.primaryGreen,
                 onRefresh: () async {
+                  // Internet ulanishini tekshirish
+                  final hasInternet = await _connectivityService.hasInternetConnection();
+                  if (!hasInternet) {
+                    if (mounted) {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const NoInternetPage(),
+                        ),
+                      );
+                    }
+                    return;
+                  }
+                  
                   // Ma'lumotlarni yangilash
                   context.read<HomeBloc>().add(HomeGetWalletsEvent());
                   context.read<HomeBloc>().add(HomeGetTotalBalancesEvent());
@@ -203,12 +278,12 @@ class _HomePageState extends State<HomePage> {
                                 itemBuilder: (context, index) {
                                   if (index == 0) {
                                     final uzsToUsdConversion =
-                                        (totalUZS / _exchangeRate).toInt();
+                                        totalUZS / _exchangeRate;
                                     return _buildBalanceCard(
                                       'Mening Pulim',
                                       '${_formatNumber(totalUZS.toInt())} UZS',
                                       subtitle:
-                                          '≈ ${_formatNumber(uzsToUsdConversion)} USD',
+                                          '≈ ${uzsToUsdConversion.toStringAsFixed(2)} USD',
                                     );
                                   } else if (index == 1) {
                                     final usdToUzsConversion =
@@ -656,7 +731,7 @@ class _HomePageState extends State<HomePage> {
     
     return GestureDetector(
       onTap: () async {
-        await context.push('/stats?walletId=${wallet.id}&walletName=${Uri.encodeComponent(wallet.name)}');
+        await context.push('/stats?walletId=${wallet.id}&walletName=${Uri.encodeComponent(wallet.name)}&walletCurrency=${wallet.type}');
         // Stats page'dan qaytganda hamyonlarni yangilash
         if (mounted) {
           context.read<HomeBloc>().add(HomeGetWalletsEvent());

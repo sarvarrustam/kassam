@@ -321,7 +321,8 @@ class _CreateUserPageState extends State<CreateUserPage> {
               backgroundColor: Colors.green,
             ),
           );
-          context.go('/home');
+          // PIN kod setup sahifasiga o'tish
+          context.go('/pin-setup');
         } else if (state is AuthError) {
           // Xatolik
           ScaffoldMessenger.of(context).showSnackBar(

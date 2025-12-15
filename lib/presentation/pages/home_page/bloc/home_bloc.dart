@@ -119,9 +119,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       if (response['success'] == true) {
         final data = response['data'];
         
-        // Yangi API format: uzsTotal va usdTotal
-        final somTotal = (data['uzsTotal'] ?? 0).toDouble();
-        final dollarTotal = (data['usdTotal'] ?? 0).toDouble();
+        // API format: uzs va usd (joriy balans), uzsTotal va usdTotal (jami)
+        // Biz joriy balansni ko'rsatamiz
+        final somTotal = (data['uzs'] ?? 0).toDouble();
+        final dollarTotal = (data['usd'] ?? 0).toDouble();
 
         print('✅ Total balances loaded: som=$somTotal, dollar=$dollarTotal');
 
@@ -131,8 +132,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         ));
       } else {
         final errorMsg = response['error'] ?? 'Server xatosi';
-        print('❌ Total balances API error: $errorMsg');
-        emit(HomeError(errorMsg));
+        print('⚠️ Total balances API error: $errorMsg (continuing with 0 balance)');
+        // Xatolik bo'lsa ham 0 balans bilan davom etish
+        emit(const HomeGetTotalBalancesSuccess(
+          somTotal: 0,
+          dollarTotal: 0,
+        ));
       }
     } catch (e, stackTrace) {
       print('❌ Total balances fetch error: $e');

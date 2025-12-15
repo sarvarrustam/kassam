@@ -46,6 +46,13 @@ class UserBloc extends Bloc<UserEvent, UserState> {
 
         print('✅ User loaded: $user');
 
+        // Serverdan kelgan versiyani saqlash
+        if (data['version'] != null) {
+          final serverVersion = data['version'] as int;
+          await _prefsService.saveAppVersion(serverVersion);
+          print('📦 Server version saved: $serverVersion');
+        }
+
         // Hive ga saqlash
         await _saveUserToHive(user);
 

@@ -1,6 +1,11 @@
 import 'package:equatable/equatable.dart';
 
-enum TransactionType { income, expense }
+enum TransactionType { 
+  income,      // Kirim
+  expense,     // Chiqim
+  loanTaken,   // Qarz olish
+  loanGiven,   // Qarz berish
+}
 
 enum TransactionCategory {
   salary,

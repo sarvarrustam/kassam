@@ -9,6 +9,9 @@ class AppPreferencesService {
   static const String _authTokenKey = 'auth_token';
   static const String _phoneNumberKey = 'phone_number';
   static const String _userDataKey = 'user_data';
+  static const String _pinCodeKey = 'pin_code';
+  static const String _hasPinCodeKey = 'has_pin_code';
+  static const String _appVersionKey = 'app_version';
 
   static final AppPreferencesService _instance =
       AppPreferencesService._internal();
@@ -123,6 +126,50 @@ class AppPreferencesService {
   Future<void> clearUserData() async {
     await _ensureInitialized();
     await _prefs.remove(_userDataKey);
+  }
+
+  // Save PIN code
+  Future<void> savePinCode(String pin) async {
+    await _ensureInitialized();
+    await _prefs.setString(_pinCodeKey, pin);
+    await _prefs.setBool(_hasPinCodeKey, true);
+  }
+
+  // Get PIN code
+  Future<String?> getPinCode() async {
+    await _ensureInitialized();
+    return _prefs.getString(_pinCodeKey);
+  }
+
+  // Check if PIN code is set
+  Future<bool> hasPinCode() async {
+    await _ensureInitialized();
+    return _prefs.getBool(_hasPinCodeKey) ?? false;
+  }
+
+  // Clear PIN code
+  Future<void> clearPinCode() async {
+    await _ensureInitialized();
+    await _prefs.remove(_pinCodeKey);
+    await _prefs.setBool(_hasPinCodeKey, false);
+  }
+
+  // Clear auth token
+  Future<void> clearAuthToken() async {
+    await _ensureInitialized();
+    await _prefs.remove(_authTokenKey);
+  }
+
+  // Save app version from server
+  Future<void> saveAppVersion(int version) async {
+    await _ensureInitialized();
+    await _prefs.setInt(_appVersionKey, version);
+  }
+
+  // Get saved app version from server
+  Future<int?> getAppVersion() async {
+    await _ensureInitialized();
+    return _prefs.getInt(_appVersionKey);
   }
 
   // Ensure preferences are initialized

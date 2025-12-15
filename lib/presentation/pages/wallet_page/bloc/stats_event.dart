@@ -82,3 +82,5 @@ class StatsGetWalletBalanceEvent extends StatsEvent {
   @override
   List<Object?> get props => [walletId, fromDate, toDate];
 }
+
+

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import '../pages/splash_page/splash_page.dart';
 import '../pages/entry_pages/entry_page.dart';
 import '../pages/entry_pages/registration_pages/phone_registration_page.dart';
 import '../pages/entry_pages/registration_pages/sms_verification_page.dart';
 import '../pages/entry_pages/registration_pages/create_user_page.dart';
+import '../pages/security/pin_code_setup_page.dart';
+import '../pages/security/pin_code_verify_page.dart';
+import '../pages/version/version_update_page.dart';
 import '../pages/home_page/home_page.dart';
 import '../pages/wallet_page/stats_page.dart';
 import '../pages/profile_setings/settings_page.dart';
@@ -11,6 +16,7 @@ import '../pages/diagram_page.dart';
 import '../pages/wallet_page/add_transaction_page.dart';
 import '../pages/transactions_list_page.dart';
 import '../../data/services/app_preferences_service.dart';
+import '../../data/services/api_service.dart';
 
 // RootLayout - Bottom Navigation Bar va Floating Action Button bilan
 class RootLayout extends StatefulWidget {
@@ -106,12 +112,46 @@ class _RootLayoutState extends State<RootLayout> {
 
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/entry',
+  initialLocation: '/splash',
   redirect: (context, state) async {
+    // Splash va version-update page'dan redirect qilmaslik
+    if (state.matchedLocation == '/splash' || 
+        state.matchedLocation == '/version-update') {
+      return null;
+    }
+
     final prefs = AppPreferencesService();
     final hasCompleted = await prefs.hasCompletedOnboarding();
+    final token = await prefs.getAuthToken();
 
-   
+    // VERSIYA TEKSHIRUVI - Eng muhim!
+    if (token != null && token.isNotEmpty) {
+      try {
+        // Hozirgi app versiyasini olish
+        final packageInfo = await PackageInfo.fromPlatform();
+        final versionParts = packageInfo.version.split('.');
+        final currentVersion = int.tryParse(versionParts.first) ?? 1;
+        
+        // Serverdan versiyani olish
+        final apiService = ApiService();
+        final response = await apiService.get(
+          'Kassam/hs/KassamUrl/getUser',
+          token: token,
+        );
+        
+        if (response['error'] == false && response['data'] != null) {
+          final serverVersion = response['data']['version'] as int?;
+          
+          if (serverVersion != null && currentVersion < serverVersion) {
+            print('❌ Router: Version outdated! Current=$currentVersion, Server=$serverVersion');
+            // Versiya eski - version update sahifasiga yo'naltirish
+            return '/version-update?current=$currentVersion&required=$serverVersion';
+          }
+        }
+      } catch (e) {
+        print('⚠️ Router: Version check error: $e');
+      }
+    }
 
     // Auth route larni aniqlash
     final isAuthRoute =
@@ -123,7 +163,6 @@ final GoRouter appRouter = GoRouter(
     // Agar onboarding tugallanmagan bo'lsa va auth route emas bo'lsa
     // Entry sahifasiga yo'naltirish
     if (!hasCompleted && !isAuthRoute) {
-     
       return '/entry';
     }
 
@@ -131,21 +170,24 @@ final GoRouter appRouter = GoRouter(
     // Bu route'lardan redirect qilmaslik
     if (state.matchedLocation == '/sms-verification' || 
         state.matchedLocation == '/create-user') {
-      
       return null;
     }
 
     // Agar onboarding tugallangan bo'lsa va entry/phone-input'da bo'lsa
     // Home sahifasiga yo'naltirish
     if (hasCompleted && (state.matchedLocation == '/entry' || state.matchedLocation == '/phone-input')) {
-     
       return '/home';
     }
 
-    
     return null;
   },
   routes: <RouteBase>[
+    // Splash Screen
+    GoRoute(
+      path: '/splash',
+      name: 'splash',
+      builder: (context, state) => const SplashPage(),
+    ),
     // Auth Routes (Entry Pages - without Bottom Navigation)
     GoRoute(
       path: '/entry',
@@ -171,6 +213,31 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final phoneNumber = state.extra as String? ?? '';
         return CreateUserPage(phoneNumber: phoneNumber);
+      },
+    ),
+    // PIN Code Routes
+    GoRoute(
+      path: '/pin-setup',
+      name: 'pin-setup',
+      builder: (context, state) => const PinCodeSetupPage(),
+    ),
+    GoRoute(
+      path: '/pin-verify',
+      name: 'pin-verify',
+      builder: (context, state) => const PinCodeVerifyPage(),
+    ),
+
+    // Version Update Route
+    GoRoute(
+      path: '/version-update',
+      name: 'version-update',
+      builder: (context, state) {
+        final currentVersion = int.tryParse(state.uri.queryParameters['current'] ?? '1') ?? 1;
+        final requiredVersion = int.tryParse(state.uri.queryParameters['required'] ?? '1') ?? 1;
+        return VersionUpdateRequiredPage(
+          currentVersion: currentVersion,
+          requiredVersion: requiredVersion,
+        );
       },
     ),
 
@@ -219,7 +286,12 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final walletId = state.uri.queryParameters['walletId'];
         final walletName = state.uri.queryParameters['walletName'];
-        return StatsPage(walletId: walletId, walletName: walletName);
+        final walletCurrency = state.uri.queryParameters['walletCurrency'];
+        return StatsPage(
+          walletId: walletId, 
+          walletName: walletName,
+          walletCurrency: walletCurrency,
+        );
       },
     ),
   ],

@@ -174,8 +174,8 @@ class ApiService {
           
           if (hasError) {
             // Error holati
-            final errorMessage = responseData['message'] ?? 
-                                responseData['errormassage'] ?? 
+            final errorMessage = responseData['errorMassage'] ?? 
+                                responseData['message'] ?? 
                                 'Xatolik';
             return {
               'success': false,
@@ -185,8 +185,8 @@ class ApiService {
             };
           } else {
             // Success holati
-            final successMessage = responseData['message'] ?? 
-                                  responseData['errormassage'] ?? 
+            final successMessage = responseData['errorMassage'] ?? 
+                                  responseData['message'] ?? 
                                   'Muvaffaqiyatli';
             return {
               'success': true,
@@ -306,8 +306,8 @@ class ApiService {
         // Agar 1C format qaytarsa
         if (response.data is Map) {
           final errorData = response.data as Map;
-          if (errorData['errormassage'] != null) {
-            errorMsg = errorData['errormassage'].toString();
+          if (errorData['errorMassage'] != null) {
+            errorMsg = errorData['errorMassage'].toString();
           } else if (errorData['message'] != null) {
             errorMsg = errorData['message'].toString();
           }
@@ -349,8 +349,8 @@ class ApiService {
         
         if (hasError) {
           // Error holati
-          final errorMessage = responseData['message'] ?? 
-                              responseData['errormassage'] ?? 
+          final errorMessage = responseData['errorMassage'] ?? 
+                              responseData['message'] ?? 
                               'Xatolik';
           return {
             'success': false,
@@ -360,8 +360,8 @@ class ApiService {
           };
         } else {
           // Success holati
-          final successMessage = responseData['message'] ?? 
-                                responseData['errormassage'] ?? 
+          final successMessage = responseData['errorMassage'] ?? 
+                                responseData['message'] ?? 
                                 'Muvaffaqiyatli';
           return {
             'success': true,

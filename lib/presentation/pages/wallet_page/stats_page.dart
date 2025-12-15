@@ -1023,16 +1023,17 @@ class _StatsPageState extends State<StatsPage> {
             );
           }
           
-          // API chaqiruvini kutish
-          await Future.delayed(const Duration(milliseconds: 500));
+          // API chaqiruvini kutish - uzunroq vaqt
+          await Future.delayed(const Duration(milliseconds: 1500));
         },
-        child: Column(
-        children: [
-          // Umumiy Hisob - fixed tepada
-          SingleChildScrollView(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              // Umumiy Hisob - fixed tepada
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -1198,16 +1199,14 @@ class _StatsPageState extends State<StatsPage> {
                 ],
               ),
             ),
-          ),
           // Scrollable tranzaksiyalar ro'yxati
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                    children: () {
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  children: () {
                       // Filter by date range if filter is active
                       final filtered = _transactions.where((t) {
                         if (_filterStartDate == null ||
@@ -1318,26 +1317,23 @@ class _StatsPageState extends State<StatsPage> {
                                   Row(
                                     children: [
                                       GestureDetector(
-                                        onTap: () =>
-                                            _showEditTransactionSheet(t),
+                                        onTap: () {
+                                          // Edit disabled - hech narsa qilmaydi
+                                        },
                                         child: const Icon(
                                           Icons.edit,
-                                          color: Colors.white70,
+                                          color: Colors.white38,
                                           size: 18,
                                         ),
                                       ),
                                       const SizedBox(width: 8),
                                       GestureDetector(
-                                        onTap: () async {
-                                          // API orqali o'chirish kerak
-                                          // Hozircha local'dan o'chiramiz
-                                          setState(() {
-                                            _transactions.removeWhere((tx) => tx.id == t.id);
-                                          });
+                                        onTap: () {
+                                          // Delete disabled - hech narsa qilmaydi
                                         },
                                         child: const Icon(
                                           Icons.delete,
-                                          color: Colors.white70,
+                                          color: Colors.white38,
                                           size: 18,
                                         ),
                                       ),
@@ -1524,16 +1520,16 @@ class _StatsPageState extends State<StatsPage> {
                 ],
               ),
             ),
-          ),
-        ],
+          ],
         ),
-      ),
+      ),  // SingleChildScrollView
+      ), // RefreshIndicator (body)
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddTransactionSheet,
         child: const Icon(Icons.add),
       ),
     ),
-    );
+  );
   }
 
   // ignore: unused_element

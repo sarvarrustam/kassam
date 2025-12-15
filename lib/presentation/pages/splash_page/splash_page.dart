@@ -131,12 +131,18 @@ class _SplashPageState extends State<SplashPage>
 
         print('✅ Version check passed, navigating...');
 
+        // PIN code statusini yana tekshirish (yangi o'rnatilgan bo'lishi mumkin)
+        final currentPinStatus = await prefs.hasPinCode();
+        print('🔐 PIN Check (after version): currentPinStatus=$currentPinStatus');
+
         // Versiya to'g'ri - davom etish
-        if (hasPinCode) {
+        if (currentPinStatus) {
           // PIN kod o'rnatilgan -> PIN verify sahifasiga
+          print('🔐 PIN code bor, verify sahifasiga o\'tish');
           context.go('/pin-verify');
         } else {
           // PIN kod o'rnatilmagan -> To'g'ridan-to'g'ri home'ga
+          print('⚠️ PIN code yo\'q, home sahifasiga o\'tish');
           context.go('/home');
         }
       } else if (hasCompleted) {

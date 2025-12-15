@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import '../pages/splash_page/splash_page.dart';
 import '../pages/entry_pages/entry_page.dart';
 import '../pages/entry_pages/registration_pages/phone_registration_page.dart';
@@ -16,7 +15,6 @@ import '../pages/diagram_page.dart';
 import '../pages/wallet_page/add_transaction_page.dart';
 import '../pages/transactions_list_page.dart';
 import '../../data/services/app_preferences_service.dart';
-import '../../data/services/api_service.dart';
 
 // RootLayout - Bottom Navigation Bar va Floating Action Button bilan
 class RootLayout extends StatefulWidget {
@@ -123,35 +121,6 @@ final GoRouter appRouter = GoRouter(
     final prefs = AppPreferencesService();
     final hasCompleted = await prefs.hasCompletedOnboarding();
     final token = await prefs.getAuthToken();
-
-    // VERSIYA TEKSHIRUVI - Eng muhim!
-    if (token != null && token.isNotEmpty) {
-      try {
-        // Hozirgi app versiyasini olish
-        final packageInfo = await PackageInfo.fromPlatform();
-        final versionParts = packageInfo.version.split('.');
-        final currentVersion = int.tryParse(versionParts.first) ?? 1;
-        
-        // Serverdan versiyani olish
-        final apiService = ApiService();
-        final response = await apiService.get(
-          'Kassam/hs/KassamUrl/getUser',
-          token: token,
-        );
-        
-        if (response['error'] == false && response['data'] != null) {
-          final serverVersion = response['data']['version'] as int?;
-          
-          if (serverVersion != null && currentVersion < serverVersion) {
-            print('❌ Router: Version outdated! Current=$currentVersion, Server=$serverVersion');
-            // Versiya eski - version update sahifasiga yo'naltirish
-            return '/version-update?current=$currentVersion&required=$serverVersion';
-          }
-        }
-      } catch (e) {
-        print('⚠️ Router: Version check error: $e');
-      }
-    }
 
     // Auth route larni aniqlash
     final isAuthRoute =

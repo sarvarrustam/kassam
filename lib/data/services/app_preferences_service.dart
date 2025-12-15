@@ -12,6 +12,7 @@ class AppPreferencesService {
   static const String _pinCodeKey = 'pin_code';
   static const String _hasPinCodeKey = 'has_pin_code';
   static const String _appVersionKey = 'app_version';
+  static const String _isFirstRunKey = 'is_first_run';
 
   static final AppPreferencesService _instance =
       AppPreferencesService._internal();
@@ -29,6 +30,16 @@ class AppPreferencesService {
   Future<void> initialize() async {
     if (!_isInitialized) {
       _prefs = await SharedPreferences.getInstance();
+
+      // First run - clear old data ONLY on actual first app launch
+      final isFirstRun = _prefs.getBool(_isFirstRunKey) ?? true;
+      if (isFirstRun) {
+        // Birinchi marta - barcha ma'lumotlarni tozalash
+        await _prefs.clear();
+        await _prefs.setBool(_isFirstRunKey, false);
+        print('🆕 First run detected - preferences cleared');
+      }
+
       _isInitialized = true;
     }
   }
@@ -133,6 +144,9 @@ class AppPreferencesService {
     await _ensureInitialized();
     await _prefs.setString(_pinCodeKey, pin);
     await _prefs.setBool(_hasPinCodeKey, true);
+    // Force save to disk
+    print('💾 PIN Code Saved: pin=$pin, key=$_pinCodeKey');
+    print('💾 Has PIN Flag Saved: $_hasPinCodeKey = true');
   }
 
   // Get PIN code

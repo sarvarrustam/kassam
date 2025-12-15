@@ -61,6 +61,10 @@ class _SplashPageState extends State<SplashPage>
 
       if (!mounted) return;
 
+      print(
+        '🔐 PIN Check: hasPinCode=$hasPinCode, hasCompleted=$hasCompleted, token=${token != null}',
+      );
+
       if (token != null && token.isNotEmpty && hasCompleted) {
         // Token bor - versiyani tekshirish
 

@@ -21,20 +21,22 @@ class _SplashPageState extends State<SplashPage>
   @override
   void initState() {
     super.initState();
-    
+
     // Animatsiya sozlash
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
     // Animatsiyani boshlash
     _controller.forward();
@@ -51,7 +53,7 @@ class _SplashPageState extends State<SplashPage>
 
     try {
       final prefs = AppPreferencesService();
-      
+
       // Token va onboarding tekshirish
       final token = await prefs.getAuthToken();
       final hasCompleted = await prefs.hasCompletedOnboarding();
@@ -61,46 +63,70 @@ class _SplashPageState extends State<SplashPage>
 
       if (token != null && token.isNotEmpty && hasCompleted) {
         // Token bor - versiyani tekshirish
-        
+
         // Hozirgi app versiyasini olish
         final packageInfo = await PackageInfo.fromPlatform();
         final versionParts = packageInfo.version.split('.');
         final currentVersion = int.tryParse(versionParts.first) ?? 1;
-        
-        // Serverdan versiyani olish
+
+        print('📱 Current app version: $currentVersion');
+
+        // Versiya tekshirishni API'dan qilish (real vaqtda)
+        int? serverVersion;
         final apiService = ApiService();
         try {
           final response = await apiService.get(
             'Kassam/hs/KassamUrl/getUser',
             token: token,
           );
-          
-          if (response['error'] == false && response['data'] != null) {
-            final serverVersion = response['data']['version'] as int?;
-            
-            if (serverVersion != null) {
-              await prefs.saveAppVersion(serverVersion);
-              
-              if (currentVersion < serverVersion) {
-                // Versiya eski - ogohlantirish sahifasiga
-                if (!mounted) return;
-                context.go('/version-update', extra: {
-                  'currentVersion': currentVersion,
-                  'requiredVersion': serverVersion,
-                });
-                return;
-              }
-              
-              print('✅ Version compatible');
-            }
+
+          print('📡 API Response: $response');
+
+          // API response'dagi versiyani olish
+          // Turli response structure'larni sinab ko'rish
+          print('📊 Full response keys: ${response.keys.toList()}');
+          print('📊 response[data]: ${response['data']}');
+          print('📊 response[version]: ${response['version']}');
+
+          if (response['data'] is Map && response['data']['version'] != null) {
+            serverVersion = response['data']['version'] as int?;
+            print('✅ Got version from response[data][version]: $serverVersion');
+          } else if (response['version'] != null) {
+            serverVersion = response['version'] as int?;
+            print('✅ Got version from response[version]: $serverVersion');
+          } else {
+            print('⚠️ No version found in response');
+          }
+
+          print('🔍 Server version from API: $serverVersion');
+          print(
+            '🔗 Comparison: currentVersion ($currentVersion) < serverVersion ($serverVersion) = ${currentVersion < (serverVersion ?? 0)}',
+          );
+
+          if (serverVersion != null && currentVersion < serverVersion) {
+            // Versiya eski - ogohlantirish sahifasiga
+            print(
+              '🔴 Version update required from API: $currentVersion < $serverVersion',
+            );
+            if (!mounted) return;
+            context.go(
+              '/version-update',
+              extra: {
+                'currentVersion': currentVersion,
+                'requiredVersion': serverVersion,
+              },
+            );
+            return;
           }
         } catch (e) {
+          // API xatosi - davom etish
           print('⚠️ Version check error: $e');
-          // Xatolik bo'lsa davom etish
         }
-        
+
         if (!mounted) return;
-        
+
+        print('✅ Version check passed, navigating...');
+
         // Versiya to'g'ri - davom etish
         if (hasPinCode) {
           // PIN kod o'rnatilgan -> PIN verify sahifasiga
@@ -124,7 +150,6 @@ class _SplashPageState extends State<SplashPage>
     }
   }
 
-
   @override
   void dispose() {
     _controller.dispose();
@@ -139,10 +164,7 @@ class _SplashPageState extends State<SplashPage>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              AppColors.primaryGreen,
-              AppColors.primaryGreenLight,
-            ],
+            colors: [AppColors.primaryGreen, AppColors.primaryGreenLight],
           ),
         ),
         child: Center(
@@ -183,10 +205,10 @@ class _SplashPageState extends State<SplashPage>
                 child: Text(
                   'Kassam',
                   style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.5,
-                      ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -196,9 +218,9 @@ class _SplashPageState extends State<SplashPage>
                 child: Text(
                   'Shaxsiy Moliyani Boshqaring',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white.withOpacity(0.9),
-                        fontWeight: FontWeight.w400,
-                      ),
+                    color: Colors.white.withOpacity(0.9),
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ),
               const SizedBox(height: 60),

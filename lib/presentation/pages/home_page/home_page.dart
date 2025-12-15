@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kassam/core/services/connectivity_service.dart';
 import 'package:kassam/data/models/wallet_balance_model.dart';
-import 'package:kassam/data/services/app_preferences_service.dart';
 import 'package:kassam/presentation/blocs/user/user_bloc.dart';
 import 'package:kassam/presentation/pages/no_internet_page.dart';
 import '../../theme/app_colors.dart';
@@ -35,7 +34,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
-    
+
     // Frame render bo'lgandan keyin ishga tushirish
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Initial data yuklash
@@ -89,8 +88,8 @@ class _HomePageState extends State<HomePage> {
           listener: (context, state) {
             if (state is UserLoaded) {
               setState(() {
-                _cachedUserName = state.user.name.isEmpty 
-                    ? 'Foydalanuvchi' 
+                _cachedUserName = state.user.name.isEmpty
+                    ? 'Foydalanuvchi'
                     : state.user.name;
               });
             } else if (state is UserError) {
@@ -112,7 +111,8 @@ class _HomePageState extends State<HomePage> {
                 color: AppColors.primaryGreen,
                 onRefresh: () async {
                   // Internet ulanishini tekshirish
-                  final hasInternet = await _connectivityService.hasInternetConnection();
+                  final hasInternet = await _connectivityService
+                      .hasInternetConnection();
                   if (!hasInternet) {
                     if (mounted) {
                       await Navigator.of(context).push(
@@ -123,366 +123,380 @@ class _HomePageState extends State<HomePage> {
                     }
                     return;
                   }
-                  
+
                   // Ma'lumotlarni yangilash
                   context.read<HomeBloc>().add(HomeGetWalletsEvent());
                   context.read<HomeBloc>().add(HomeGetTotalBalancesEvent());
                   context.read<HomeBloc>().add(HomeGetExchangeRateEvent());
                   context.read<UserBloc>().add(UserGetDataEvent());
-                  
-                  // API chaqiruvlari tugashini kutish
-                  await Future.delayed(const Duration(milliseconds: 500));
+
+                  // API chaqiruvlari tugashini kutish (2 sekund)
+                  await Future.delayed(const Duration(seconds: 2));
                 },
                 child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Card
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.primaryGreen,
-                        AppColors.primaryGreenLight,
-                      ],
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(24),
-                      bottomRight: Radius.circular(24),
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 40),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _cachedUserName != null 
-                                ? ' $_cachedUserName!'
-                                : 'Xush kelibsiz!',   
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                          // Kurs ko'rsatish
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'Kurs \$',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(1),
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${_formatNumber(_exchangeRate.toInt())} so\'m',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                      // Header Card
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppColors.primaryGreen,
+                              AppColors.primaryGreenLight,
                             ],
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 32), 
-                      
-                      GestureDetector(
-                        onTap: () {
-                          final next = (_currentPage + 1) % 3;
-                          _pageController.animateToPage(
-                            next,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            //color:Colors.greenAccent,
-                          );
-                        },
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(24),
+                            bottomRight: Radius.circular(24),
+                          ),
+                        ),
+                        padding: const EdgeInsets.all(24),
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(
-                              height: 100,
-                              child: PageView.builder(
-                                controller: _pageController,
-                                itemCount: 3,
-                                onPageChanged: (index) {
-                                  setState(() {
-                                    _currentPage = index;
-                                  });
-                                },
-                                itemBuilder: (context, index) {
-                                  if (index == 0) {
-                                    final uzsToUsdConversion =
-                                        totalUZS / _exchangeRate;
-                                    return _buildBalanceCard(
-                                      'Mening Pulim',
-                                      '${_formatNumber(totalUZS.toInt())} UZS',
-                                      subtitle:
-                                          '≈ ${uzsToUsdConversion.toStringAsFixed(2)} USD',
-                                    );
-                                  } else if (index == 1) {
-                                    final usdToUzsConversion =
-                                        (totalUSD * _exchangeRate).toInt();
-                                    return _buildBalanceCard(
-                                      'Mening Dollarim',
-                                      '${_formatNumber(totalUSD.toInt())} USD',
-                                      subtitle:
-                                          '≈ ${_formatNumber(usdToUzsConversion)} UZS',
-                                    );
-                                  }
-
-                                  // 3-chi tab: Jami
-                                  return _buildTotalBalanceCard(
-                                    totalUZS.toInt(),
-                                    totalUSD.toInt(),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 40),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildPageIndicator(0),
-                                _buildPageIndicator(1),
-                                _buildPageIndicator(2),
+                                Text(
+                                  _cachedUserName != null
+                                      ? ' $_cachedUserName!'
+                                      : 'Xush kelibsiz!',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                                // Kurs ko'rsatish
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'Kurs \$',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(1),
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${_formatNumber(_exchangeRate.toInt())} so\'m',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-                // Hamyonlar Grid
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Mening Hamyonlarim',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                          // Plus tugmasi
-                          Material(
-                            elevation: 2,
-                            borderRadius: BorderRadius.circular(12),
-                            child: InkWell(
+                            const SizedBox(height: 32),
+
+                            GestureDetector(
                               onTap: () {
-                                print('➕ Plus bosildi');
-                                setState(() {
-                                  _showAddMenu = !_showAddMenu;
-                                });
+                                final next = (_currentPage + 1) % 3;
+                                _pageController.animateToPage(
+                                  next,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                  //color:Colors.greenAccent,
+                                );
                               },
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                height: 40,
-                                width: 40,
-                                decoration: BoxDecoration(
-                                  color: const Color.fromARGB(255, 53, 210, 181),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  _showAddMenu ? Icons.close : Icons.add,
-                                  color: const Color.fromARGB(255, 248, 250, 249),
-                                  size: 24,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      // Dropdown menu - inline
-                      if (_showAddMenu)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          child: Material(
-                            elevation: 8,
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
                               child: Column(
-                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  InkWell(
-                                    onTap: () {
-                                      print('🔧 Hamyon qo\'shish bosildi');
-                                      setState(() {
-                                        _showAddMenu = false;
-                                      });
-                                      _showAddWalletSheet();
-                                    },
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(12),
-                                      topRight: Radius.circular(12),
-                                    ),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.account_balance_wallet,
-                                            color: AppColors.primaryGreen,
-                                            size: 20,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          const Text(
-                                            'Hamyon qo\'shish',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                  SizedBox(
+                                    height: 100,
+                                    child: PageView.builder(
+                                      controller: _pageController,
+                                      itemCount: 3,
+                                      onPageChanged: (index) {
+                                        setState(() {
+                                          _currentPage = index;
+                                        });
+                                      },
+                                      itemBuilder: (context, index) {
+                                        if (index == 0) {
+                                          final uzsToUsdConversion =
+                                              totalUZS / _exchangeRate;
+                                          return _buildBalanceCard(
+                                            'Mening Pulim',
+                                            '${_formatNumber(totalUZS.toInt())} UZS',
+                                            subtitle:
+                                                '≈ ${uzsToUsdConversion.toStringAsFixed(2)} USD',
+                                          );
+                                        } else if (index == 1) {
+                                          final usdToUzsConversion =
+                                              (totalUSD * _exchangeRate)
+                                                  .toInt();
+                                          return _buildBalanceCard(
+                                            'Mening Dollarim',
+                                            '${_formatNumber(totalUSD.toInt())} USD',
+                                            subtitle:
+                                                '≈ ${_formatNumber(usdToUzsConversion)} UZS',
+                                          );
+                                        }
+
+                                        // 3-chi tab: Jami
+                                        return _buildTotalBalanceCard(
+                                          totalUZS.toInt(),
+                                          totalUSD.toInt(),
+                                        );
+                                      },
                                     ),
                                   ),
-                                  Divider(height: 1, color: Colors.grey[300]),
-                                  InkWell(
-                                    onTap: () {
-                                      print('💵 Kurs kiritish bosildi');
-                                      setState(() {
-                                        _showAddMenu = false;
-                                      });
-                                      _showUpdateExchangeRateSheet();
-                                    },
-                                    borderRadius: const BorderRadius.only(
-                                      bottomLeft: Radius.circular(12),
-                                      bottomRight: Radius.circular(12),
-                                    ),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.attach_money,
-                                            color: AppColors.primaryGreen,
-                                            size: 20,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          const Text(
-                                            'Kurs kiritish',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      _buildPageIndicator(0),
+                                      _buildPageIndicator(1),
+                                      _buildPageIndicator(2),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      if (state is HomeWalletsLoading)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(32.0),
-                            child: CircularProgressIndicator(),
-                          ),
-                        )
-                      else if (wallets.isEmpty)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(32.0),
-                            child: Text('Hamyonlar topilmadi'),
-                          ),
-                        )
-                      else
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            // Kartalarni 2 tadan qatorlarga bo'lish
-                            List<Widget> rows = [];
-                            for (int i = 0; i < wallets.length; i += 2) {
-                              List<Widget> rowChildren = [];
-                              
-                              // 1-chi karta
-                              rowChildren.add(
-                                Expanded(
-                                  child: _buildWalletCard(
-                                    wallets[i],
-                                    i,
-                                  ),
+                      ),
+                      const SizedBox(height: 32),
+                      // Hamyonlar Grid
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Mening Hamyonlarim',
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.w700),
                                 ),
-                              );
-                              
-                              // 2-chi karta (agar qatorda bo'lsa)
-                              if (i + 1 < wallets.length) {
-                                rowChildren.add(const SizedBox(width: 12));
-                                rowChildren.add(
-                                  Expanded(
-                                    child: _buildWalletCard(
-                                      wallets[i + 1],
-                                      i + 1,
+                                // Plus tugmasi
+                                Material(
+                                  elevation: 2,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: InkWell(
+                                    onTap: () {
+                                      print('➕ Plus bosildi');
+                                      setState(() {
+                                        _showAddMenu = !_showAddMenu;
+                                      });
+                                    },
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      height: 40,
+                                      width: 40,
+                                      decoration: BoxDecoration(
+                                        color: const Color.fromARGB(
+                                          255,
+                                          53,
+                                          210,
+                                          181,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        _showAddMenu ? Icons.close : Icons.add,
+                                        color: const Color.fromARGB(
+                                          255,
+                                          248,
+                                          250,
+                                          249,
+                                        ),
+                                        size: 24,
+                                      ),
                                     ),
                                   ),
-                                );
-                              } else {
-                                // Bo'sh joy
-                                rowChildren.add(const SizedBox(width: 12));
-                                rowChildren.add(const Expanded(child: SizedBox()));
-                              }
-                              
-                              rows.add(
-                                IntrinsicHeight(
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: rowChildren,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            // Dropdown menu - inline
+                            if (_showAddMenu)
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                child: Material(
+                                  elevation: 8,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        InkWell(
+                                          onTap: () {
+                                            print(
+                                              '🔧 Hamyon qo\'shish bosildi',
+                                            );
+                                            setState(() {
+                                              _showAddMenu = false;
+                                            });
+                                            _showAddWalletSheet();
+                                          },
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(12),
+                                            topRight: Radius.circular(12),
+                                          ),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(16),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.account_balance_wallet,
+                                                  color: AppColors.primaryGreen,
+                                                  size: 20,
+                                                ),
+                                                const SizedBox(width: 12),
+                                                const Text(
+                                                  'Hamyon qo\'shish',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        Divider(
+                                          height: 1,
+                                          color: Colors.grey[300],
+                                        ),
+                                        InkWell(
+                                          onTap: () {
+                                            print('💵 Kurs kiritish bosildi');
+                                            setState(() {
+                                              _showAddMenu = false;
+                                            });
+                                            _showUpdateExchangeRateSheet();
+                                          },
+                                          borderRadius: const BorderRadius.only(
+                                            bottomLeft: Radius.circular(12),
+                                            bottomRight: Radius.circular(12),
+                                          ),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(16),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.attach_money,
+                                                  color: AppColors.primaryGreen,
+                                                  size: 20,
+                                                ),
+                                                const SizedBox(width: 12),
+                                                const Text(
+                                                  'Kurs kiritish',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              );
-                              
-                              // Qatorlar orasida masofa
-                              if (i + 2 < wallets.length) {
-                                rows.add(const SizedBox(height: 12));
-                              }
-                            }
-                            
-                            return Column(
-                              children: rows,
-                            );
-                          },
+                              ),
+                            if (state is HomeWalletsLoading)
+                              const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(32.0),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              )
+                            else if (wallets.isEmpty)
+                              const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(32.0),
+                                  child: Text('Hamyonlar topilmadi'),
+                                ),
+                              )
+                            else
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  // Kartalarni 2 tadan qatorlarga bo'lish
+                                  List<Widget> rows = [];
+                                  for (int i = 0; i < wallets.length; i += 2) {
+                                    List<Widget> rowChildren = [];
+
+                                    // 1-chi karta
+                                    rowChildren.add(
+                                      Expanded(
+                                        child: _buildWalletCard(wallets[i], i),
+                                      ),
+                                    );
+
+                                    // 2-chi karta (agar qatorda bo'lsa)
+                                    if (i + 1 < wallets.length) {
+                                      rowChildren.add(
+                                        const SizedBox(width: 12),
+                                      );
+                                      rowChildren.add(
+                                        Expanded(
+                                          child: _buildWalletCard(
+                                            wallets[i + 1],
+                                            i + 1,
+                                          ),
+                                        ),
+                                      );
+                                    } else {
+                                      // Bo'sh joy
+                                      rowChildren.add(
+                                        const SizedBox(width: 12),
+                                      );
+                                      rowChildren.add(
+                                        const Expanded(child: SizedBox()),
+                                      );
+                                    }
+
+                                    rows.add(
+                                      IntrinsicHeight(
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: rowChildren,
+                                        ),
+                                      ),
+                                    );
+
+                                    // Qatorlar orasida masofa
+                                    if (i + 2 < wallets.length) {
+                                      rows.add(const SizedBox(height: 12));
+                                    }
+                                  }
+
+                                  return Column(children: rows);
+                                },
+                              ),
+                          ],
                         ),
+                      ),
+                      const SizedBox(height: 32),
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
-              ],
-            ),
+              );
+            },
           ),
-          );
-        },
+        ],
       ),
-    ],
-    ),
     );
   }
 
@@ -502,7 +516,7 @@ class _HomePageState extends State<HomePage> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.25),
-        
+
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
       ),
@@ -517,10 +531,9 @@ class _HomePageState extends State<HomePage> {
             children: [
               Text(
                 title,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: Colors.white70),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 4, right: 4),
@@ -543,9 +556,9 @@ class _HomePageState extends State<HomePage> {
           Text(
             _showBalance ? amount : '••••••',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           if (subtitle != null) ...[
             Text(
@@ -592,10 +605,9 @@ class _HomePageState extends State<HomePage> {
             children: [
               Text(
                 'Jami',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: Colors.white70),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
               ),
               GestureDetector(
                 onTap: () {
@@ -624,9 +636,9 @@ class _HomePageState extends State<HomePage> {
                           ? '${_formatNumber(totalInUZS)} UZS'
                           : '••••••',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -642,9 +654,9 @@ class _HomePageState extends State<HomePage> {
                           ? '${_formatNumber(totalInUSD)} USD'
                           : '••••••',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -658,14 +670,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
-//bu qism meni ano tepadigi plusni bosgand aochladigan showdilaogm 
+  //bu qism meni ano tepadigi plusni bosgand aochladigan showdilaogm
   Widget _buildWalletCard(WalletBalance wallet, int index) {
     final formattedAmount = _formatNumber(wallet.value.toInt());
     final displayText = _showBalance
         ? '$formattedAmount ${wallet.currency}'
         : '•••••• ${wallet.currency}';
-    
+
     // Summa uzunligiga qarab font size
     double fontSize = 15;
     if (formattedAmount.length > 12) {
@@ -675,10 +686,12 @@ class _HomePageState extends State<HomePage> {
     } else if (formattedAmount.length > 6) {
       fontSize = 14;
     }
-    
+
     return GestureDetector(
       onTap: () async {
-        await context.push('/stats?walletId=${wallet.id}&walletName=${Uri.encodeComponent(wallet.name)}&walletCurrency=${wallet.type}');
+        await context.push(
+          '/stats?walletId=${wallet.id}&walletName=${Uri.encodeComponent(wallet.name)}&walletCurrency=${wallet.type}',
+        );
         // Stats page'dan qaytganda hamyonlarni yangilash
         if (mounted) {
           context.read<HomeBloc>().add(HomeGetWalletsEvent());
@@ -690,10 +703,7 @@ class _HomePageState extends State<HomePage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              AppColors.primaryGreen,
-              AppColors.primaryGreenLight,
-            ],
+            colors: [AppColors.primaryGreen, AppColors.primaryGreenLight],
           ),
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
@@ -712,17 +722,9 @@ class _HomePageState extends State<HomePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  Icons.wallet_rounded,
-                  size: 32,
-                  color: Colors.white,
-                ),
+                Icon(Icons.wallet_rounded, size: 32, color: Colors.white),
                 if (index == 0)
-                  const Icon(
-                    Icons.check_circle,
-                    size: 16,
-                    color: Colors.white,
-                  ),
+                  const Icon(Icons.check_circle, size: 16, color: Colors.white),
               ],
             ),
             const SizedBox(height: 12),
@@ -752,7 +754,7 @@ class _HomePageState extends State<HomePage> {
   void _showAddWalletSheet() {
     final TextEditingController nameController = TextEditingController();
     int selectedTabIndex = 0; // 0 = UZS, 1 = USD
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -786,10 +788,7 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 24),
                   const Text(
                     'Yangi hamyon qo\'shish',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 24),
                   // Hamyon nomi input - yuqorida
@@ -842,14 +841,18 @@ class _HomePageState extends State<HomePage> {
                               }
 
                               // selectedTabIndex'ga qarab currency'ni aniqlash
-                              final currency = selectedTabIndex == 0 ? 'uzs' : 'usd';
+                              final currency = selectedTabIndex == 0
+                                  ? 'uzs'
+                                  : 'usd';
 
                               // BLoC orqali hamyon yaratish
-                              context.read<HomeBloc>().add(HomeCreateWalletEvent(
-                                name: name,
-                                currency: currency,
-                              ));
-                              
+                              context.read<HomeBloc>().add(
+                                HomeCreateWalletEvent(
+                                  name: name,
+                                  currency: currency,
+                                ),
+                              );
+
                               Navigator.pop(ctx);
                               nameController.clear();
                             },
@@ -861,8 +864,8 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                             child: Text(
-                              selectedTabIndex == 0 
-                                  ? 'So\'m hamyon qo\'shish' 
+                              selectedTabIndex == 0
+                                  ? 'So\'m hamyon qo\'shish'
                                   : 'Dollar hamyon qo\'shish',
                               style: const TextStyle(
                                 color: Colors.white,
@@ -888,7 +891,7 @@ class _HomePageState extends State<HomePage> {
     final TextEditingController kursController = TextEditingController(
       text: _formatNumber(_exchangeRate.toInt()),
     );
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -920,10 +923,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 24),
               const Text(
                 'Kurs yangilash',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
               // Kurs input
@@ -941,7 +941,7 @@ class _HomePageState extends State<HomePage> {
                   // Space'larni olib tashlash va formatlab qayta qo'yish
                   final clean = value.replaceAll(' ', '');
                   if (clean.isEmpty) return;
-                  
+
                   final number = int.tryParse(clean);
                   if (number != null) {
                     final formatted = _formatNumber(number);
@@ -990,17 +990,17 @@ class _HomePageState extends State<HomePage> {
                     });
 
                     // BLoC orqali API'ga kurs jo'natish
-                    context.read<HomeBloc>().add(HomeUpdateExchangeRateEvent(
-                      kurs: kursValue,
-                    ));
-                    
+                    context.read<HomeBloc>().add(
+                      HomeUpdateExchangeRateEvent(kurs: kursValue),
+                    );
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Kurs yangilandi'),
                         backgroundColor: AppColors.primaryGreen,
                       ),
                     );
-                    
+
                     Navigator.pop(ctx);
                   },
                   style: ElevatedButton.styleFrom(
@@ -1012,10 +1012,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   child: const Text(
                     'Kurs saqlash',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(color: Colors.white, fontSize: 16),
                   ),
                 ),
               ),

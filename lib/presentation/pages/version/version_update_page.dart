@@ -35,9 +35,9 @@ class VersionUpdateRequiredPage extends StatelessWidget {
                 color: Colors.orange.shade700,
               ),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Sarlavha
             Text(
               'Yangilanish kerak',
@@ -47,9 +47,9 @@ class VersionUpdateRequiredPage extends StatelessWidget {
                 color: AppColors.textPrimary,
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Xabar
             Text(
               'Siz eski versiyadan foydalanyapsiz. Dasturni ishlatish uchun yangi versiyaga yangilanish zarur.',
@@ -60,9 +60,9 @@ class VersionUpdateRequiredPage extends StatelessWidget {
                 height: 1.5,
               ),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Versiya ma'lumotlari
             Container(
               padding: const EdgeInsets.all(16),
@@ -86,10 +86,10 @@ class VersionUpdateRequiredPage extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 48),
-            
-            // Chiqish tugmasi
+
+            // Dasturdan chiqish tugmasi
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -107,16 +107,13 @@ class VersionUpdateRequiredPage extends StatelessWidget {
                 ),
                 child: const Text(
                   'Dasturdan chiqish',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Qo'shimcha ma'lumot
             Text(
               'Yangi versiyani Google Play Store yoki App Store\'dan yuklab oling',
@@ -139,10 +136,7 @@ class VersionUpdateRequiredPage extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 16,
-            color: AppColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
         ),
         Text(
           version,

@@ -107,20 +107,20 @@ class _RootLayoutState extends State<RootLayout> {
   }
 }
 
-
-
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
   redirect: (context, state) async {
-    // Splash va version-update page'dan redirect qilmaslik
-    if (state.matchedLocation == '/splash' || 
-        state.matchedLocation == '/version-update') {
+    // Splash, version-update, PIN setup/verify page'lardan redirect qilmaslik
+    if (state.matchedLocation == '/splash' ||
+        state.matchedLocation == '/version-update' ||
+        state.matchedLocation == '/pin-setup' ||
+        state.matchedLocation == '/pin-verify') {
       return null;
     }
 
     final prefs = AppPreferencesService();
     final hasCompleted = await prefs.hasCompletedOnboarding();
-    final token = await prefs.getAuthToken();
+    final hasPinCode = await prefs.hasPinCode();
 
     // Auth route larni aniqlash
     final isAuthRoute =
@@ -137,14 +137,20 @@ final GoRouter appRouter = GoRouter(
 
     // YANGI: SMS verification va create-user'dan keyin home/register'ga o'tishga ruxsat berish
     // Bu route'lardan redirect qilmaslik
-    if (state.matchedLocation == '/sms-verification' || 
+    if (state.matchedLocation == '/sms-verification' ||
         state.matchedLocation == '/create-user') {
       return null;
     }
 
     // Agar onboarding tugallangan bo'lsa va entry/phone-input'da bo'lsa
-    // Home sahifasiga yo'naltirish
-    if (hasCompleted && (state.matchedLocation == '/entry' || state.matchedLocation == '/phone-input')) {
+    // PIN code yoki Home sahifasiga yo'naltirish
+    if (hasCompleted &&
+        (state.matchedLocation == '/entry' ||
+            state.matchedLocation == '/phone-input')) {
+      // Agar PIN code o'rnatilmagan bo'lsa, PIN setup'ga o'tish
+      if (!hasPinCode) {
+        return '/pin-setup';
+      }
       return '/home';
     }
 
@@ -201,8 +207,10 @@ final GoRouter appRouter = GoRouter(
       path: '/version-update',
       name: 'version-update',
       builder: (context, state) {
-        final currentVersion = int.tryParse(state.uri.queryParameters['current'] ?? '1') ?? 1;
-        final requiredVersion = int.tryParse(state.uri.queryParameters['required'] ?? '1') ?? 1;
+        final currentVersion =
+            int.tryParse(state.uri.queryParameters['current'] ?? '1') ?? 1;
+        final requiredVersion =
+            int.tryParse(state.uri.queryParameters['required'] ?? '1') ?? 1;
         return VersionUpdateRequiredPage(
           currentVersion: currentVersion,
           requiredVersion: requiredVersion,
@@ -257,7 +265,7 @@ final GoRouter appRouter = GoRouter(
         final walletName = state.uri.queryParameters['walletName'];
         final walletCurrency = state.uri.queryParameters['walletCurrency'];
         return StatsPage(
-          walletId: walletId, 
+          walletId: walletId,
           walletName: walletName,
           walletCurrency: walletCurrency,
         );

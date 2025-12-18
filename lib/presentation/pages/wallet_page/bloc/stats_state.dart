@@ -78,5 +78,14 @@ class StatsWalletBalanceLoaded extends StatsState {
   @override
   List<Object?> get props => [kirimTotal, chiqimTotal, walletBalance];
 }
+
+class StatsDebtorsCreditorsLoaded extends StatsState {
+  final dynamic data;
+
+  const StatsDebtorsCreditorsLoaded({required this.data});
+
+  @override
+  List<Object?> get props => [data];
+}
   
   

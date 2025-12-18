@@ -11,6 +11,7 @@ import '../pages/version/version_update_page.dart';
 import '../pages/home_page/home_page.dart';
 import '../pages/wallet_page/stats_page.dart';
 import '../pages/profile_setings/settings_page.dart';
+import '../pages/profile_page/profile_page.dart';
 import '../pages/diagram_page.dart';
 import '../pages/wallet_page/add_transaction_page.dart';
 import '../pages/transactions_list_page.dart';
@@ -270,6 +271,13 @@ final GoRouter appRouter = GoRouter(
           walletCurrency: walletCurrency,
         );
       },
+    ),
+
+    // Profile Page Route
+    GoRoute(
+      path: '/profile',
+      name: 'profile',
+      builder: (context, state) => const ProfilePage(),
     ),
   ],
 );

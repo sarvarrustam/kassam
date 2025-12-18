@@ -246,9 +246,14 @@ class _HomePageState extends State<HomePage> {
                                         }
 
                                         // 3-chi tab: Jami
+                                        // UZS: 1-oynadagi UZS + (2-oynadagi USD * kurs)
+                                        final totalUzsWithUsdConverted = totalUZS + (totalUSD * _exchangeRate);
+                                        // USD: 2-oynadagi USD + (1-oynadagi UZS / kurs)
+                                        final totalUsdWithUzsConverted = totalUSD + (totalUZS / _exchangeRate);
+                                        
                                         return _buildTotalBalanceCard(
-                                          totalUZS.toInt(),
-                                          totalUSD.toInt(),
+                                          totalUzsWithUsdConverted.toInt(),
+                                          totalUsdWithUzsConverted,
                                         );
                                       },
                                     ),
@@ -553,22 +558,35 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            _showBalance ? amount : '••••••',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Text(
+                  _showBalance ? amount : '••••••',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(width: 8),
+                Text(
+                  _showBalance ? subtitle : '••••••',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
           ),
-          if (subtitle != null) ...[
-            Text(
-              _showBalance ? subtitle : '••••••',
-              style: const TextStyle(color: Colors.white70, fontSize: 11),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
         ],
       ),
     );
@@ -589,7 +607,7 @@ class _HomePageState extends State<HomePage> {
     return parts.reversed.join('');
   }
 
-  Widget _buildTotalBalanceCard(int totalInUZS, int totalInUSD) {
+  Widget _buildTotalBalanceCard(int totalInUZS, double totalInUSD) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.25),
@@ -652,7 +670,7 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     Text(
                       _showBalance
-                          ? '${_formatNumber(totalInUSD)} USD'
+                          ? '${totalInUSD.toStringAsFixed(2)} USD'
                           : '••••••',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Colors.white,
@@ -724,8 +742,6 @@ class _HomePageState extends State<HomePage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Icon(Icons.wallet_rounded, size: 32, color: Colors.white),
-                if (index == 0)
-                  const Icon(Icons.check_circle, size: 16, color: Colors.white),
               ],
             ),
             const SizedBox(height: 12),

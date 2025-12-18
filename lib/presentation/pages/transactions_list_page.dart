@@ -154,7 +154,8 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
                         children: [
                           FilterChip(
                             label: const Text('Hammasi'),
-                            selected: _filterType == null,
+                            selected: _filterType == null, 
+                            
                             onSelected: (selected) {
                               setState(() => _filterType = null);
                               Navigator.pop(context);

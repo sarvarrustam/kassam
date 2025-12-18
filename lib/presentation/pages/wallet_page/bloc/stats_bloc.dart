@@ -14,6 +14,7 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
     on<StatsCreateTransactionTypeEvent>(_onCreateTransactionType);
     on<StatsGetTransactionsEvent>(_onGetTransactions);
     on<StatsGetWalletBalanceEvent>(_onGetWalletBalance);
+    on<StatsGetDebtorsCreditors>(_onGetDebtorsCreditors);
   }
 
   Future<void> _onCreateTransaction(
@@ -178,6 +179,33 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
         ));
       } else {
         final errorMsg = response['error'] ?? 'Hamyon balansi yuklashda xatolik';
+        emit(StatsError(errorMsg));
+      }
+    } catch (e, stackTrace) {
+      print('❌ Exception: $e');
+      print('Stack trace: $stackTrace');
+      emit(StatsError('Xatolik: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onGetDebtorsCreditors(
+    StatsGetDebtorsCreditors event,
+    Emitter<StatsState> emit,
+  ) async {
+    try {
+      print('👥 Getting debtors/creditors list');
+
+      final response = await _apiService.getDebtorsCreditorsList();
+
+      print('👥 Debtors/creditors response: $response');
+
+      if (response['success'] == true) {
+        final data = response['data'];
+        print('👥 Debtors/creditors data: $data');
+
+        emit(StatsDebtorsCreditorsLoaded(data: data));
+      } else {
+        final errorMsg = response['error'] ?? 'Qarzkorlar ro\'yxatini yuklashda xatolik';
         emit(StatsError(errorMsg));
       }
     } catch (e, stackTrace) {

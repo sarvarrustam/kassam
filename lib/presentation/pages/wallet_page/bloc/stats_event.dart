@@ -83,4 +83,11 @@ class StatsGetWalletBalanceEvent extends StatsEvent {
   List<Object?> get props => [walletId, fromDate, toDate];
 }
 
+/// Qarzkorlar va kreditorlar ro'yxatini olish event
+class StatsGetDebtorsCreditors extends StatsEvent {
+  const StatsGetDebtorsCreditors();
+
+  @override
+  List<Object?> get props => [];
+}
 

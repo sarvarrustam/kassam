@@ -5,6 +5,7 @@ enum TransactionType {
   expense,     // Chiqim
   loanTaken,   // Qarz olish
   loanGiven,   // Qarz berish
+  conversion,  // Konvertatsiya
 }
 
 enum TransactionCategory {
@@ -68,6 +69,14 @@ class Transaction extends Equatable {
   final String? paymentMethod;
   final String? customCategoryName;
   final String? customCategoryEmoji;
+  
+  // Konvertatsiya uchun qo'shimcha field'lar
+  final String? walletKirim;  // Qaysi hamyonga kirdi
+  final String? walletChiqim; // Qaysi hamyondan chiqdi
+  
+  // Qarz olish/berish uchun qo'shimcha field'lar
+  final String? counterparty; // Kimdan/Kimga
+  final double? amountDebit;  // Qarz summasi
 
   const Transaction({
     required this.id,
@@ -82,6 +91,10 @@ class Transaction extends Equatable {
     this.paymentMethod,
     this.customCategoryName,
     this.customCategoryEmoji,
+    this.walletKirim,
+    this.walletChiqim,
+    this.counterparty,
+    this.amountDebit,
   });
 
   @override
@@ -98,6 +111,10 @@ class Transaction extends Equatable {
     paymentMethod,
     customCategoryName,
     customCategoryEmoji,
+    walletKirim,
+    walletChiqim,
+    counterparty,
+    amountDebit,
   ];
 
   // Kirim yoki chiqimni aniqlash

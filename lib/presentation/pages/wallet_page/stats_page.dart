@@ -263,17 +263,30 @@ class _StatsPageState extends State<StatsPage> {
     );
   }
 
+
+
+
+ // shu qism meni tarnzaksiyamni qarzda qo'shish uchun ishlatiladi
   void _showAddTransactionSheet() {
+    // Qarzkorlar ro'yxatini yuklash
+    _statsBloc.add(const StatsGetDebtorsCreditors());
+    
     // Main dialog for transaction
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (dialogCtx) {
         TransactionType type = TransactionType.expense;
+        String debtType = ''; // bo'sh = oddiy tranzaksiya, 'qarz_olish'/'qarz_berish'/'konvertatsiya'
         TransactionCategory? selectedCategory;
         Map<String, String>? selectedCustomCategory;
         final titleCtrl = TextEditingController();
         final amountCtrl = TextEditingController();
+        final debtPersonCtrl = TextEditingController(); // kimga/kimdan
+        String? selectedPersonId; // Tanlangan shaxs ID'si
+        final walletChiqimCtrl = TextEditingController(); // konvertatsiya uchun
+        final walletKirimCtrl = TextEditingController(); // konvertatsiya uchun
+        List<dynamic> debtorsList = []; // Qarzkorlar ro'yxati
 
         return BlocListener<StatsBloc, StatsState>(
           bloc: _statsBloc,
@@ -342,6 +355,10 @@ class _StatsPageState extends State<StatsPage> {
                   print('📊 Stats page - Balance (API): $_currentWalletBalance');
                 });
               }
+            } else if (state is StatsDebtorsCreditorsLoaded) {
+              // Qarzkorlar ro'yxati kelganda
+              print('👥 Debtors/creditors loaded: ${state.data}');
+              debtorsList = state.data is List ? state.data : [];
             } else if (state is StatsError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -429,72 +446,203 @@ class _StatsPageState extends State<StatsPage> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      // Chiqim/Kirim tanlash - rasmga o'xshash
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                      // Bitta qatorda scrollable toggle'lar
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
                         child: Row(
                           children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setStateSB(() {
-                                    type = TransactionType.income;
-                                    selectedCategory = null;
-                                    selectedCustomCategory = null;
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  decoration: BoxDecoration(
+                            // Kirim tugmasi
+                            GestureDetector(
+                              onTap: () {
+                                setStateSB(() {
+                                  type = TransactionType.income;
+                                  debtType = ''; // qarz holatini reset qilish
+                                  selectedCategory = null;
+                                  selectedCustomCategory = null;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: type == TransactionType.income
+                                      ? Colors.green.shade100
+                                      : Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
                                     color: type == TransactionType.income
-                                        ? Colors.green.shade100
+                                        ? Colors.green.shade700
                                         : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(12),
+                                    width: 2,
                                   ),
-                                  child: Text(
-                                    'kirim',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: type == TransactionType.income
-                                          ? Colors.green.shade700
-                                          : Colors.grey.shade600,
-                                    ),
+                                ),
+                                child: Text(
+                                  'kirim',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: type == TransactionType.income
+                                        ? Colors.green.shade700
+                                        : Colors.grey.shade600,
                                   ),
                                 ),
                               ),
                             ),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setStateSB(() {
-                                    type = TransactionType.expense;
-                                    selectedCategory = null;
-                                    selectedCustomCategory = null;
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  decoration: BoxDecoration(
+                            const SizedBox(width: 8),
+                            // Chiqim tugmasi
+                            GestureDetector(
+                              onTap: () {
+                                setStateSB(() {
+                                  type = TransactionType.expense;
+                                  debtType = ''; // qarz holatini reset qilish
+                                  selectedCategory = null;
+                                  selectedCustomCategory = null;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: type == TransactionType.expense
+                                      ? Colors.red.shade100
+                                      : Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
                                     color: type == TransactionType.expense
-                                        ? Colors.red.shade100
+                                        ? Colors.red.shade700
                                         : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(12),
+                                    width: 2,
                                   ),
-                                  child: Text(
-                                    'chiqim',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: type == TransactionType.expense
-                                          ? Colors.red.shade700
-                                          : Colors.grey.shade600,
-                                    ),
+                                ),
+                                child: Text(
+                                  'chiqim',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: type == TransactionType.expense
+                                        ? Colors.red.shade700
+                                        : Colors.grey.shade600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Qarz olish tugmasi
+                            GestureDetector(
+                              onTap: () {
+                                setStateSB(() {
+                                  debtType = 'qarz_olish';
+                                  selectedCategory = null;
+                                  selectedCustomCategory = null;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: debtType == 'qarz_olish'
+                                      ? Colors.blue.shade100
+                                      : Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: debtType == 'qarz_olish'
+                                        ? Colors.blue.shade700
+                                        : Colors.transparent,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Text(
+                                  'qarz olish',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: debtType == 'qarz_olish'
+                                        ? Colors.blue.shade700
+                                        : Colors.grey.shade600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Qarz berish tugmasi
+                            GestureDetector(
+                              onTap: () {
+                                setStateSB(() {
+                                  debtType = 'qarz_berish';
+                                  selectedCategory = null;
+                                  selectedCustomCategory = null;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: debtType == 'qarz_berish'
+                                      ? Colors.orange.shade100
+                                      : Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: debtType == 'qarz_berish'
+                                        ? Colors.orange.shade700
+                                        : Colors.transparent,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Text(
+                                  'qarz berish',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: debtType == 'qarz_berish'
+                                        ? Colors.orange.shade700
+                                        : Colors.grey.shade600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Konvertatsiya tugmasi
+                            GestureDetector(
+                              onTap: () {
+                                setStateSB(() {
+                                  debtType = 'konvertatsiya';
+                                  selectedCategory = null;
+                                  selectedCustomCategory = null;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: debtType == 'konvertatsiya'
+                                      ? Colors.amber.shade100
+                                      : Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: debtType == 'konvertatsiya'
+                                        ? Colors.amber.shade700
+                                        : Colors.transparent,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Text(
+                                  'konvertatsiya',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: debtType == ''
+                                        ? Colors.amber.shade700
+                                        : Colors.grey.shade600,
                                   ),
                                 ),
                               ),
@@ -502,6 +650,77 @@ class _StatsPageState extends State<StatsPage> {
                           ],
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      // Chiqim/Kirim turi tanlash (faqat qarz va konvertatsiya bo'lmasa)
+                      if (debtType.isEmpty)
+                        InkWell(
+                          onTap: () {
+                            _openTransactionTypePicker(
+                              dialogContext: dialogCtx,
+                              transactionType: type,
+                              onSelected: (selected) {
+                                final selectedName = selected['name'] ?? 'Boshqa';
+                                final selectedEmoji = (selected['emoji'] ?? '🏷️').isEmpty
+                                    ? '🏷️'
+                                    : selected['emoji']!;
+
+                                setStateSB(() {
+                                  selectedCategory = TransactionCategory.other;
+                                  selectedCustomCategory = {
+                                    'name': selectedName,
+                                    'emoji': selectedEmoji,
+                                    'type': selected['type'] ??
+                                        (type == TransactionType.income
+                                            ? 'income'
+                                            : 'expense'),
+                                  };
+
+                                  if ((selected['id'] ?? '').isNotEmpty) {
+                                    selectedCustomCategory!['id'] = selected['id']!;
+                                  }
+
+                                  // Sarlavhani avtomatik to'ldirmaslik
+                                });
+                              },
+                            );
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  selectedCustomCategory != null
+                                      ? (selectedCustomCategory!['name'] ?? 'Boshqa')
+                                      : (selectedCategory != null
+                                            ? _getCategoryName(selectedCategory!)
+                                            : (type == TransactionType.income
+                                                  ? 'Kirim turi tanlang'
+                                                  : 'Chiqim turi tanlang')),
+                                  style: TextStyle(
+                                    color: selectedCustomCategory != null ||
+                                            selectedCategory != null
+                                        ? Colors.black
+                                        : Colors.grey.shade600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.arrow_drop_down,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 12),
                       // Summa kiritish
                       TextField(
@@ -539,85 +758,110 @@ class _StatsPageState extends State<StatsPage> {
                         },
                       ),
                       const SizedBox(height: 12),
-                      // Chiqim/Kirim turi tanlash
-                      InkWell(
-                        onTap: () {
-                          _openTransactionTypePicker(
-                            dialogContext: dialogCtx,
-                            transactionType: type,
-                            onSelected: (selected) {
-                              final selectedName = selected['name'] ?? 'Boshqa';
-                              final selectedEmoji = (selected['emoji'] ?? '🏷️').isEmpty
-                                  ? '🏷️'
-                                  : selected['emoji']!;
-
-                              setStateSB(() {
-                                selectedCategory = TransactionCategory.other;
-                                selectedCustomCategory = {
-                                  'name': selectedName,
-                                  'emoji': selectedEmoji,
-                                  'type': selected['type'] ??
-                                      (type == TransactionType.income
-                                          ? 'income'
-                                          : 'expense'),
-                                };
-
-                                if ((selected['id'] ?? '').isNotEmpty) {
-                                  selectedCustomCategory!['id'] = selected['id']!;
-                                }
-
-                                // Sarlavhani avtomatik to'ldirmaslik
-                              });
-                            },
-                          );
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
+                      // Konvertatsiya uchun maxsus maydonlar
+                      if (debtType == 'konvertatsiya') ...[
+                        // Wallet Chiqim
+                        TextField(
+                          controller: walletChiqimCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Wallet Chiqim (qayerdan)',
+                            border: OutlineInputBorder(),
                           ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(8),
+                        ),
+                        const SizedBox(height: 12),
+                        // Wallet Kirim
+                        TextField(
+                          controller: walletKirimCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Wallet Kirim (qayerga)',
+                            border: OutlineInputBorder(),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                selectedCustomCategory != null
-                                    ? (selectedCustomCategory!['name'] ?? 'Boshqa')
-                                    : (selectedCategory != null
-                                          ? _getCategoryName(selectedCategory!)
-                                          : (type == TransactionType.income
-                                                ? 'Kirim turi tanlang'
-                                                : 'Chiqim turi tanlang')),
-                                style: TextStyle(
-                                  color: selectedCustomCategory != null ||
-                                          selectedCategory != null
-                                      ? Colors.black
-                                      : Colors.grey.shade600,
-                                  fontSize: 16,
+                        ),
+                        const SizedBox(height: 12),
+                        // Izoh (konvertatsiya uchun)
+                        TextField(
+                          controller: titleCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Izoh',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      // Kimga/Kimdan (faqat qarz uchun, konvertatsiya emas)
+                      if (debtType.isNotEmpty && debtType != 'konvertatsiya')
+                        GestureDetector(
+                          onTap: () {
+                            // Ro'yxatdan tanlash dialog
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: Text(debtType == 'qarz_olish' ? 'Kimdan' : 'Kimga'),
+                                content: SizedBox(
+                                  width: double.maxFinite,
+                                  child: debtorsList.isEmpty
+                                      ? const Center(
+                                          child: Padding(
+                                            padding: EdgeInsets.all(20),
+                                            child: Text('Ro\'yxat bo\'sh'),
+                                          ),
+                                        )
+                                      : ListView.builder(
+                                          shrinkWrap: true,
+                                          itemCount: debtorsList.length,
+                                          itemBuilder: (ctx, index) {
+                                            final person = debtorsList[index];
+                                            final name = person['name']?.toString() ?? '';
+                                            final phone = person['telephoneNumber']?.toString() ?? '';
+                                            final id = person['id']?.toString() ?? '';
+                                            
+                                            return ListTile(
+                                              title: Text(name),
+                                              subtitle: phone.isNotEmpty ? Text(phone) : null,
+                                              onTap: () {
+                                                setStateSB(() {
+                                                  debtPersonCtrl.text = name;
+                                                  selectedPersonId = id;
+                                                });
+                                                Navigator.pop(ctx);
+                                              },
+                                            );
+                                          },
+                                        ),
                                 ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text('Yopish'),
+                                  ),
+                                ],
                               ),
-                              Icon(
-                                Icons.arrow_drop_down,
-                                color: Colors.grey.shade600,
+                            );
+                          },
+                          child: AbsorbPointer(
+                            child: TextField(
+                              controller: debtPersonCtrl,
+                              decoration: InputDecoration(
+                                labelText: debtType == 'qarz_olish' ? 'Kimdan' : 'Kimga',
+                                border: const OutlineInputBorder(),
+                                suffixIcon: const Icon(Icons.arrow_drop_down),
                               ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Sarlavha kiritish
-                      TextField(
-                        controller: titleCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Izoh',
-                          border: OutlineInputBorder(),
+                      if (debtType.isNotEmpty && debtType != 'konvertatsiya')
+                        const SizedBox(height: 12),
+                      // Sarlavha kiritish (konvertatsiya uchun ham)
+                      if (debtType != 'konvertatsiya')
+                        TextField(
+                          controller: titleCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Izoh',
+                            border: OutlineInputBorder(),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
+                      if (debtType != 'konvertatsiya')
+                        const SizedBox(height: 16),
                       // OK va Bekor qilish tugmalari
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
@@ -870,6 +1114,10 @@ class _StatsPageState extends State<StatsPage> {
       },
     );
   }
+
+
+
+//shu royhatni dizaynlari hama qismi shu yerda
 
   @override
   Widget build(BuildContext context) {
@@ -1222,8 +1470,15 @@ class _StatsPageState extends State<StatsPage> {
                       final sorted = List<Transaction>.from(filtered)
                         ..sort((a, b) => b.date.compareTo(a.date));
                       return sorted.map((t) {
-                        final isExpense = t.type == TransactionType.expense;
-                        final bgGradient = isExpense
+                        // Rang tanlash: 
+                        // Qizil: expense (chiqim), loanGiven (qarz berish)
+                        // Yashil: income (kirim), loanTaken (qarz olish)
+                        // Sariq: conversion (konvertatsiya). 
+                        final isRed = t.type == TransactionType.expense || t.type == TransactionType.loanGiven;
+                        final isGreen = t.type == TransactionType.income || t.type == TransactionType.loanTaken;
+                        final isConversion = t.type == TransactionType.conversion;
+                        
+                        final bgGradient = isRed
                             ? const LinearGradient(
                                 colors: [
                                   Color.fromARGB(255, 209, 105, 103),
@@ -1232,14 +1487,23 @@ class _StatsPageState extends State<StatsPage> {
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               )
-                            : LinearGradient(
-                                colors: [
-                                  AppColors.primaryGreen,
-                                  AppColors.primaryGreenLight,
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              );
+                            : isConversion
+                                ? const LinearGradient(
+                                    colors: [
+                                      Color(0xFFFFA726), // Orange
+                                      Color(0xFFFFB74D), // Light Orange
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  )
+                                : LinearGradient(
+                                    colors: [
+                                      AppColors.primaryGreen,
+                                      AppColors.primaryGreenLight,
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  );
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -1255,9 +1519,25 @@ class _StatsPageState extends State<StatsPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    const SizedBox(height: 20), // Tepada bo'sh joy
+                                    // Faqat konvertatsiya uchun "Ayirboshlash" text
+                                    // if (t.type == TransactionType.conversion)
+                                    //   const Center(
+                                    //     child: Text(
+                                    //       '               Ayirboshlash',
+                                    //       style: TextStyle(
+                                    //         color: Colors.white,
+                                    //         fontWeight: FontWeight.bold,
+                                    //         fontSize: 18,
+                                    //       ),
+                                    //     ),
+                                    //   ),
+                                    // if (t.type == TransactionType.conversion)
+                                    //   const SizedBox(height: 12),
                                     // Tranzaksiya turi (customCategoryName)
                                     Text(
-                                      t.customCategoryName ?? 'Boshqa',
+                                      t.customCategoryName ?? 'Boshqa', 
+                                
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -1267,7 +1547,7 @@ class _StatsPageState extends State<StatsPage> {
                                     const SizedBox(height: 6),
                                     // Sana
                                     Text(
-                                      '${t.date.day.toString().padLeft(2, '0')}.${t.date.month.toString().padLeft(2, '0')}.${t.date.year} ${t.date.hour.toString().padLeft(2, '0')}:${t.date.minute.toString().padLeft(2, '0')}',
+                                      'Sana: ${t.date.day.toString().padLeft(2, '0')}.${t.date.month.toString().padLeft(2, '0')}.${t.date.year} ${t.date.hour.toString().padLeft(2, '0')}:${t.date.minute.toString().padLeft(2, '0')}',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 14,
@@ -1275,15 +1555,64 @@ class _StatsPageState extends State<StatsPage> {
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    // Hamyon nomi
-                                    Text(
-                                      'Hamyon: ${t.notes ?? widget.walletName ?? 'Noma\'lum'}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
+                                    
+                                    // Konvertatsiya uchun maxsus ko'rinish
+                                    if (t.type == TransactionType.conversion)
+                                      ...[
+                                        if (t.walletChiqim != null && t.walletChiqim!.isNotEmpty)
+                                          Text(
+                                            'Chiqim: ${t.walletChiqim}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        const SizedBox(height: 4),
+                                        if (t.walletKirim != null && t.walletKirim!.isNotEmpty)
+                                          Text(
+                                            'Kirim: ${t.walletKirim}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                      ]
+                                    // Qarz olish/berish uchun maxsus ko'rinish
+                                    else if (t.type == TransactionType.loanTaken || t.type == TransactionType.loanGiven)
+                                      ...[
+                                        if (t.counterparty != null && t.counterparty!.isNotEmpty)
+                                          Text(
+                                            '${t.type == TransactionType.loanTaken ? 'Kimdan' : 'Kimga'}: ${t.counterparty}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        const SizedBox(height: 4),
+                                        if (t.notes != null && t.notes!.isNotEmpty)
+                                          Text(
+                                            'Hamyon: ${t.notes}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                      ]
+                                    else
+                                      // Oddiy tranzaksiyalar uchun hamyon nomi
+                                      Text(
+                                        'Hamyon: ${t.notes ?? widget.walletName ?? 'Noma\'lum'}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
-                                    ),
+                                    
                                     // Komment (agar bo'sh bo'lmasa) - eng pastda
                                     if (t.title.isNotEmpty)
                                       Padding(
@@ -1297,12 +1626,37 @@ class _StatsPageState extends State<StatsPage> {
                                           ),
                                         ),
                                       ),
+                                    const SizedBox(height: 12), 
+                                    // Har bir tranzaksiya turi uchun pastda text - markazda
+                                    Center(
+                                      child: Text(
+                                        t.type == TransactionType.income
+                                            ? '                       Kirim'
+                                            : t.type == TransactionType.expense
+                                                ? '                    Chiqim'
+                                                : t.type == TransactionType.conversion
+                                                    ? '                       Ayirboshlash'
+                                                    : t.type == TransactionType.loanTaken
+                                                        ? '                        Qarz pul olish'
+                                                        : t.type == TransactionType.loanGiven
+                                                            ? '                      Qarz pul berish'
+                                                            : 'Boshqa',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
                                   ],
                                 ),
                               ),
+                            
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
+                                  const SizedBox(height: 20), // Tepada bo'sh joy
                                   Text(
                                     _showBalance 
                                       ? '${_formatNumber(t.amount.toInt())} ${_getCurrencySymbol()}'
@@ -1348,175 +1702,7 @@ class _StatsPageState extends State<StatsPage> {
                     }(),
                   ),
 
-                  // // Kategoriya Bo'yicha Analiz
-                  // Card(
-                  //   child: Padding(
-                  //     padding: const EdgeInsets.all(16),
-                  //     child: Column(
-                  //       crossAxisAlignment: CrossAxisAlignment.start,
-                  //       children: [
-                  //         Text(
-                  //           'Kategoriya Bo\'yicha',
-                  //           style: Theme.of(context).textTheme.titleMedium,
-                  //         ),
-                  //         const SizedBox(height: 16),
-                  //         if (categoryTotals.isEmpty)
-                  //           Center(
-                  //             child: Padding(
-                  //               padding: const EdgeInsets.symmetric(vertical: 20),
-                  //               child: Text(
-                  //                 'Hali Kategoriya Ma\'lumoti Yo\'q',
-                  //                 style: TextStyle(color: Colors.grey.shade600),
-                  //               ),
-                  //             ),
-                  //           )
-                  //         else
-                  //           Column(
-                  //             children: categoryTotals.entries.map((entry) {
-                  //               final total = entry.value;
-                  //               final percentage = (total / totalExpense * 100).clamp(0.0, 100.0);
-                  //               final transaction = Transaction(
-                  //                 id: '',
-                  //                 title: '',
-                  //                 amount: 0,
-                  //                 type: TransactionType.expense,
-                  //                 category: entry.key,
-                  //                 date: DateTime.now(),
-                  //               );
-
-                  //               return Padding(
-                  //                 padding: const EdgeInsets.only(bottom: 12),
-                  //                 child: Column(
-                  //                   crossAxisAlignment: CrossAxisAlignment.start,
-                  //                   children: [
-                  //                     Row(
-                  //                       children: [
-                  //                         Text(
-                  //                           transaction.getCategoryEmoji(),
-                  //                           style: const TextStyle(fontSize: 20),
-                  //                         ),
-                  //                         const SizedBox(width: 12),
-                  //                         Expanded(
-                  //                           child: Column(
-                  //                             crossAxisAlignment: CrossAxisAlignment.start,
-                  //                             children: [
-                  //                               Text(
-                  //                                 transaction.getCategoryName(),
-                  //                                 style: const TextStyle(
-                  //                                   fontWeight: FontWeight.w600,
-                  //                                   fontSize: 13,
-                  //                                 ),
-                  //                               ),
-                  //                               Text(
-                  //                                 '${percentage.toStringAsFixed(1)}%',
-                  //                                 style: TextStyle(
-                  //                                   fontSize: 11,
-                  //                                   color: Colors.grey.shade600,
-                  //                                 ),
-                  //                               ),
-                  //                             ],
-                  //                           ),
-                  //                         ),
-                  //                         Text(
-                  //                           '${total.toStringAsFixed(0)} UZS',
-                  //                           style: const TextStyle(
-                  //                             fontWeight: FontWeight.bold,
-                  //                             fontSize: 13,
-                  //                           ),
-                  //                         ),
-                  //                       ],
-                  //                     ),
-                  //                     const SizedBox(height: 8),
-                  //                     ClipRRect(
-                  //                       borderRadius: BorderRadius.circular(4),
-                  //                       child: LinearProgressIndicator(
-                  //                         value: percentage / 100,
-                  //                         minHeight: 6,
-                  //                         backgroundColor: Colors.grey.shade200,
-                  //                         valueColor: AlwaysStoppedAnimation(
-                  //                           Color(
-                  //                             int.parse(
-                  //                               'FF${transaction.getCategoryColor()}',
-                  //                               radix: 16,
-                  //                             ),
-                  //                           ),
-                  //                         ),
-                  //                       ),
-                  //                     ),
-                  //                   ],
-                  //                 ),
-                  //               );
-                  //             }).toList(),
-                  //           ),
-                  //       ],
-                  //     ),
-                  //   ),
-                  // ),
-                  // const SizedBox(height: 24),
-
-                  // Eng Ko'p Xarajat Kategoriyasi
-                  // if (mostExpensive != null)
-                  //   Card(
-                  //     color: Color(
-                  //       int.parse(
-                  //         'FF${Transaction(id: '', title: '', amount: 0, type: TransactionType.expense, category: mostExpensive, date: DateTime.now()).getCategoryColor()}',
-                  //         radix: 16,
-                  //       ),
-                  //     ).withValues(alpha: 0.1),
-                  //     child: Padding(
-                  //       padding: const EdgeInsets.all(16),
-                  //       child: Column(
-                  //         crossAxisAlignment: CrossAxisAlignment.start,
-                  //         children: [
-                  //           Text(
-                  //             'Eng Ko\'p Xarajat',
-                  //             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  //               color: Colors.grey.shade600,
-                  //             ),
-                  //           ),
-                  //           const SizedBox(height: 12),
-                  //           Row(
-                  //             children: [
-                  //               Text(
-                  //                 Transaction(
-                  //                   id: '',
-                  //                   title: '',
-                  //                   amount: 0,
-                  //                   type: TransactionType.expense,
-                  //                   category: mostExpensive,
-                  //                   date: DateTime.now(),
-                  //                 ).getCategoryEmoji(),
-                  //                 style: const TextStyle(fontSize: 32),
-                  //               ),
-                  //               const SizedBox(width: 12),
-                  //               Column(
-                  //                 crossAxisAlignment: CrossAxisAlignment.start,
-                  //                 children: [
-                  //                   Text(
-                  //                     Transaction(
-                  //                       id: '',
-                  //                       title: '',
-                  //                       amount: 0,
-                  //                       type: TransactionType.expense,
-                  //                       category: mostExpensive,
-                  //                       date: DateTime.now(),
-                  //                     ).getCategoryName(),
-                  //                     style: const TextStyle(
-                  //                       fontWeight: FontWeight.bold,
-                  //                       fontSize: 16,
-                  //                     ),
-                  //                   ),
-                  //                   Text(
-                  //                     '${categoryTotals[mostExpensive]?.toStringAsFixed(0) ?? 0} UZS',
-                  //                     style: TextStyle(
-                  //                       color: Colors.grey.shade600,
-                  //                       fontSize: 12,
-                  //                     ),
-                  //                   ),
-                  //                 ],
-                  //               ),
-                  //             ],
-                  //           ),
+                
                 ],
               ),
             ),
@@ -1591,39 +1777,7 @@ class _StatsPageState extends State<StatsPage> {
     }
   }
 
-  // ignore: unused_element
-  IconData _getCategoryIcon(TransactionCategory category) {
-    switch (category) {
-      case TransactionCategory.salary:
-        return Icons.work;
-      case TransactionCategory.gift:
-        return Icons.card_giftcard;
-      case TransactionCategory.investment:
-        return Icons.trending_up;
-      case TransactionCategory.loan:
-        return Icons.account_balance;
-      case TransactionCategory.grocery:
-        return Icons.shopping_cart;
-      case TransactionCategory.restaurant:
-        return Icons.restaurant;
-      case TransactionCategory.transport:
-        return Icons.directions_car;
-      case TransactionCategory.utilities:
-        return Icons.home;
-      case TransactionCategory.entertainment:
-        return Icons.movie;
-      case TransactionCategory.healthcare:
-        return Icons.health_and_safety;
-      case TransactionCategory.shopping:
-        return Icons.shopping_bag;
-      case TransactionCategory.education:
-        return Icons.school;
-      case TransactionCategory.subscription:
-        return Icons.subscriptions;
-      case TransactionCategory.other:
-        return Icons.more_horiz;
-    }
-  }
+  
 
   double _calculateExpenseTotal() {
     final filtered = _transactions.where((t) {
@@ -1678,6 +1832,10 @@ class _StatsPageState extends State<StatsPage> {
     return parts.reversed.join('');
   }
 
+
+
+
+//shu qismda ranglarni berb yuvoryapmz bazadan ushab. 
   void _parseAndSaveTransactions(dynamic data) {
     try {
       print('📊 Parsing transactions data: $data');
@@ -1689,7 +1847,6 @@ class _StatsPageState extends State<StatsPage> {
       
       // Yangi tranzaksiyalar ro'yxati
       final newTransactions = <Transaction>[];
-      final existingIds = _transactions.map((t) => t.id).toSet();
       
       // Sanasiga qarab tartiblash (eskisidan yangisiga, keyin UI da reverse bo'ladi)
       transactionsList.sort((a, b) {
@@ -1706,25 +1863,48 @@ class _StatsPageState extends State<StatsPage> {
                    item['id']?.toString() ?? 
                    DateTime.now().millisecondsSinceEpoch.toString();
         
-        // Agar bu tranzaksiya allaqachon mavjud bo'lsa, o'tkazib yuborish
-        if (existingIds.contains(id)) {
-          print('⏭️ Skipping duplicate transaction ID: $id');
-          continue;
-        }
-        
-        print('➕ Adding new transaction ID: $id');
+        print('➕ Adding transaction ID: $id');
         
         final amount = double.tryParse(item['amount']?.toString() ?? '0') ?? 0.0;
-        final typeString = item['type']?.toString().toLowerCase() ?? '';
+        final typeString = item['type']?.toString().toLowerCase().trim() ?? '';
+        final transactionTypeString = item['transactiontype']?.toString().toLowerCase().trim() ?? '';
         print('🔍 Transaction type from API: "${item['type']}" -> parsed: "$typeString"');
-        final type = typeString == 'kirim' 
-            ? TransactionType.income 
-            : TransactionType.expense;
+        print('🔍 TransactionType field: "${item['transactiontype']}" -> parsed: "$transactionTypeString"');
+        
+        // Type'ni aniqlash - type field'ini tekshirish
+        TransactionType type;
+        if (typeString.contains('qarzpulolish') || typeString == 'qarzpulolish') {
+          type = TransactionType.loanTaken;
+          print('✅ Detected QARZ OLISH - will be GREEN');
+        } else if (typeString.contains('qarzpulberish') || typeString == 'qarzpulberish') {
+          type = TransactionType.loanGiven;
+          print('✅ Detected QARZ BERISH - will be RED');
+        } else if (typeString.contains('kirim')) {
+          type = TransactionType.income;
+          print('✅ Detected KIRIM - will be GREEN');
+        } else if (typeString.contains('chiqim')) {
+          type = TransactionType.expense;
+          print('✅ Detected CHIQIM - will be RED');
+        } else if (typeString.contains('konvertatsiya') || typeString.contains('konvert')) {
+          type = TransactionType.conversion;
+          print('✅ Detected CONVERSION - will be ORANGE');
+        } else {
+          type = TransactionType.expense; // Default
+          print('⚠️ Unknown type: "$typeString" - defaulting to expense');
+        }
         final comment = item['comment']?.toString() ?? '';
         final transactionTypeName = item['transactionType']?.toString() ?? 
                                      item['transactionTypeName']?.toString() ?? 
                                      'Boshqa';
         final walletName = item['wallet']?.toString() ?? '';
+        
+        // Konvertatsiya uchun qo'shimcha ma'lumotlar
+        final walletKirim = item['walletKirim']?.toString() ?? '';
+        final walletChiqim = item['walletChiqim']?.toString() ?? '';
+        
+        // Qarz olish/berish uchun qo'shimcha ma'lumotlar
+        final counterparty = item['counterparty']?.toString() ?? ''; // Kimdan/Kimga
+        final amountDebit = double.tryParse(item['amountdebit']?.toString() ?? '0') ?? 0.0;
         
         // Sana parse qilish - dd.MM.yyyy HH:mm:ss formatidan
         DateTime date = DateTime.now();
@@ -1767,6 +1947,10 @@ class _StatsPageState extends State<StatsPage> {
           customCategoryName: transactionTypeName, // Tranzaksiya turi
           customCategoryEmoji: '🏷️',
           notes: walletName, // Hamyon nomini notes'ga saqlaymiz
+          walletKirim: walletKirim,
+          walletChiqim: walletChiqim,
+          counterparty: counterparty, // Kimdan/Kimga
+          amountDebit: amountDebit,   // Qarz summasi
         );
         
         newTransactions.add(transaction);
@@ -1775,7 +1959,10 @@ class _StatsPageState extends State<StatsPage> {
       
       // Yangi tranzaksiyalarni ro'yxatga qo'shish
       setState(() {
-        _transactions.addAll(newTransactions);
+        // API'dan kelgan barcha tranzaksiyalarni yangilash
+        _transactions.clear(); // Eski tranzaksiyalarni tozalash
+        _transactions.addAll(newTransactions); // Yangilarini qo'shish
+        print('🔄 Replaced all transactions: ${newTransactions.length} items');
       });
       
       print('✅ Transactions parsed and saved (${transactionsList.length} items)');

@@ -593,7 +593,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       case TransactionType.loanTaken:
         return Colors.blue;
       case TransactionType.loanGiven:
-        return Colors.orange;
+        return Colors.orange;  
+      case TransactionType.conversion:
+        return const Color(0xFFFFA726); // Orange for conversion
     }
   }
 }

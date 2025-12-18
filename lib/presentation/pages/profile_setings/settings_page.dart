@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kassam/presentation/blocs/user/user_bloc.dart';
 import '../../theme/app_colors.dart';
 import '../../../arch/bloc/theme_bloc.dart';
+
 import '../../../data/services/app_preferences_service.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -58,24 +60,41 @@ class _SettingsPageState extends State<SettingsPage> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Abdullayev Anvar',
-                              style: Theme.of(context).textTheme.headlineSmall
-                                  ?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
+                        Expanded(
+                          child: BlocBuilder<UserBloc, UserState>(
+                            builder: (context, userState) {
+                              String userName = 'Foydalanuvchi';
+                              String userPhone = '';
+                              
+                              if (userState is UserLoaded) {
+                                userName = userState.user.name ?? 'Foydalanuvchi';
+                               // userPhone = userState.user.phone ?? '';
+                              }
+                              
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    userName,
+                                    style: Theme.of(context).textTheme.headlineSmall
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '+998 (99) 123 45 67',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: Colors.white70),
-                            ),
-                          ],
+                                  const SizedBox(height: 4),
+                                  if (userPhone.isNotEmpty)
+                                    Text(
+                                      userPhone,
+                                      style: Theme.of(context).textTheme.bodyMedium
+                                          ?.copyWith(color: Colors.white70),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -134,17 +153,19 @@ class _SettingsPageState extends State<SettingsPage> {
                       title: 'Profil',
                       subtitle: 'Shaxsiy ma\'lumotlarni tahrir qiling',
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {},
+                      onTap: () {
+                        context.push('/profile');
+                      },
                     ),
                     const SizedBox(height: 16),
-                    _buildSettingItem(
-                      context,
-                      icon: Icons.security,
-                      title: 'Xavfsizlik',
-                      subtitle: 'Parol va ruxsatlar',
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {},
-                    ),
+                    // _buildSettingItem(
+                    //   context,
+                    //   icon: Icons.security,
+                    //   title: 'Xavfsizlik',
+                    //   subtitle: 'Parol va ruxsatlar',
+                    //   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    //   onTap: () {},
+                    // ),
                     const SizedBox(height: 16),
                     _buildSettingItem(
                       context,

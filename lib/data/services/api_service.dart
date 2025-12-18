@@ -42,6 +42,7 @@ class ApiService {
   final String getTransactionTypes = 'Kassam/hs/KassamUrl/getTransactionTypes';
   final String transactionTypesCreate = 'Kassam/hs/KassamUrl/transactionTypesCreate';
   final String getWalletBalance = 'Kassam/hs/KassamUrl/getWalletBalance';
+  final String getDebtorsCreditors = 'Kassam/hs/KassamUrl/getDebtorsCreditors';
 
 
 
@@ -652,6 +653,32 @@ class ApiService {
       };
     }
   }
-}
 
+  /// Qarzkorlar va kreditorlar ro'yxatini olish
+  Future<Map<String, dynamic>> getDebtorsCreditorsList() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final token = sp.getString('auth_token') ?? _authToken;
+
+      print('👥 Getting debtors/creditors list');
+      print('👥 Token: $token');
+
+      final response = await get(
+        getDebtorsCreditors,
+        token: token,
+      );
+
+      print('👥 Debtors/creditors response: $response');
+      return response;
+    } catch (e) {
+      print('❌ Get debtors/creditors error: $e');
+      return {
+        'success': false,
+        'error': 'Qarzkorlar ro\'yxatini yuklashda xatolik: $e',
+        'errorCode': 0,
+        'data': [],
+      };
+    }
+  }
+}
 

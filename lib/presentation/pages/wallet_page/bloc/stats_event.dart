@@ -91,3 +91,55 @@ class StatsGetDebtorsCreditors extends StatsEvent {
   List<Object?> get props => [];
 }
 
+/// Yangi qarzkor/kreditor yaratish event
+class StatsCreateDebtorCreditor extends StatsEvent {
+  final String name;
+  final String telephoneNumber;
+  
+  const StatsCreateDebtorCreditor({
+    required this.name,
+    required this.telephoneNumber,
+  });
+
+  @override
+  List<Object?> get props => [name, telephoneNumber];
+}
+
+/// Qarz operatsiyasini yaratish event
+class StatsCreateTransactionDebt extends StatsEvent {
+  final String transactionTypesId;
+  final String type; // qarzPulBerish, qarzPulOlish
+  final String walletId;
+  final String debtorCreditorId;
+  final bool previousDebt;
+  final String currency; // uzs, usd
+  final double amount;
+  final double amountDebt;
+  final String? comment;
+
+  const StatsCreateTransactionDebt({
+    required this.transactionTypesId,
+    required this.type,
+    required this.walletId,
+    required this.debtorCreditorId,
+    required this.previousDebt,
+    required this.currency,
+    required this.amount,
+    required this.amountDebt,
+    this.comment,
+  });
+
+  @override
+  List<Object?> get props => [
+    transactionTypesId,
+    type,
+    walletId,
+    debtorCreditorId,
+    previousDebt,
+    currency,
+    amount,
+    amountDebt,
+    comment,
+  ];
+}
+

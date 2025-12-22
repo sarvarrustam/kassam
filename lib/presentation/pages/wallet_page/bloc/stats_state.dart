@@ -87,5 +87,33 @@ class StatsDebtorsCreditorsLoaded extends StatsState {
   @override
   List<Object?> get props => [data];
 }
+
+/// Yangi qarzkor/kreditor yaratildi
+class StatsDebtorCreditorCreated extends StatsState {
+  final String message;
+  final dynamic data;
+
+  const StatsDebtorCreditorCreated({
+    required this.message,
+    this.data,
+  });
+
+  @override
+  List<Object?> get props => [message, data];
+}
+
+/// Qarz operatsiyasi yaratildi
+class StatsTransactionDebtCreated extends StatsState {
+  final String message;
+  final dynamic data;
+
+  const StatsTransactionDebtCreated({
+    required this.message,
+    this.data,
+  });
+
+  @override
+  List<Object?> get props => [message, data];
+}
   
   

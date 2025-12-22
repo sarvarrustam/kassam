@@ -43,6 +43,7 @@ class ApiService {
   final String transactionTypesCreate = 'Kassam/hs/KassamUrl/transactionTypesCreate';
   final String getWalletBalance = 'Kassam/hs/KassamUrl/getWalletBalance';
   final String getDebtorsCreditors = 'Kassam/hs/KassamUrl/getDebtorsCreditors';
+  final String debtorCreditorCreate = 'Kassam/hs/KassamUrl/debtorCreditorCreate';
 
 
 
@@ -677,6 +678,186 @@ class ApiService {
         'error': 'Qarzkorlar ro\'yxatini yuklashda xatolik: $e',
         'errorCode': 0,
         'data': [],
+      };
+    }
+  }
+
+  // Yangi qarzkor/kreditor yaratish
+  Future<Map<String, dynamic>> createDebtorCreditor({
+    required String name,
+    required String telephoneNumber,
+  }) async {
+    print('👤 Creating debtor/creditor: $name, $telephoneNumber');
+    
+    try {
+      // SharedPreferences'dan token olish
+      final sp = await SharedPreferences.getInstance();
+      final token = sp.getString('auth_token') ?? _authToken;
+      print('👤 Token: $token');
+      
+      final body = {
+        'name': name,
+        'telephoneNumber': telephoneNumber,
+      };
+      
+      // Custom headers bilan
+      final headers = getHeaders();
+      if (token != null && token.isNotEmpty) {
+        headers['token'] = token;
+      }
+      
+      Response response;
+      try {
+        response = await _dio.post(
+          debtorCreditorCreate,
+          data: body,
+          options: Options(
+            headers: headers,
+            validateStatus: (status) {
+              return status != null && status >= 200 && status < 600;
+            },
+          ),
+        );
+      } on DioException catch (e) {
+        print('👤 DioException: ${e.message}');
+        return {
+          'success': false,
+          'message': 'Internetga ulanishda xatolik: ${e.message}',
+          'data': null,
+        };
+      }
+      
+      print('👤 Response: ${response.data}');
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        
+        if (data['error'] == false) {
+          print('👤 Debtor/creditor created successfully');
+          return {
+            'success': true,
+            'message': data['errorMassage'] ?? 'Muvaffaqiyatli qo\'shildi',
+            'data': data['data'],
+          };
+        } else {
+          print('👤 Error in response: ${data['errorMassage']}');
+          return {
+            'success': false,
+            'message': data['errorMassage'] ?? 'Xatolik yuz berdi',
+            'data': null,
+          };
+        }
+      } else {
+        print('👤 HTTP Error: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': 'Server xatosi: ${response.statusCode}',
+          'data': null,
+        };
+      }
+    } catch (e) {
+      print('👤 Exception in createDebtorCreditor: $e');
+      return {
+        'success': false,
+        'message': 'Internetga ulanishda xatolik',
+        'data': null,
+      };
+    }
+  }
+
+  // Qarz operatsiyasini yaratish
+  Future<Map<String, dynamic>> createTransactionDebt({
+    required String transactionTypesId,
+    required String type, // qarzPulBerish, qarzPulOlish
+    required String walletId,
+    required String debtorCreditorId,
+    required bool previousDebt,
+    required String currency, // uzs, usd
+    required double amount,
+    required double amountDebt,
+    String? comment,
+  }) async {
+    print('💰 Creating transaction debt: $type, amount: $amount');
+    
+    try {
+      // SharedPreferences'dan token olish
+      final sp = await SharedPreferences.getInstance();
+      final token = sp.getString('auth_token') ?? _authToken;
+      print('💰 Token: $token');
+      
+      final body = {
+        'transactionTypesId': transactionTypesId,
+        'type': type,
+        'walletId': walletId,
+        'debtorCreditorId': debtorCreditorId,
+        'previousDebt': previousDebt,
+        'currency': currency.toLowerCase(),
+        'amount': amount,
+        'amountDebt': amountDebt,
+        if (comment != null && comment.isNotEmpty) 'comment': comment,
+      };
+      
+      // Custom headers bilan
+      final headers = getHeaders();
+      if (token != null && token.isNotEmpty) {
+        headers['token'] = token;
+      }
+      
+      Response response;
+      try {
+        response = await _dio.post(
+          'https://master.cloudhoff.uz/Kassam/hs/KassamUrl/transactionDebtsCreate',
+          data: body,
+          options: Options(
+            headers: headers,
+            validateStatus: (status) {
+              return status != null && status >= 200 && status < 600;
+            },
+          ),
+        );
+      } on DioException catch (e) {
+        print('💰 DioException: ${e.message}');
+        return {
+          'success': false,
+          'message': 'Internetga ulanishda xatolik: ${e.message}',
+          'data': null,
+        };
+      }
+      
+      print('💰 Response: ${response.data}');
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        
+        if (data['error'] == false) {
+          print('💰 Transaction debt created successfully');
+          return {
+            'success': true,
+            'message': data['errorMassage'] ?? 'Qarz operatsiyasi muvaffaqiyatli yaratildi',
+            'data': data['data'],
+          };
+        } else {
+          print('💰 Error in response: ${data['errorMassage']}');
+          return {
+            'success': false,
+            'message': data['errorMassage'] ?? 'Xatolik yuz berdi',
+            'data': null,
+          };
+        }
+      } else {
+        print('💰 HTTP Error: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': 'Server xatosi: ${response.statusCode}',
+          'data': null,
+        };
+      }
+    } catch (e) {
+      print('💰 Exception in createTransactionDebt: $e');
+      return {
+        'success': false,
+        'message': 'Internetga ulanishda xatolik',
+        'data': null,
       };
     }
   }

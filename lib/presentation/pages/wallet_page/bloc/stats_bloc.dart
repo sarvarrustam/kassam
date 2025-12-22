@@ -15,6 +15,8 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
     on<StatsGetTransactionsEvent>(_onGetTransactions);
     on<StatsGetWalletBalanceEvent>(_onGetWalletBalance);
     on<StatsGetDebtorsCreditors>(_onGetDebtorsCreditors);
+    on<StatsCreateDebtorCreditor>(_onCreateDebtorCreditor);
+    on<StatsCreateTransactionDebt>(_onCreateTransactionDebt);
   }
 
   Future<void> _onCreateTransaction(
@@ -215,4 +217,60 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
     }
   }
 
+  Future<void> _onCreateDebtorCreditor(
+    StatsCreateDebtorCreditor event,
+    Emitter<StatsState> emit,
+  ) async {
+    try {
+      final result = await _apiService.createDebtorCreditor(
+        name: event.name,
+        telephoneNumber: event.telephoneNumber,
+      );
+
+      if (result['success']) {
+        emit(StatsDebtorCreditorCreated(
+          message: result['message'],
+          data: result['data'],
+        ));
+      } else {
+        emit(StatsError(result['message']));
+      }
+    } catch (e) {
+      emit(StatsError('Xatolik: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onCreateTransactionDebt(
+    StatsCreateTransactionDebt event,
+    Emitter<StatsState> emit,
+  ) async {
+    try {
+      emit(const StatsLoading());
+      
+      print('💰 Creating transaction debt: ${event.type}, amount: ${event.amount}');
+      
+      final result = await _apiService.createTransactionDebt(
+        transactionTypesId: event.transactionTypesId,
+        type: event.type,
+        walletId: event.walletId,
+        debtorCreditorId: event.debtorCreditorId,
+        previousDebt: event.previousDebt,
+        currency: event.currency,
+        amount: event.amount,
+        amountDebt: event.amountDebt,
+        comment: event.comment,
+      );
+
+      if (result['success']) {
+        emit(StatsTransactionDebtCreated(
+          message: result['message'],
+          data: result['data'],
+        ));
+      } else {
+        emit(StatsError(result['message']));
+      }
+    } catch (e) {
+      emit(StatsError('Xatolik: ${e.toString()}'));
+    }
+  }
 }

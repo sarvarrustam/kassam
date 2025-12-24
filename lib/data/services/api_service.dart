@@ -414,6 +414,26 @@ class ApiService {
     }
   }
 
+  /// Kurs olish
+  Future<Map<String, dynamic>> getExchangeRate() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final token = sp.getString('auth_token') ?? _authToken;
+
+      final response = await get(
+        getKurs,
+        token: token,
+      );
+      return response;
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Kursni olishda xatolik: $e',
+        'data': {},
+      };
+    }
+  }
+
   /// Kurs yangilash
   Future<Map<String, dynamic>> updateExchangeRate(double kurs) async {
     try {

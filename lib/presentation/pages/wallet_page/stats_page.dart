@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kassam/presentation/theme/app_colors.dart';
 import 'package:kassam/data/models/transaction_model.dart';
+import 'package:kassam/data/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kassam/presentation/pages/wallet_page/bloc/stats_bloc.dart';
 import 'package:kassam/core/services/connectivity_service.dart';
@@ -47,6 +48,9 @@ class _StatsPageState extends State<StatsPage> {
   // Qarzkorlar ro'yxati (API dan)
   List<dynamic> _debtorsList = [];
 
+  // Exchange rate (default 12000, but will be loaded from SharedPreferences)
+  double _exchangeRate = 12000.0;
+
   // Dialog refresh callback
   Function? _dialogRefreshCallback;
 
@@ -58,10 +62,46 @@ class _StatsPageState extends State<StatsPage> {
     if (widget.walletId != null) {
       _selectedWalletId = widget.walletId;
     }
+    _loadExchangeRate(); // Kursni yuklash
     _loadCustomCategories();
     _loadInitialTransactions();
     // Qarzkorlar ro'yxatini oldindan yuklash
     _statsBloc.add(const StatsGetDebtorsCreditors());
+  }
+
+  Future<void> _loadExchangeRate() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      // Kursni SharedPreferences dan olish (default 12000)
+      final savedRate = sp.getDouble('exchange_rate_usd') ?? 12000.0;
+      setState(() {
+        _exchangeRate = savedRate;
+      });
+      print('📊 Exchange rate loaded from SP: $_exchangeRate');
+      
+      // API dan yangi kurs olishga urindi (optional)
+      try {
+        final apiService = ApiService();
+        final response = await apiService.getExchangeRate();
+        if (response['success'] == true && response['data'] != null) {
+          final apiRate = (response['data']['kurs'] ?? savedRate).toDouble();
+          if (apiRate != savedRate) {
+            // Yangi kursni saqlash
+            await sp.setDouble('exchange_rate_usd', apiRate);
+            setState(() {
+              _exchangeRate = apiRate;
+            });
+            print('📊 Exchange rate updated from API: $_exchangeRate');
+          }
+        }
+      } catch (apiError) {
+        print('⚠️ Could not fetch rate from API: $apiError');
+        // SharedPreferences dan olingan qiymat qoladi
+      }
+    } catch (e) {
+      print('❌ Error loading exchange rate: $e');
+      // Default qiymat qoladi (12000.0)
+    }
   }
 
   @override
@@ -568,7 +608,8 @@ class _StatsPageState extends State<StatsPage> {
         TransactionType type = TransactionType.expense;
         String debtType =
             ''; // bo'sh = oddiy tranzaksiya, 'qarz_olish'/'qarz_berish'/'konvertatsiya'
-        String selectedCurrency = 'UZS'; // valyuta tanlash uchun
+        String selectedCurrency = widget.walletCurrency?.toUpperCase() ?? 'UZS'; // hamyon valyutasidan olish
+        String displayedAmount = '0'; // SumaQarz ko'rinishi uchun
         bool isBalanceAffected = true; // qarz balansga ta'sir qiladimi
         TransactionCategory? selectedCategory;
         Map<String, String>? selectedCustomCategory;
@@ -581,12 +622,14 @@ class _StatsPageState extends State<StatsPage> {
         
         // Debug: har safar dialog ochilganda controllers bo'sh ekanligini tekshirish
         print('🔍 New dialog opened:');
+        print('   - walletCurrency: "${widget.walletCurrency}"');
+        print('   - selectedCurrency (default): "$selectedCurrency"');
         print('   - titleCtrl.text: "${titleCtrl.text}"');
         print('   - amountCtrl.text: "${amountCtrl.text}"');
         print('   - debtPersonCtrl.text: "${debtPersonCtrl.text}"');
         print('   - selectedPersonId: $selectedPersonId');
         print('   - debtType: "$debtType"');
-        print('   - selectedCurrency: "$selectedCurrency"');
+        print('   - displayedAmount: "$displayedAmount"');
         print('   - type: $type');
         print('   - isBalanceAffected: $isBalanceAffected');
 
@@ -1238,7 +1281,12 @@ class _StatsPageState extends State<StatsPage> {
                             ),
                             onChanged: (value) {
                               final clean = value.replaceAll(' ', '');
-                              if (clean.isEmpty) return;
+                              if (clean.isEmpty) {
+                                setStateSB(() {
+                                  displayedAmount = '0';
+                                });
+                                return;
+                              }
                               try {
                                 final parts = clean.split('.');
                                 final intPart = int.parse(parts[0]);
@@ -1256,6 +1304,28 @@ class _StatsPageState extends State<StatsPage> {
                                     ),
                                   );
                                 }
+                                
+                                // SumaQarz uchun displayedAmount ni yangilash
+                                setStateSB(() {
+                                  // Hamyon valyutasiga qarab ko'rsatish
+                                  final walletCurrency = widget.walletCurrency?.toUpperCase() ?? 'UZS';
+                                  if (walletCurrency == selectedCurrency) {
+                                    // Bir xil valyuta - original qiymatni ko'rsatish
+                                    displayedAmount = newText;
+                                  } else if (walletCurrency == 'USD' && selectedCurrency == 'UZS') {
+                                    // USD hamyondan UZS ko'rinish
+                                    final usdAmount = double.tryParse(clean) ?? 0;
+                                    final uzsAmount = usdAmount * _exchangeRate;
+                                    displayedAmount = _formatNumber(uzsAmount.toInt());
+                                  } else if (walletCurrency == 'UZS' && selectedCurrency == 'USD') {
+                                    // UZS hamyondan USD ko'rinish
+                                    final uzsAmount = double.tryParse(clean) ?? 0;
+                                    final usdAmount = uzsAmount / _exchangeRate;
+                                    displayedAmount = usdAmount.toStringAsFixed(2);
+                                  } else {
+                                    displayedAmount = newText;
+                                  }
+                                });
                               } catch (e) {
                                 // Invalid format
                               }
@@ -1272,7 +1342,13 @@ class _StatsPageState extends State<StatsPage> {
                                 flex: 3,
                                 child: Container(
                                   width: double.infinity,
-                                  padding: const EdgeInsets.all(16),
+                                  constraints: const BoxConstraints(
+                                    minHeight: 56,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.grey.shade100,
                                     border: Border.all(
@@ -1280,9 +1356,9 @@ class _StatsPageState extends State<StatsPage> {
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Text(
                                         'SumaQarz:',
@@ -1291,14 +1367,19 @@ class _StatsPageState extends State<StatsPage> {
                                           color: Colors.grey.shade600,
                                         ),
                                       ),
+                                      const SizedBox(height: 4),
                                       Text(
-                                        amountCtrl.text.isNotEmpty
-                                            ? '${amountCtrl.text} $selectedCurrency'
+                                        displayedAmount.isNotEmpty && displayedAmount != '0'
+                                            ? _formatDisplayAmount(displayedAmount, selectedCurrency)
                                             : '0 $selectedCurrency',
-                                        style: const TextStyle(
-                                          fontSize: 16,
+                                        style: TextStyle(
+                                          fontSize: _getAdaptiveFontSize(displayedAmount, selectedCurrency),
                                           fontWeight: FontWeight.bold,
+                                          color: selectedCurrency == 'USD' ? Colors.green[700] : Colors.blue[700],
                                         ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 2,
+                                        softWrap: true,
                                       ),
                                     ],
                                   ),
@@ -1330,6 +1411,37 @@ class _StatsPageState extends State<StatsPage> {
                                     ],
                                     onChanged: (value) {
                                       setStateSB(() {
+                                        // Hamyon valyutasini hisobga olish
+                                        final walletCurrency = widget.walletCurrency?.toUpperCase() ?? 'UZS';
+                                        
+                                        if (amountCtrl.text.isNotEmpty && value != selectedCurrency) {
+                                          final cleanAmount = amountCtrl.text.replaceAll(' ', '').replaceAll(',', '');
+                                          final numericAmount = double.tryParse(cleanAmount) ?? 0;
+                                          
+                                          if (walletCurrency == 'USD') {
+                                            // USD hamyon
+                                            if (value == 'UZS') {
+                                              // USD summani UZS ko'rinishda
+                                              final convertedAmount = numericAmount * _exchangeRate;
+                                              displayedAmount = _formatNumber(convertedAmount.toInt());
+                                            } else {
+                                              // USD summani USD ko'rinishda
+                                              displayedAmount = amountCtrl.text;
+                                            }
+                                          } else {
+                                            // UZS hamyon
+                                            if (value == 'USD') {
+                                              // UZS summani USD ko'rinishda
+                                              final convertedAmount = numericAmount / _exchangeRate;
+                                              displayedAmount = convertedAmount.toStringAsFixed(2);
+                                            } else {
+                                              // UZS summani UZS ko'rinishda
+                                              displayedAmount = amountCtrl.text;
+                                            }
+                                          }
+                                        } else if (amountCtrl.text.isEmpty) {
+                                          displayedAmount = '0';
+                                        }
                                         selectedCurrency = value!;
                                       });
                                     },
@@ -3125,5 +3237,34 @@ class _StatsPageState extends State<StatsPage> {
       }
       return {'name': item.toString(), 'type': fallbackType, 'emoji': '🏷️'};
     }).toList();
+  }
+
+  double _getAdaptiveFontSize(String amount, String currency) {
+    // Matn uzunligiga qarab font size'ni moslash
+    final fullText = '$amount $currency';
+    final textLength = fullText.length;
+    
+    if (textLength <= 12) {
+      return 16.0; // Normal size
+    } else if (textLength <= 18) {
+      return 14.0; // Kichikroq
+    } else if (textLength <= 25) {
+      return 12.0; // Yanada kichik
+    } else {
+      return 10.0; // Eng kichik
+    }
+  }
+
+  String _formatDisplayAmount(String amount, String currency) {
+    // Juda uzun bo'lsa, qisqartirish
+    final fullText = '$amount $currency';
+    if (fullText.length > 30) {
+      // Raqamni qisqartirish
+      if (amount.length > 20) {
+        final shortAmount = '${amount.substring(0, 15)}...';
+        return '$shortAmount $currency';
+      }
+    }
+    return fullText;
   }
 }

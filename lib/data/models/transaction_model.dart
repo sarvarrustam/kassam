@@ -45,6 +45,7 @@ class Transaction extends Equatable {
       walletChiqim: json['walletChiqim'] as String?,
       counterparty: json['counterparty'] as String?,
       amountDebit: json['amountDebit'] != null ? (json['amountDebit'] as num).toDouble() : null,
+      openingBalance: json['openingBalance'] as bool?,
     );
   }
 
@@ -65,6 +66,7 @@ class Transaction extends Equatable {
     'walletChiqim': walletChiqim,
     'counterparty': counterparty,
     'amountDebit': amountDebit,
+    'openingBalance': openingBalance,
     'exchangeRate': exchangeRate,
   };
   final String id;
@@ -87,6 +89,7 @@ class Transaction extends Equatable {
   // Qarz olish/berish uchun qo'shimcha field'lar
   final String? counterparty; // Kimdan/Kimga
   final double? amountDebit;  // Qarz summasi
+  final bool? openingBalance; // Avvalgi qarzim (true = ha, false/null = yo'q)
   
   // Kurs ma'lumoti (tranzaksiya qilingan paytdagi)
   final double? exchangeRate; // USD/UZS kursi
@@ -108,6 +111,7 @@ class Transaction extends Equatable {
     this.walletChiqim,
     this.counterparty,
     this.amountDebit,
+    this.openingBalance,
     this.exchangeRate, // Kurs qo'shildi
   });
 
@@ -129,6 +133,7 @@ class Transaction extends Equatable {
     walletChiqim,
     counterparty,
     amountDebit,
+    openingBalance,
     exchangeRate, // Kurs qo'shildi
   ];
 

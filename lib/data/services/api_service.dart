@@ -875,7 +875,12 @@ Future<Map<String, dynamic>> createTransactionDebt({
         if (comment != null && comment.isNotEmpty) 'comment': comment,
       };
       
+      print('💱 ===== FINAL API REQUEST =====');
+      print('💱 Endpoint: $transactionConversionCreate');
+      print('💱 Method: POST');
       print('💱 Request body: $body');
+      print('💱 Headers: ${getHeaders()}');
+      print('💱 ==============================');
       
       final response = await post(
         transactionConversionCreate,
@@ -883,10 +888,12 @@ Future<Map<String, dynamic>> createTransactionDebt({
         token: token,
       );
       
+      print('💱 ===== API RESPONSE =====');
       print('💱 Response: $response');
+      print('💱 =========================');
       return response;
     } catch (e) {
-      print('💱 Exception in createTransactionConversion: $e');
+      print('💱 ❌ Exception in createTransactionConversion: $e');
       return {
         'success': false,
         'message': 'Internetga ulanishda xatolik',

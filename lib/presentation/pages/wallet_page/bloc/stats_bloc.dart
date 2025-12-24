@@ -298,10 +298,15 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
       );
 
       if (result['success']) {
+        print('💱 ✅ Conversion API SUCCESS!');
+        print('💱 📝 Response data: ${result['data']}');
+        print('💱 💬 Message: ${result['message']}');
         emit(StatsTransactionCreatedSuccess(
           message: result['message'] ?? 'Konvertatsiya muvaffaqiyatli yaratildi',
         ));
       } else {
+        print('💱 ❌ Conversion API FAILED!');
+        print('💱 📝 Response: $result');
         emit(StatsError(result['message'] ?? 'Konvertatsiya yaratishda xatolik'));
       }
     } catch (e) {

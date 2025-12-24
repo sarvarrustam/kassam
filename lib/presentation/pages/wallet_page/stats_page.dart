@@ -136,12 +136,22 @@ class _StatsPageState extends State<StatsPage> {
         
         print('📱 Raw walletsData: $walletsData');
         
+        // Har bir wallet uchun alohida debug
+        walletsData.forEach((wallet) {
+          print('🔍 Wallet raw: $wallet');
+          print('   - balance field: ${wallet['balance']}');
+          print('   - balans field: ${wallet['balans']}');
+          print('   - amount field: ${wallet['amount']}');
+          print('   - suma field: ${wallet['suma']}');
+          print('   - value field: ${wallet['value']} ← ACTUAL BALANCE');
+        });
+        
         setState(() {
           _walletsList = walletsData.map((wallet) => {
             'walletId': wallet['walletId']?.toString() ?? wallet['id']?.toString() ?? '',
             'name': wallet['name']?.toString() ?? 'Wallet',
-            'currency': wallet['currency']?.toString() ?? 'UZS',
-            'balance': (wallet['balance'] ?? 0.0).toDouble(),
+            'currency': wallet['currency']?.toString() ?? wallet['type']?.toString()?.toUpperCase() ?? 'UZS',
+            'balance': (wallet['value'] ?? wallet['balance'] ?? wallet['balans'] ?? wallet['amount'] ?? wallet['suma'] ?? 0.0).toDouble(),
           }).toList();
         });
         print('📱 Loaded ${_walletsList.length} wallets for conversion');
@@ -669,9 +679,29 @@ class _StatsPageState extends State<StatsPage> {
         final titleCtrl = TextEditingController();
         final amountCtrl = TextEditingController();
         final debtPersonCtrl = TextEditingController(); // kimga/kimdan
+        final chiqimAmountCtrl = TextEditingController(); // konvertatsiya chiqim
+        final kirimAmountCtrl = TextEditingController(); // konvertatsiya kirim
         String? selectedPersonId; // Tanlangan shaxs ID'si (moved here)
         String? selectedWalletChiqimId; // Konvertatsiya: qayerdan
         String? selectedWalletKirimId; // Konvertatsiya: qayerga
+        
+        // Form ma'lumotlarini tozalash funksiyasi
+        void clearFormData() {
+          titleCtrl.clear();
+          amountCtrl.clear();
+          debtPersonCtrl.clear();
+          chiqimAmountCtrl.clear();
+          kirimAmountCtrl.clear();
+          selectedPersonId = null;
+          selectedWalletChiqimId = null;
+          selectedWalletKirimId = null;
+          selectedCategory = null;
+          selectedCustomCategory = null;
+          displayedAmount = '0';
+          isBalanceAffected = true;
+          selectedCurrency = widget.walletCurrency?.toUpperCase() ?? 'UZS';
+          print('🧹 Form cleared!');
+        }
         
         // Debug: har safar dialog ochilganda controllers bo'sh ekanligini tekshirish
         print('🔍 New dialog opened:');
@@ -991,9 +1021,7 @@ class _StatsPageState extends State<StatsPage> {
                                   setStateSB(() {
                                     type = TransactionType.income;
                                     debtType = ''; // qarz holatini reset qilish
-                                    isBalanceAffected = true; // checkbox reset
-                                    selectedCategory = null;
-                                    selectedCustomCategory = null;
+                                    clearFormData(); // Form ma'lumotlarini tozalash
                                   });
                                 },
                                 child: Container(
@@ -1032,9 +1060,7 @@ class _StatsPageState extends State<StatsPage> {
                                   setStateSB(() {
                                     type = TransactionType.expense;
                                     debtType = ''; // qarz holatini reset qilish
-                                    isBalanceAffected = true; // checkbox reset
-                                    selectedCategory = null;
-                                    selectedCustomCategory = null;
+                                    clearFormData(); // Form ma'lumotlarini tozalash
                                   });
                                 },
                                 child: Container(
@@ -1072,9 +1098,7 @@ class _StatsPageState extends State<StatsPage> {
                                 onTap: () {
                                   setStateSB(() {
                                     debtType = 'qarz_olish';
-                                    isBalanceAffected = true; // reset checkbox
-                                    selectedCategory = null;
-                                    selectedCustomCategory = null;
+                                    clearFormData(); // Form ma'lumotlarini tozalash
                                   });
                                 },
                                 child: Container(
@@ -1112,9 +1136,7 @@ class _StatsPageState extends State<StatsPage> {
                                 onTap: () {
                                   setStateSB(() {
                                     debtType = 'qarz_berish';
-                                    isBalanceAffected = true;
-                                    selectedCategory = null;
-                                    selectedCustomCategory = null;
+                                    clearFormData(); // Form ma'lumotlarini tozalash
                                   });
                                 },
                                 child: Container(
@@ -1152,9 +1174,7 @@ class _StatsPageState extends State<StatsPage> {
                                 onTap: () {
                                   setStateSB(() {
                                     debtType = 'konvertatsiya';
-                                    isBalanceAffected = true;
-                                    selectedCategory = null;
-                                    selectedCustomCategory = null;
+                                    clearFormData(); // Form ma'lumotlarini tozalash
                                   });
                                   // Walletlar ro'yxatini qayta yuklash
                                   _loadWalletsList();
@@ -1292,12 +1312,13 @@ class _StatsPageState extends State<StatsPage> {
                               isExpanded: true,
                               underline: const SizedBox(),
                               items: _walletsList.map((wallet) {
+                                print('🏦 Chiqim wallet available: ${wallet['name']} (${wallet['currency']}) - ${wallet['walletId']}');
                                 return DropdownMenuItem<String>(
                                   value: wallet['walletId'],
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 12),
                                     child: Text(
-                                      '${wallet['name']} (${wallet['currency']}) - ${_formatNumber(wallet['balance'].toInt())}',
+                                      '${wallet['name']} (${wallet['currency']}) - ${_formatWalletBalance(wallet['balance'], wallet['currency'])}',
                                     ),
                                   ),
                                 );
@@ -1327,12 +1348,13 @@ class _StatsPageState extends State<StatsPage> {
                               isExpanded: true,
                               underline: const SizedBox(),
                               items: _walletsList.map((wallet) {
+                                print('🏦 Kirim wallet available: ${wallet['name']} (${wallet['currency']}) - ${wallet['walletId']}');
                                 return DropdownMenuItem<String>(
                                   value: wallet['walletId'],
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 12),
                                     child: Text(
-                                      '${wallet['name']} (${wallet['currency']}) - ${_formatNumber(wallet['balance'].toInt())}',
+                                      '${wallet['name']} (${wallet['currency']}) - ${_formatWalletBalance(wallet['balance'], wallet['currency'])}',
                                     ),
                                   ),
                                 );
@@ -1345,7 +1367,29 @@ class _StatsPageState extends State<StatsPage> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          // Izoh (konvertatsiya uchun)
+                          // Chiqim suma
+                          TextField(
+                            controller: chiqimAmountCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Chiqim summasi',
+                              border: OutlineInputBorder(),
+                              hintText: 'Qancha chiqadi',
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Kirim suma  
+                          TextField(
+                            controller: kirimAmountCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Kirim summasi',
+                              border: OutlineInputBorder(),
+                              hintText: 'Qancha kiradi',
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Izoh (konvertatsiya uchun) - oxirida
                           TextField(
                             controller: titleCtrl,
                             decoration: const InputDecoration(
@@ -1511,7 +1555,7 @@ class _StatsPageState extends State<StatsPage> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Text(
-                                        'SumaQarz:',
+                                        'Suma qarz:',
                                         style: TextStyle(
                                           fontSize: 14,
                                           color: Colors.grey.shade600,
@@ -1602,8 +1646,8 @@ class _StatsPageState extends State<StatsPage> {
                           ),
                         if (debtType.isNotEmpty && debtType != 'konvertatsiya')
                           const SizedBox(height: 12),
-                        // Summa kiritish (oddiy va konvertatsiya uchun)
-                        if (debtType.isEmpty || debtType == 'konvertatsiya')
+                        // Summa kiritish (faqat oddiy tranzaksiyalar uchun)
+                        if (debtType.isEmpty)
                           TextField(
                             controller: amountCtrl,
                             decoration: const InputDecoration(
@@ -1659,50 +1703,57 @@ class _StatsPageState extends State<StatsPage> {
                             children: [
                               GestureDetector(
                                 onTap: () {
-                                  // Dialog ko'rsatish
-                                  showDialog(
-                                    context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text('Diqqat'),
-                                      content: const Text(
-                                        'Buni tanlasangiz qarzingiz summa hamyon balansiga ta\'sir qilmaydi (+ yoki - bo\'lmaydi).\n\nDavom etasizmi?',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(ctx),
-                                          child: const Text('Yo\'q'),
+                                  // Faqat checkbox OFF holatida bo'lsa (ya'ni ON qilyapmiz) dialog ko'rsatish
+                                  if (isBalanceAffected) {
+                                    // Dialog ko'rsatish - ON qilyapmiz
+                                    showDialog(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text('Diqqat'),
+                                        content: const Text(
+                                          'Buni tanlasangiz qarzingiz summa hamyon balansiga ta\'sir qilmaydi (+ yoki - bo\'lmaydi).\n\nDavom etasizmi?',
                                         ),
-                                        TextButton(
-                                          onPressed: () {
-                                            setStateSB(() {
-                                              isBalanceAffected =
-                                                  !isBalanceAffected;
-                                            });
-                                            Navigator.pop(ctx);
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  isBalanceAffected
-                                                      ? 'Qarz balansga ta\'sir qiladi'
-                                                      : 'Qarz balansga ta\'sir qilmaydi',
-                                                ),
-                                                backgroundColor:
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx),
+                                            child: const Text('Yo\'q'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              setStateSB(() {
+                                                isBalanceAffected = !isBalanceAffected;
+                                              });
+                                              Navigator.pop(ctx);
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
                                                     isBalanceAffected
-                                                    ? Colors.green
-                                                    : Colors.orange,
-                                                duration: const Duration(
-                                                  seconds: 2,
+                                                        ? 'Qarz balansga ta\'sir qiladi'
+                                                        : 'Qarz balansga ta\'sir qilmaydi',
+                                                  ),
+                                                  backgroundColor:
+                                                      isBalanceAffected
+                                                      ? Colors.green
+                                                      : Colors.orange,
+                                                  duration: const Duration(
+                                                    seconds: 2,
+                                                  ),
                                                 ),
-                                              ),
-                                            );
-                                          },
-                                          child: const Text('Ha'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
+                                              );
+                                            },
+                                            child: const Text('Ha'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  } else {
+                                    // Checkbox OFF qilyapmiz - dialog yo'q
+                                    setStateSB(() {
+                                      isBalanceAffected = !isBalanceAffected;
+                                    });
+                                  }
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.all(12),
@@ -1770,50 +1821,57 @@ class _StatsPageState extends State<StatsPage> {
                             children: [
                               GestureDetector(
                                 onTap: () {
-                                  // Dialog ko'rsatish
-                                  showDialog(
-                                    context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text('Diqqat'),
-                                      content: const Text(
-                                        'Buni tanlasangiz berayotgan qarzingiz summa hamyon balansiga ta\'sir qilmaydi (+ yoki - bo\'lmaydi).\n\nDavom etasizmi?',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(ctx),
-                                          child: const Text('Yo\'q'),
+                                  // Faqat checkbox OFF holatida bo'lsa (ya'ni ON qilyapmiz) dialog ko'rsatish
+                                  if (isBalanceAffected) {
+                                    // Dialog ko'rsatish - ON qilyapmiz
+                                    showDialog(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text('Diqqat'),
+                                        content: const Text(
+                                          'Buni tanlasangiz berayotgan qarzingiz summa hamyon balansiga ta\'sir qilmaydi (+ yoki - bo\'lmaydi).\n\nDavom etasizmi?',
                                         ),
-                                        TextButton(
-                                          onPressed: () {
-                                            setStateSB(() {
-                                              isBalanceAffected =
-                                                  !isBalanceAffected;
-                                            });
-                                            Navigator.pop(ctx);
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  isBalanceAffected
-                                                      ? 'Berayotgan qarz balansga ta\'sir qiladi'
-                                                      : 'Berayotgan qarz balansga ta\'sir qilmaydi',
-                                                ),
-                                                backgroundColor:
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx),
+                                            child: const Text('Yo\'q'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              setStateSB(() {
+                                                isBalanceAffected = !isBalanceAffected;
+                                              });
+                                              Navigator.pop(ctx);
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
                                                     isBalanceAffected
-                                                    ? Colors.green
-                                                    : Colors.orange,
-                                                duration: const Duration(
-                                                  seconds: 2,
+                                                        ? 'Berayotgan qarz balansga ta\'sir qiladi'
+                                                        : 'Berayotgan qarz balansga ta\'sir qilmaydi',
+                                                  ),
+                                                  backgroundColor:
+                                                      isBalanceAffected
+                                                      ? Colors.green
+                                                      : Colors.orange,
+                                                  duration: const Duration(
+                                                    seconds: 2,
+                                                  ),
                                                 ),
-                                              ),
-                                            );
-                                          },
-                                          child: const Text('Ha'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
+                                              );
+                                            },
+                                            child: const Text('Ha'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  } else {
+                                    // Checkbox OFF qilyapmiz - dialog yo'q
+                                    setStateSB(() {
+                                      isBalanceAffected = !isBalanceAffected;
+                                    });
+                                  }
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.all(12),
@@ -1905,7 +1963,8 @@ class _StatsPageState extends State<StatsPage> {
                                     ) ??
                                     0.0;
 
-                                if (amount <= 0) {
+                                // Umumiy summa validatsiyasi (faqat konvertatsiya emas)
+                                if (debtType != 'konvertatsiya' && amount <= 0) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text('Summani kiriting!'),
@@ -1994,56 +2053,59 @@ class _StatsPageState extends State<StatsPage> {
                                     return;
                                   }
 
-                                  // Valyuta konvertatsiyasi hisoblanishi
-                                  final chiqimWallet = _walletsList.firstWhere(
-                                    (w) => w['walletId'] == selectedWalletChiqimId,
-                                    orElse: () => {'currency': 'UZS'},
-                                  );
-                                  final kirimWallet = _walletsList.firstWhere(
-                                    (w) => w['walletId'] == selectedWalletKirimId,
-                                    orElse: () => {'currency': 'UZS'},
-                                  );
+                                  // Chiqim va kirim summalarini tekshirish
+                                  final chiqimAmountText = chiqimAmountCtrl.text.trim().replaceAll(' ', '');
+                                  final kirimAmountText = kirimAmountCtrl.text.trim().replaceAll(' ', '');
                                   
-                                  print('💱 DEBUG: Chiqim wallet currency: ${chiqimWallet['currency']}');
-                                  print('💱 DEBUG: Kirim wallet currency: ${kirimWallet['currency']}');
-                                  print('💱 DEBUG: Exchange rate: $_exchangeRate');
-                                  print('💱 DEBUG: Input amount: $amount');
-                                  print('💱 DEBUG: Selected currency: $selectedCurrency');
-                                  
-                                  // Amount qaysi valyutada kiritilgan?
-                                  double chiqimAmount;
-                                  double kirimAmount;
-                                  
-                                  if (selectedCurrency.toUpperCase() == chiqimWallet['currency']?.toString().toUpperCase()) {
-                                    // Amount chiqim hamyon valyutasida kiritilgan
-                                    chiqimAmount = amount;
-                                    if (chiqimWallet['currency']?.toString().toUpperCase() == 'USD' && 
-                                        kirimWallet['currency']?.toString().toUpperCase() == 'UZS') {
-                                      kirimAmount = amount * _exchangeRate; // USD → UZS
-                                    } else if (chiqimWallet['currency']?.toString().toUpperCase() == 'UZS' && 
-                                               kirimWallet['currency']?.toString().toUpperCase() == 'USD') {
-                                      kirimAmount = amount / _exchangeRate; // UZS → USD
-                                    } else {
-                                      kirimAmount = amount; // Bir xil valyuta
-                                    }
-                                  } else {
-                                    // Amount kirim hamyon valyutasida kiritilgan
-                                    kirimAmount = amount;
-                                    if (kirimWallet['currency']?.toString().toUpperCase() == 'USD' && 
-                                        chiqimWallet['currency']?.toString().toUpperCase() == 'UZS') {
-                                      chiqimAmount = amount * _exchangeRate; // USD → UZS
-                                    } else if (kirimWallet['currency']?.toString().toUpperCase() == 'UZS' && 
-                                               chiqimWallet['currency']?.toString().toUpperCase() == 'USD') {
-                                      chiqimAmount = amount / _exchangeRate; // UZS → USD  
-                                    } else {
-                                      chiqimAmount = amount; // Bir xil valyuta
-                                    }
+                                  if (chiqimAmountText.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Chiqim summasini kiriting!'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                    return;
                                   }
                                   
-                                  print('💱 DEBUG: Final chiqimAmount: $chiqimAmount');
-                                  print('💱 DEBUG: Final kirimAmount: $kirimAmount');
+                                  if (kirimAmountText.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Kirim summasini kiriting!'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                    return;
+                                  }
 
-                                  // Konvertatsiya API call - bitta API call
+                                  final chiqimAmount = double.tryParse(chiqimAmountText);
+                                  final kirimAmount = double.tryParse(kirimAmountText);
+                                  
+                                  if (chiqimAmount == null || chiqimAmount <= 0) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Chiqim summasini to\'g\'ri kiriting!'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  
+                                  if (kirimAmount == null || kirimAmount <= 0) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Kirim summasini to\'g\'ri kiriting!'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  print('💱 DEBUG: Chiqim amount: $chiqimAmount');
+                                  print('💱 DEBUG: Kirim amount: $kirimAmount');
+                                  print('💱 DEBUG: WalletIdChiqim: $selectedWalletChiqimId');
+                                  print('💱 DEBUG: WalletIdKirim: $selectedWalletKirimId');
+
+                                  // Konvertatsiya API call
                                   _statsBloc.add(
                                     StatsCreateTransactionConversion(
                                       walletIdChiqim: selectedWalletChiqimId!,
@@ -2793,13 +2855,23 @@ class _StatsPageState extends State<StatsPage> {
                                           const SizedBox(height: 4),
                                           if (t.amountDebit != null && t.amountDebit! > 0)
                                             Text(
-                                              'SumaQarz: ${_formatDebtAmount(t.amountDebit!, t.paymentMethod ?? 'UZS')}',
+                                              'Suma qarz: ${_formatDebtAmount(t.amountDebit!, t.paymentMethod ?? 'UZS')}',
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w500,
                                               ),
                                             ),
+                                          const SizedBox(height: 4),
+                                          // Avvalgi qarzim statusi
+                                          Text(
+                                            'Avvalgi qarzim: ${(t.openingBalance == true) ? 'Ha' : 'Yo\'q'}',
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
                                           const SizedBox(height: 4),
                                           if (t.notes != null && t.notes!.isNotEmpty)
                                             Text(
@@ -2875,7 +2947,9 @@ class _StatsPageState extends State<StatsPage> {
                                       ), // Tepada bo'sh joy
                                       Text(
                                         _showBalance
-                                            ? '${_formatNumber(t.amount.toInt())} ${_getCurrencySymbol()}'
+                                            ? (t.type == TransactionType.conversion
+                                                ? '${_formatNumber((t.amountDebit ?? t.amount).toInt())} ${_getCurrencySymbol()}'
+                                                : '${_formatNumber(t.amount.toInt())} ${_getCurrencySymbol()}')
                                             : '••••••',
                                         style: const TextStyle(
                                           color: Colors.white,
@@ -3055,6 +3129,21 @@ class _StatsPageState extends State<StatsPage> {
     }
   }
 
+  String _formatWalletBalance(double balance, String currency) {
+    // Wallet balance formatting based on currency
+    if (currency.toUpperCase() == 'USD' || currency.toUpperCase() == 'EUR') {
+      // USD/EUR: show 2 decimal places if not whole number
+      if (balance == balance.toInt()) {
+        return '${balance.toInt()}'; // 3.0 → "3"
+      } else {
+        return balance.toStringAsFixed(2); // 3.5 → "3.50"
+      }
+    } else {
+      // UZS: show as integer with space formatting
+      return _formatNumber(balance.toInt());
+    }
+  }
+
   //shu qismda ranglarni berb yuvoryapmz bazadan ushab.
   void _parseAndSaveTransactions(dynamic data) {
     try {
@@ -3117,9 +3206,12 @@ class _StatsPageState extends State<StatsPage> {
           type = TransactionType.expense;
           print('✅ Detected CHIQIM - will be RED');
         } else if (typeString.contains('konvertatsiya') ||
-            typeString.contains('konvert')) {
+            typeString.contains('konvert') ||
+            typeString == 'konvertatsiya' ||
+            item['type']?.toString() == 'konvertatsiya') {
           type = TransactionType.conversion;
           print('✅ Detected CONVERSION - will be ORANGE');
+          print('🔍 Conversion data: walletKirim=${item['walletKirim']}, walletChiqim=${item['walletChiqim']}');
         } else {
           type = TransactionType.expense; // Default
           print('⚠️ Unknown type: "$typeString" - defaulting to expense');
@@ -3138,9 +3230,31 @@ class _StatsPageState extends State<StatsPage> {
         // Qarz olish/berish uchun qo'shimcha ma'lumotlar
         final counterparty =
             item['counterparty']?.toString() ?? ''; // Kimdan/Kimga
-        final amountDebit =
-            double.tryParse(item['debtAmount']?.toString() ?? '0') ?? 
-            double.tryParse(item['amountdebit']?.toString() ?? '0') ?? 0.0;
+        
+        // amountDebit - qarz uchun debtAmount, konvertatsiya uchun amountChiqim
+        double amountDebit = 0.0;
+        if (type == TransactionType.conversion) {
+          // Debug: API'dan qanday field'lar kelayotganini ko'rish
+          print('🔍 Conversion API fields for ID $id:');
+          print('   amountChiqim: ${item['amountChiqim']}');
+          print('   amountchiqim: ${item['amountchiqim']}');
+          print('   amountKirim: ${item['amountKirim']}');
+          print('   amountkirim: ${item['amountkirim']}');
+          print('   amount: ${item['amount']}');
+          print('   suma: ${item['suma']}');
+          print('   All keys: ${item.keys.toList()}');
+          
+          // Konvertatsiya uchun chiqim summasi - har xil variant
+          amountDebit = double.tryParse(item['amountChiqim']?.toString() ?? '0') ?? 
+                        double.tryParse(item['amountchiqim']?.toString() ?? '0') ?? 
+                        double.tryParse(item['suma']?.toString() ?? '0') ??
+                        amount; // Fallback: umumiy amount
+          print('   Final amountDebit: $amountDebit');
+        } else {
+          // Qarz uchun debt amount  
+          amountDebit = double.tryParse(item['debtAmount']?.toString() ?? '0') ?? 
+                        double.tryParse(item['amountdebit']?.toString() ?? '0') ?? 0.0;
+        }
 
         // Kurs ma'lumoti (tranzaksiya qilingan paytdagi)
         // API dan "11 800" formatida keladi - probelni olib tashlaymiz
@@ -3206,6 +3320,7 @@ class _StatsPageState extends State<StatsPage> {
           walletChiqim: walletChiqim,
           counterparty: counterparty, // Kimdan/Kimga
           amountDebit: amountDebit, // Qarz summasi
+          openingBalance: item['openingBalance'] as bool?, // Avvalgi qarzim
           exchangeRate: exchangeRate ?? _exchangeRate, // API dan kelgan yoki joriy kurs
           paymentMethod: currency, // Currency'ni paymentMethod'da saqlaymiz
         );

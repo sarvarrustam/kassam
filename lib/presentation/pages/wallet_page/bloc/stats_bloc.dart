@@ -17,6 +17,7 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
     on<StatsGetDebtorsCreditors>(_onGetDebtorsCreditors);
     on<StatsCreateDebtorCreditor>(_onCreateDebtorCreditor);
     on<StatsCreateTransactionDebt>(_onCreateTransactionDebt);
+    on<StatsCreateTransactionConversion>(_onCreateTransactionConversion);
 //  on<StatsCreateDebtorCreditor>(_onCreateDebtorCreditor);
 //     on<StatsCreateTransactionDebt>(_onCreateTransactionDebt);  
 
@@ -37,6 +38,8 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
         type: event.type,
         comment: event.comment,
         amount: event.amount,
+        currency: event.currency,
+        exchangeRate: event.exchangeRate, // Tranzaksiya qilingan paytdagi kurs
       );
 
       print('📝 Transaction Response: $response');
@@ -271,6 +274,35 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
         ));
       } else {
         emit(StatsError(result['message']));
+      }
+    } catch (e) {
+      emit(StatsError('Xatolik: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onCreateTransactionConversion(
+    StatsCreateTransactionConversion event,
+    Emitter<StatsState> emit,
+  ) async {
+    try {
+      emit(const StatsLoading());
+      
+      print('💱 Creating conversion: ${event.amountChiqim} → ${event.amountKirim}');
+      
+      final result = await _apiService.createTransactionConversion(
+        walletIdChiqim: event.walletIdChiqim,
+        walletIdKirim: event.walletIdKirim,
+        amountChiqim: event.amountChiqim,
+        amountKirim: event.amountKirim,
+        comment: event.comment,
+      );
+
+      if (result['success']) {
+        emit(StatsTransactionCreatedSuccess(
+          message: result['message'] ?? 'Konvertatsiya muvaffaqiyatli yaratildi',
+        ));
+      } else {
+        emit(StatsError(result['message'] ?? 'Konvertatsiya yaratishda xatolik'));
       }
     } catch (e) {
       emit(StatsError('Xatolik: ${e.toString()}'));

@@ -48,6 +48,9 @@ class _StatsPageState extends State<StatsPage> {
   // Qarzkorlar ro'yxati (API dan)
   List<dynamic> _debtorsList = [];
 
+  // Walletlar ro'yxati (konvertatsiya uchun)
+  List<Map<String, dynamic>> _walletsList = [];
+
   // Exchange rate (default 12000, but will be loaded from SharedPreferences)
   double _exchangeRate = 12000.0;
 
@@ -65,6 +68,7 @@ class _StatsPageState extends State<StatsPage> {
     _loadExchangeRate(); // Kursni yuklash
     _loadCustomCategories();
     _loadInitialTransactions();
+    _loadWalletsList(); // Walletlar ro'yxatini yuklash
     // Qarzkorlar ro'yxatini oldindan yuklash
     _statsBloc.add(const StatsGetDebtorsCreditors());
   }
@@ -101,6 +105,55 @@ class _StatsPageState extends State<StatsPage> {
     } catch (e) {
       print('❌ Error loading exchange rate: $e');
       // Default qiymat qoladi (12000.0)
+    }
+  }
+
+  Future<void> _loadWalletsList() async {
+    print('📱 Starting _loadWalletsList method...');
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final userToken = sp.getString('auth_token') ?? sp.getString('token') ?? '';
+      
+      print('📱 Loading wallets with token: ${userToken.isEmpty ? "EMPTY" : "EXISTS"}');
+      
+      if (userToken.isEmpty) {
+        print('❌ No user token for wallets');
+        return;
+      }
+      
+      final apiService = ApiService();
+      final response = await apiService.get(
+        apiService.getWalletsBalans,
+        token: userToken,
+      );
+      
+      print('📱 API Response: $response');
+      
+      if (response['success'] == true && response['data'] != null) {
+        final List<dynamic> walletsData = response['data'] is List 
+          ? response['data'] 
+          : (response['data']['wallets'] ?? []);
+        
+        print('📱 Raw walletsData: $walletsData');
+        
+        setState(() {
+          _walletsList = walletsData.map((wallet) => {
+            'walletId': wallet['walletId']?.toString() ?? wallet['id']?.toString() ?? '',
+            'name': wallet['name']?.toString() ?? 'Wallet',
+            'currency': wallet['currency']?.toString() ?? 'UZS',
+            'balance': (wallet['balance'] ?? 0.0).toDouble(),
+          }).toList();
+        });
+        print('📱 Loaded ${_walletsList.length} wallets for conversion');
+        _walletsList.forEach((w) {
+          print('   💰 ${w['name']} (${w['currency']}) - Balance: ${w['balance']} - ID: ${w['walletId']}');
+        });
+      } else {
+        print('❌ Failed to load wallets: ${response['message'] ?? response['error']}');
+        print('❌ Full response: $response');
+      }
+    } catch (e) {
+      print('❌ Error loading wallets: $e');
     }
   }
 
@@ -616,9 +669,9 @@ class _StatsPageState extends State<StatsPage> {
         final titleCtrl = TextEditingController();
         final amountCtrl = TextEditingController();
         final debtPersonCtrl = TextEditingController(); // kimga/kimdan
-        final walletChiqimCtrl = TextEditingController(); // konvertatsiya uchun
-        final walletKirimCtrl = TextEditingController(); // konvertatsiya uchun
         String? selectedPersonId; // Tanlangan shaxs ID'si (moved here)
+        String? selectedWalletChiqimId; // Konvertatsiya: qayerdan
+        String? selectedWalletKirimId; // Konvertatsiya: qayerga
         
         // Debug: har safar dialog ochilganda controllers bo'sh ekanligini tekshirish
         print('🔍 New dialog opened:');
@@ -644,6 +697,12 @@ class _StatsPageState extends State<StatsPage> {
                   duration: const Duration(seconds: 2),
                 ),
               );
+
+              // Agar konvertatsiya bo'lsa - hamma walletlarni yangilash
+              if (state.message.contains('Konvertatsiya') || state.message.contains('konvert')) {
+                // Barcha walletlarning balansini yangilash (konvertatsiya 2 ta walletni ta'sir qiladi)
+                _loadWalletsList(); // Walletlar ro'yxatini qayta yuklash
+              }
 
               // Tranzaksiyalar ro'yxatini yangilash
               if (_selectedWalletId != null) {
@@ -883,7 +942,44 @@ class _StatsPageState extends State<StatsPage> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 12),
+                        
+                        // Kurs ma'lumoti (ramkasiz)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                // Icon(Icons.currency_exchange, 
+                                //      color: Colors.blue.shade700, 
+                                //      size: 16),
+                                // const SizedBox(width: 6),
+                                Text(
+                                  'Kurs',
+                                  style: TextStyle(
+                                    color: Colors.blue.shade700,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            
+                            const SizedBox(width: 4),
+                            
+                            Text(
+                              '1 USD = ${_exchangeRate.toStringAsFixed(0)} UZS',
+                              style: TextStyle(
+                                color: Colors.blue.shade600,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 16),
+                        
                         // Bitta qatorda scrollable toggle'lar
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
@@ -906,12 +1002,12 @@ class _StatsPageState extends State<StatsPage> {
                                     vertical: 12,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: type == TransactionType.income
+                                    color: type == TransactionType.income && debtType.isEmpty
                                         ? Colors.green.shade100
                                         : Colors.grey[200],
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: type == TransactionType.income
+                                      color: type == TransactionType.income && debtType.isEmpty
                                           ? Colors.green.shade700
                                           : Colors.transparent,
                                       width: 2,
@@ -922,7 +1018,7 @@ class _StatsPageState extends State<StatsPage> {
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
-                                      color: type == TransactionType.income
+                                      color: type == TransactionType.income && debtType.isEmpty
                                           ? Colors.green.shade700
                                           : Colors.grey.shade600,
                                     ),
@@ -947,12 +1043,12 @@ class _StatsPageState extends State<StatsPage> {
                                     vertical: 12,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: type == TransactionType.expense
+                                    color: type == TransactionType.expense && debtType.isEmpty
                                         ? Colors.red.shade100
                                         : Colors.grey[200],
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: type == TransactionType.expense
+                                      color: type == TransactionType.expense && debtType.isEmpty
                                           ? Colors.red.shade700
                                           : Colors.transparent,
                                       width: 2,
@@ -963,7 +1059,7 @@ class _StatsPageState extends State<StatsPage> {
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
-                                      color: type == TransactionType.expense
+                                      color: type == TransactionType.expense && debtType.isEmpty
                                           ? Colors.red.shade700
                                           : Colors.grey.shade600,
                                     ),
@@ -1060,6 +1156,8 @@ class _StatsPageState extends State<StatsPage> {
                                     selectedCategory = null;
                                     selectedCustomCategory = null;
                                   });
+                                  // Walletlar ro'yxatini qayta yuklash
+                                  _loadWalletsList();
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
@@ -1083,7 +1181,7 @@ class _StatsPageState extends State<StatsPage> {
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
-                                      color: debtType == ''
+                                      color: debtType == 'konvertatsiya'
                                           ? Colors.amber.shade700
                                           : Colors.grey.shade600,
                                     ),
@@ -1177,21 +1275,73 @@ class _StatsPageState extends State<StatsPage> {
                         const SizedBox(height: 12),
                         // Konvertatsiya uchun maxsus maydonlar
                         if (debtType == 'konvertatsiya') ...[
-                          // Wallet Chiqim
-                          TextField(
-                            controller: walletChiqimCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Wallet Chiqim (qayerdan)',
-                              border: OutlineInputBorder(),
+                          // Wallet Chiqim (Qayerdan)
+                          const Text(
+                            'Qayerdan (Chiqim Hamyoni):',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: DropdownButton<String>(
+                              value: selectedWalletChiqimId,
+                              hint: const Text('Hamyon tanlang'),
+                              isExpanded: true,
+                              underline: const SizedBox(),
+                              items: _walletsList.map((wallet) {
+                                return DropdownMenuItem<String>(
+                                  value: wallet['walletId'],
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: Text(
+                                      '${wallet['name']} (${wallet['currency']}) - ${_formatNumber(wallet['balance'].toInt())}',
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setStateSB(() {
+                                  selectedWalletChiqimId = value;
+                                });
+                              },
                             ),
                           ),
                           const SizedBox(height: 12),
-                          // Wallet Kirim
-                          TextField(
-                            controller: walletKirimCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Wallet Kirim (qayerga)',
-                              border: OutlineInputBorder(),
+                          // Wallet Kirim (Qayerga)
+                          const Text(
+                            'Qayerga (Kirim Hamyoni):',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: DropdownButton<String>(
+                              value: selectedWalletKirimId,
+                              hint: const Text('Hamyon tanlang'),
+                              isExpanded: true,
+                              underline: const SizedBox(),
+                              items: _walletsList.map((wallet) {
+                                return DropdownMenuItem<String>(
+                                  value: wallet['walletId'],
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: Text(
+                                      '${wallet['name']} (${wallet['currency']}) - ${_formatNumber(wallet['balance'].toInt())}',
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setStateSB(() {
+                                  selectedWalletKirimId = value;
+                                });
+                              },
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -1783,6 +1933,19 @@ class _StatsPageState extends State<StatsPage> {
                                   }
 
                                   // Qarz operatsiyasi API'si
+                                  double debtAmount = 0.0;
+                                  try {
+                                    debtAmount = double.parse(displayedAmount.replaceAll(' ', '').replaceAll(',', ''));
+                                  } catch (e) {
+                                    print('Qarz miqdorini parse qilishda xatolik: $e');
+                                  }
+                                  
+                                  print('🎯 Debt Transaction Debug:');
+                                  print('   - amount (main): $amount');
+                                  print('   - debtAmount (SumaQarz): $debtAmount'); 
+                                  print('   - selectedCurrency: $selectedCurrency');
+                                  print('   - displayedAmount: "$displayedAmount"');
+                                  
                                   _statsBloc.add(
                                     StatsCreateTransactionDebt(
                                       type: debtType == 'qarz_berish'
@@ -1793,10 +1956,101 @@ class _StatsPageState extends State<StatsPage> {
                                       previousDebt: !isBalanceAffected, // Checkbox bosilsa true bo'ladi
                                       currency: selectedCurrency.toLowerCase(),
                                       amount: amount,
-                                      amountDebt: amount,
+                                      amountDebt: debtAmount,
                                       comment: comment.isNotEmpty
                                           ? comment
                                           : null,
+                                    ),
+                                  );
+                                } else if (debtType == 'konvertatsiya') {
+                                  // Konvertatsiya operatsiyasi uchun
+                                  if (selectedWalletChiqimId == null || selectedWalletChiqimId!.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Chiqim hamyonini tanlang!'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  
+                                  if (selectedWalletKirimId == null || selectedWalletKirimId!.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Kirim hamyonini tanlang!'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  
+                                  if (selectedWalletChiqimId == selectedWalletKirimId) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Bir xil hamyon tanlash mumkin emas!'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  // Valyuta konvertatsiyasi hisoblanishi
+                                  final chiqimWallet = _walletsList.firstWhere(
+                                    (w) => w['walletId'] == selectedWalletChiqimId,
+                                    orElse: () => {'currency': 'UZS'},
+                                  );
+                                  final kirimWallet = _walletsList.firstWhere(
+                                    (w) => w['walletId'] == selectedWalletKirimId,
+                                    orElse: () => {'currency': 'UZS'},
+                                  );
+                                  
+                                  print('💱 DEBUG: Chiqim wallet currency: ${chiqimWallet['currency']}');
+                                  print('💱 DEBUG: Kirim wallet currency: ${kirimWallet['currency']}');
+                                  print('💱 DEBUG: Exchange rate: $_exchangeRate');
+                                  print('💱 DEBUG: Input amount: $amount');
+                                  print('💱 DEBUG: Selected currency: $selectedCurrency');
+                                  
+                                  // Amount qaysi valyutada kiritilgan?
+                                  double chiqimAmount;
+                                  double kirimAmount;
+                                  
+                                  if (selectedCurrency.toUpperCase() == chiqimWallet['currency']?.toString().toUpperCase()) {
+                                    // Amount chiqim hamyon valyutasida kiritilgan
+                                    chiqimAmount = amount;
+                                    if (chiqimWallet['currency']?.toString().toUpperCase() == 'USD' && 
+                                        kirimWallet['currency']?.toString().toUpperCase() == 'UZS') {
+                                      kirimAmount = amount * _exchangeRate; // USD → UZS
+                                    } else if (chiqimWallet['currency']?.toString().toUpperCase() == 'UZS' && 
+                                               kirimWallet['currency']?.toString().toUpperCase() == 'USD') {
+                                      kirimAmount = amount / _exchangeRate; // UZS → USD
+                                    } else {
+                                      kirimAmount = amount; // Bir xil valyuta
+                                    }
+                                  } else {
+                                    // Amount kirim hamyon valyutasida kiritilgan
+                                    kirimAmount = amount;
+                                    if (kirimWallet['currency']?.toString().toUpperCase() == 'USD' && 
+                                        chiqimWallet['currency']?.toString().toUpperCase() == 'UZS') {
+                                      chiqimAmount = amount * _exchangeRate; // USD → UZS
+                                    } else if (kirimWallet['currency']?.toString().toUpperCase() == 'UZS' && 
+                                               chiqimWallet['currency']?.toString().toUpperCase() == 'USD') {
+                                      chiqimAmount = amount / _exchangeRate; // UZS → USD  
+                                    } else {
+                                      chiqimAmount = amount; // Bir xil valyuta
+                                    }
+                                  }
+                                  
+                                  print('💱 DEBUG: Final chiqimAmount: $chiqimAmount');
+                                  print('💱 DEBUG: Final kirimAmount: $kirimAmount');
+
+                                  // Konvertatsiya API call - bitta API call
+                                  _statsBloc.add(
+                                    StatsCreateTransactionConversion(
+                                      walletIdChiqim: selectedWalletChiqimId!,
+                                      walletIdKirim: selectedWalletKirimId!,
+                                      amountChiqim: chiqimAmount,
+                                      amountKirim: kirimAmount,
+                                      comment: comment.isNotEmpty ? comment : 'Valyuta konvertatsiyasi',
                                     ),
                                   );
                                 } else {
@@ -1842,6 +2096,7 @@ class _StatsPageState extends State<StatsPage> {
                                       comment: comment,
                                       amount: amount,
                                       currency: 'UZS',
+                                      exchangeRate: _exchangeRate, // Joriy kursni saqlash
                                     ),
                                   );
                                 }
@@ -2485,6 +2740,17 @@ class _StatsPageState extends State<StatsPage> {
                                           ),
                                         ),
                                         const SizedBox(height: 4),
+                                        // Kurs ma'lumoti (faqat tranzaksiya paytdagi saqlangan kurs)
+                                        if (t.exchangeRate != null)
+                                          Text(
+                                            'Kurs: 1 USD = ${t.exchangeRate!.toStringAsFixed(0)} UZS ',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                          ),
+                                        const SizedBox(height: 4),
 
                                         // Konvertatsiya uchun maxsus ko'rinish
                                         if (t.type ==
@@ -2512,12 +2778,10 @@ class _StatsPageState extends State<StatsPage> {
                                             ),
                                         ]
                                         // Qarz olish/berish uchun maxsus ko'rinish
-                                        else if (t.type ==
-                                                TransactionType.loanTaken ||
-                                            t.type ==
-                                                TransactionType.loanGiven) ...[
-                                          if (t.counterparty != null &&
-                                              t.counterparty!.isNotEmpty)
+                                        else if (t.type == TransactionType.loanTaken || 
+                                                  t.type == TransactionType.loanGiven) ...[
+                                          // Qarz tranzaksiyalari uchun maxsus ko'rinish
+                                          if (t.counterparty != null && t.counterparty!.isNotEmpty)
                                             Text(
                                               '${t.type == TransactionType.loanTaken ? 'Kimdan' : 'Kimga'}: ${t.counterparty}',
                                               style: const TextStyle(
@@ -2527,8 +2791,17 @@ class _StatsPageState extends State<StatsPage> {
                                               ),
                                             ),
                                           const SizedBox(height: 4),
-                                          if (t.notes != null &&
-                                              t.notes!.isNotEmpty)
+                                          if (t.amountDebit != null && t.amountDebit! > 0)
+                                            Text(
+                                              'SumaQarz: ${_formatDebtAmount(t.amountDebit!, t.paymentMethod ?? 'UZS')}',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          const SizedBox(height: 4),
+                                          if (t.notes != null && t.notes!.isNotEmpty)
                                             Text(
                                               'Hamyon: ${t.notes}',
                                               style: const TextStyle(
@@ -2771,6 +3044,17 @@ class _StatsPageState extends State<StatsPage> {
     return parts.reversed.join('');
   }
 
+  String _formatDebtAmount(double amount, String currency) {
+    // Debt amount formatting based on currency
+    if (currency.toUpperCase() == 'USD') {
+      // USD: show 2 decimal places
+      return '${amount.toStringAsFixed(2)} USD';
+    } else {
+      // UZS: show as integer with space formatting
+      return '${_formatNumber(amount.toInt())} ${currency.toUpperCase()}';
+    }
+  }
+
   //shu qismda ranglarni berb yuvoryapmz bazadan ushab.
   void _parseAndSaveTransactions(dynamic data) {
     try {
@@ -2855,7 +3139,27 @@ class _StatsPageState extends State<StatsPage> {
         final counterparty =
             item['counterparty']?.toString() ?? ''; // Kimdan/Kimga
         final amountDebit =
+            double.tryParse(item['debtAmount']?.toString() ?? '0') ?? 
             double.tryParse(item['amountdebit']?.toString() ?? '0') ?? 0.0;
+
+        // Kurs ma'lumoti (tranzaksiya qilingan paytdagi)
+        // API dan "11 800" formatida keladi - probelni olib tashlaymiz
+        final kursString = item['kurs']?.toString() ?? '';
+        double? exchangeRate;
+        if (kursString.isNotEmpty) {
+          final cleanKurs = kursString.replaceAll(' ', '').replaceAll(',', '').replaceAll('.', '');
+          exchangeRate = double.tryParse(cleanKurs);
+        } else if (item['exchangeRate'] != null) {
+          exchangeRate = double.tryParse(item['exchangeRate']?.toString() ?? '0');
+        }
+        
+        // Currency ma'lumoti
+        final currency = item['currency']?.toString().toUpperCase() ?? 'UZS';
+        
+        print('🔍 Transaction ID: ${item['id']}');
+        print('💱 Raw API data: kurs="${item['kurs']}", exchangeRate="${item['exchangeRate']}"');
+        print('💱 Parsed: kurs="$kursString", final exchangeRate=$exchangeRate');
+        print('💰 Transaction currency: $currency, debtAmount: $amountDebit');
 
         // Sana parse qilish - dd.MM.yyyy HH:mm:ss formatidan
         DateTime date = DateTime.now();
@@ -2902,6 +3206,8 @@ class _StatsPageState extends State<StatsPage> {
           walletChiqim: walletChiqim,
           counterparty: counterparty, // Kimdan/Kimga
           amountDebit: amountDebit, // Qarz summasi
+          exchangeRate: exchangeRate ?? _exchangeRate, // API dan kelgan yoki joriy kurs
+          paymentMethod: currency, // Currency'ni paymentMethod'da saqlaymiz
         );
 
         newTransactions.add(transaction);

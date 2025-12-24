@@ -38,6 +38,7 @@ class ApiService {
   
   // Transaction endpoints
   final String transactionCreate = 'Kassam/hs/KassamUrl/transactionCreate';
+  final String transactionConversionCreate = 'Kassam/hs/KassamUrl/transactionConversionCreate';
   final String getTransaction = 'Kassam/hs/KassamUrl/getTransaction';
   final String getTransactionTypes = 'Kassam/hs/KassamUrl/getTransactionTypes';
   final String transactionTypesCreate = 'Kassam/hs/KassamUrl/transactionTypesCreate';
@@ -471,6 +472,8 @@ class ApiService {
     required String type, // 'chiqim' yoki 'kirim'
     required String comment,
     required double amount,
+    String? currency,
+    double? exchangeRate, // Tranzaksiya qilingan paytdagi kurs
   }) async {
     try {
       final sp = await SharedPreferences.getInstance();
@@ -485,6 +488,9 @@ class ApiService {
         'type': type,
         'comment': comment,
         'amount': amount,
+        if (currency != null) 'currency': currency,
+        if (exchangeRate != null) 'exchangeRate': exchangeRate,
+        if (exchangeRate != null) 'kurs': exchangeRate, // Server compatibility
       };
 
       final response = await post(
@@ -819,7 +825,9 @@ Future<Map<String, dynamic>> createTransactionDebt({
         'previousDebt': previousDebt,
         'currency': currency.toLowerCase(),
         'amount': amount.toInt(),
-        'amountDebt': amountDebt.toInt(),
+        'amountDebt': currency.toLowerCase() == 'usd' ? amountDebt : amountDebt.toInt(),
+        'summa': amount.toInt(), // Server compatibility  
+        'sumaQarz': currency.toLowerCase() == 'usd' ? amountDebt : amountDebt.toInt(), // Server compatibility
         if (comment != null && comment.isNotEmpty) 'comment': comment,
       };
       
@@ -835,6 +843,50 @@ Future<Map<String, dynamic>> createTransactionDebt({
       return response;
     } catch (e) {
       print('💰 Exception in createTransactionDebt: $e');
+      return {
+        'success': false,
+        'message': 'Internetga ulanishda xatolik',
+        'data': null,
+      };
+    }
+  }
+
+  /// Konvertatsiya operatsiyasini yaratish
+  Future<Map<String, dynamic>> createTransactionConversion({
+    required String walletIdChiqim,
+    required String walletIdKirim,
+    required double amountChiqim,
+    required double amountKirim,
+    String? comment,
+  }) async {
+    print('💱 Creating conversion: $amountChiqim → $amountKirim');
+    
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final token = sp.getString('auth_token') ?? _authToken;
+      print('💱 Token: $token');
+      
+      final body = {
+        'type': 'konvertatsiya',
+        'walletIdKirim': walletIdKirim,
+        'walletIdChiqim': walletIdChiqim,
+        'amountKirim': amountKirim.toInt(),
+        'amountChiqim': amountChiqim.toInt(),
+        if (comment != null && comment.isNotEmpty) 'comment': comment,
+      };
+      
+      print('💱 Request body: $body');
+      
+      final response = await post(
+        transactionConversionCreate,
+        body: body,
+        token: token,
+      );
+      
+      print('💱 Response: $response');
+      return response;
+    } catch (e) {
+      print('💱 Exception in createTransactionConversion: $e');
       return {
         'success': false,
         'message': 'Internetga ulanishda xatolik',

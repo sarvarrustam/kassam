@@ -14,17 +14,21 @@ class StatsCreateTransactionEvent extends StatsEvent {
   final String type; // 'chiqim' yoki 'kirim'
   final String comment;
   final double amount;
+  final String currency;
+  final double? exchangeRate; // Tranzaksiya qilingan paytdagi kurs
 
   const StatsCreateTransactionEvent({
     required this.walletId,
     required this.transactionTypesId,
     required this.type,
     required this.comment,
-    required this.amount, required String currency,
+    required this.amount,
+    required this.currency,
+    this.exchangeRate, // Optional
   });
 
   @override
-  List<Object?> get props => [walletId, transactionTypesId, type, comment, amount];
+  List<Object?> get props => [walletId, transactionTypesId, type, comment, amount, currency, exchangeRate];
 }
 
 /// Transaction turlarini olish event
@@ -141,6 +145,32 @@ class StatsCreateTransactionDebt extends StatsEvent {
     currency,
     amount,
     amountDebt,
+    comment,
+  ];
+}
+
+/// Konvertatsiya operatsiyasini yaratish event
+class StatsCreateTransactionConversion extends StatsEvent {
+  final String walletIdChiqim;
+  final String walletIdKirim;
+  final double amountChiqim;
+  final double amountKirim;
+  final String? comment;
+
+  const StatsCreateTransactionConversion({
+    required this.walletIdChiqim,
+    required this.walletIdKirim,
+    required this.amountChiqim,
+    required this.amountKirim,
+    this.comment,
+  });
+
+  @override
+  List<Object?> get props => [
+    walletIdChiqim,
+    walletIdKirim,
+    amountChiqim,
+    amountKirim,
     comment,
   ];
 }

@@ -40,6 +40,11 @@ class Transaction extends Equatable {
       paymentMethod: json['paymentMethod'] as String?,
       customCategoryName: json['customCategoryName'] as String?,
       customCategoryEmoji: json['customCategoryEmoji'] as String?,
+      exchangeRate: json['exchangeRate'] != null ? (json['exchangeRate'] as num).toDouble() : null,
+      walletKirim: json['walletKirim'] as String?,
+      walletChiqim: json['walletChiqim'] as String?,
+      counterparty: json['counterparty'] as String?,
+      amountDebit: json['amountDebit'] != null ? (json['amountDebit'] as num).toDouble() : null,
     );
   }
 
@@ -56,6 +61,11 @@ class Transaction extends Equatable {
     'paymentMethod': paymentMethod,
     'customCategoryName': customCategoryName,
     'customCategoryEmoji': customCategoryEmoji,
+    'walletKirim': walletKirim,
+    'walletChiqim': walletChiqim,
+    'counterparty': counterparty,
+    'amountDebit': amountDebit,
+    'exchangeRate': exchangeRate,
   };
   final String id;
   final String title;
@@ -77,6 +87,9 @@ class Transaction extends Equatable {
   // Qarz olish/berish uchun qo'shimcha field'lar
   final String? counterparty; // Kimdan/Kimga
   final double? amountDebit;  // Qarz summasi
+  
+  // Kurs ma'lumoti (tranzaksiya qilingan paytdagi)
+  final double? exchangeRate; // USD/UZS kursi
 
   const Transaction({
     required this.id,
@@ -95,6 +108,7 @@ class Transaction extends Equatable {
     this.walletChiqim,
     this.counterparty,
     this.amountDebit,
+    this.exchangeRate, // Kurs qo'shildi
   });
 
   @override
@@ -115,6 +129,7 @@ class Transaction extends Equatable {
     walletChiqim,
     counterparty,
     amountDebit,
+    exchangeRate, // Kurs qo'shildi
   ];
 
   // Kirim yoki chiqimni aniqlash

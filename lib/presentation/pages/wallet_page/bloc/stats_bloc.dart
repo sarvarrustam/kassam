@@ -17,6 +17,9 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
     on<StatsGetDebtorsCreditors>(_onGetDebtorsCreditors);
     on<StatsCreateDebtorCreditor>(_onCreateDebtorCreditor);
     on<StatsCreateTransactionDebt>(_onCreateTransactionDebt);
+//  on<StatsCreateDebtorCreditor>(_onCreateDebtorCreditor);
+//     on<StatsCreateTransactionDebt>(_onCreateTransactionDebt);  
+
   }
 
   Future<void> _onCreateTransaction(
@@ -250,7 +253,7 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
       print('💰 Creating transaction debt: ${event.type}, amount: ${event.amount}');
       
       final result = await _apiService.createTransactionDebt(
-        transactionTypesId: event.transactionTypesId,
+        //transactionTypesId: event.transactionTypesId,
         type: event.type,
         walletId: event.walletId,
         debtorCreditorId: event.debtorCreditorId,
@@ -273,4 +276,5 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
       emit(StatsError('Xatolik: ${e.toString()}'));
     }
   }
+
 }

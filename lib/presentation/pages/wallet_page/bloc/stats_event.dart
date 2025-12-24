@@ -20,7 +20,7 @@ class StatsCreateTransactionEvent extends StatsEvent {
     required this.transactionTypesId,
     required this.type,
     required this.comment,
-    required this.amount,
+    required this.amount, required String currency,
   });
 
   @override
@@ -105,9 +105,11 @@ class StatsCreateDebtorCreditor extends StatsEvent {
   List<Object?> get props => [name, telephoneNumber];
 }
 
+
+
 /// Qarz operatsiyasini yaratish event
 class StatsCreateTransactionDebt extends StatsEvent {
-  final String transactionTypesId;
+  //final String transactionTypesId;
   final String type; // qarzPulBerish, qarzPulOlish
   final String walletId;
   final String debtorCreditorId;
@@ -118,7 +120,7 @@ class StatsCreateTransactionDebt extends StatsEvent {
   final String? comment;
 
   const StatsCreateTransactionDebt({
-    required this.transactionTypesId,
+    //required this.transactionTypesId,
     required this.type,
     required this.walletId,
     required this.debtorCreditorId,
@@ -131,7 +133,7 @@ class StatsCreateTransactionDebt extends StatsEvent {
 
   @override
   List<Object?> get props => [
-    transactionTypesId,
+    //transactionTypesId,
     type,
     walletId,
     debtorCreditorId,
@@ -142,4 +144,3 @@ class StatsCreateTransactionDebt extends StatsEvent {
     comment,
   ];
 }
-

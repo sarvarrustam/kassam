@@ -64,12 +64,6 @@ class _StatsPageState extends State<StatsPage> {
     _statsBloc.add(const StatsGetDebtorsCreditors());
   }
 
-  @override
-  void dispose() {
-    _statsBloc.close();
-    super.dispose();
-  }
-
   Future<void> _loadInitialTransactions() async {
     // Sahifa ochilganda tranzaksiyalarni yuklash
     print('🔍 Loading transactions for wallet: $_selectedWalletId');
@@ -108,11 +102,11 @@ class _StatsPageState extends State<StatsPage> {
     }
   }
 
-  // @override
-  // void dispose() {
-  //   _statsBloc.close();
-  //   super.dispose();
-  // }
+  @override
+  void dispose() {
+    _statsBloc.close();
+    super.dispose();
+  }
 
   Future<void> _loadCustomCategories() async {
     final sp = await SharedPreferences.getInstance();
@@ -1673,6 +1667,10 @@ class _StatsPageState extends State<StatsPage> {
                                   // Qarz operatsiyasi API'si
                                   _statsBloc.add(
                                     StatsCreateTransactionDebt(
+                                      transactionTypesId:
+                                          debtType == 'qarz_berish'
+                                          ? '20b88c22-d51d-11f0-8059-c888ab3416b4' // Hardcoded for now
+                                          : '20b88c22-d51d-11f0-8059-c888ab3416b4', // Should be different for qarz_olish
                                       type: debtType == 'qarz_berish'
                                           ? 'qarzPulBerish'
                                           : 'qarzPulOlish',
@@ -1729,7 +1727,6 @@ class _StatsPageState extends State<StatsPage> {
                                       type: apiType,
                                       comment: comment,
                                       amount: amount,
-                                      currency: 'UZS',
                                     ),
                                   );
                                 }

@@ -43,6 +43,7 @@ class ApiService {
   final String transactionTypesCreate = 'Kassam/hs/KassamUrl/transactionTypesCreate';
   final String getWalletBalance = 'Kassam/hs/KassamUrl/getWalletBalance';
   final String getDebtorsCreditors = 'Kassam/hs/KassamUrl/getDebtorsCreditors';
+  final String transactionDebtsCreate = 'Kassam/hs/KassamUrl/transactionDebtsCreate';
   final String debtorCreditorCreate = 'Kassam/hs/KassamUrl/debtorCreditorCreate';
 
 
@@ -140,8 +141,8 @@ class ApiService {
       print('Query Params: $queryParams');
       if (token != null) print('Token: $token');
       
-      // Headers
-      final headers = <String, dynamic>{};
+      // Headers (getHeaders() ni ishlatish - Basic Auth bilan)
+      final headers = getHeaders();
       if (token != null) {
         headers['token'] = token;
       }
@@ -250,13 +251,20 @@ class ApiService {
     try {
       print('🔵 POST Request: $baseUrl$endpoint');
       print('🔵 POST Body: $body');
-      if (token != null) print('🔵 Token: $token');
+      print('🔵 POST Headers will include:');
+      print('   - Authorization: Basic ... (username: $_username)');
+      print('   - Content-Type: application/json');
+      if (token != null) {
+        print('   - token: $token');
+      }
       
-      // Headers
-      final headers = <String, dynamic>{};
+      // Headers (getHeaders() ni ishlatish - Basic Auth bilan)
+      final headers = getHeaders();
       if (token != null) {
         headers['token'] = token;
       }
+      
+      print('🔵 Final headers: $headers');
       
       Response response;
       try {
@@ -765,9 +773,8 @@ class ApiService {
     }
   }
 
-  // Qarz operatsiyasini yaratish
-  Future<Map<String, dynamic>> createTransactionDebt({
-    required String transactionTypesId,
+Future<Map<String, dynamic>> createTransactionDebt({
+    //required String transactionTypesId,
     required String type, // qarzPulBerish, qarzPulOlish
     required String walletId,
     required String debtorCreditorId,
@@ -786,72 +793,26 @@ class ApiService {
       print('💰 Token: $token');
       
       final body = {
-        'transactionTypesId': transactionTypesId,
         'type': type,
         'walletId': walletId,
         'debtorCreditorId': debtorCreditorId,
         'previousDebt': previousDebt,
         'currency': currency.toLowerCase(),
-        'amount': amount,
-        'amountDebt': amountDebt,
+        'amount': amount.toInt(),
+        'amountDebt': amountDebt.toInt(),
         if (comment != null && comment.isNotEmpty) 'comment': comment,
       };
       
-      // Custom headers bilan
-      final headers = getHeaders();
-      if (token != null && token.isNotEmpty) {
-        headers['token'] = token;
-      }
+      print('💰 Request body: $body');
       
-      Response response;
-      try {
-        response = await _dio.post(
-          'https://master.cloudhoff.uz/Kassam/hs/KassamUrl/transactionDebtsCreate',
-          data: body,
-          options: Options(
-            headers: headers,
-            validateStatus: (status) {
-              return status != null && status >= 200 && status < 600;
-            },
-          ),
-        );
-      } on DioException catch (e) {
-        print('💰 DioException: ${e.message}');
-        return {
-          'success': false,
-          'message': 'Internetga ulanishda xatolik: ${e.message}',
-          'data': null,
-        };
-      }
+      final response = await post(
+        transactionDebtsCreate,
+        body: body,
+        token: token,
+      );
       
-      print('💰 Response: ${response.data}');
-      
-      if (response.statusCode == 200) {
-        final data = response.data;
-        
-        if (data['error'] == false) {
-          print('💰 Transaction debt created successfully');
-          return {
-            'success': true,
-            'message': data['errorMassage'] ?? 'Qarz operatsiyasi muvaffaqiyatli yaratildi',
-            'data': data['data'],
-          };
-        } else {
-          print('💰 Error in response: ${data['errorMassage']}');
-          return {
-            'success': false,
-            'message': data['errorMassage'] ?? 'Xatolik yuz berdi',
-            'data': null,
-          };
-        }
-      } else {
-        print('💰 HTTP Error: ${response.statusCode}');
-        return {
-          'success': false,
-          'message': 'Server xatosi: ${response.statusCode}',
-          'data': null,
-        };
-      }
+      print('💰 Response: $response');
+      return response;
     } catch (e) {
       print('💰 Exception in createTransactionDebt: $e');
       return {
@@ -861,5 +822,6 @@ class ApiService {
       };
     }
   }
+
 }
 

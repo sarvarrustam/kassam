@@ -102,6 +102,8 @@ class StatsDebtorCreditorCreated extends StatsState {
   List<Object?> get props => [message, data];
 }
 
+
+
 /// Qarz operatsiyasi yaratildi
 class StatsTransactionDebtCreated extends StatsState {
   final String message;
@@ -115,5 +117,4 @@ class StatsTransactionDebtCreated extends StatsState {
   @override
   List<Object?> get props => [message, data];
 }
-  
   

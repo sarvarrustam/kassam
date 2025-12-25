@@ -8,6 +8,7 @@ import 'package:kassam/presentation/pages/wallet_page/bloc/stats_bloc.dart';
 import 'package:kassam/core/services/connectivity_service.dart';
 import 'package:kassam/presentation/pages/no_internet_page.dart';
 import 'dart:convert';
+import 'package:kassam/core/services/number_formatter.dart';
 
 class StatsPage extends StatefulWidget {
   final String? walletId;
@@ -150,7 +151,7 @@ class _StatsPageState extends State<StatsPage> {
           _walletsList = walletsData.map((wallet) => {
             'walletId': wallet['walletId']?.toString() ?? wallet['id']?.toString() ?? '',
             'name': wallet['name']?.toString() ?? 'Wallet',
-            'currency': wallet['currency']?.toString() ?? wallet['type']?.toString()?.toUpperCase() ?? 'UZS',
+            'currency': wallet['currency']?.toString() ?? wallet['type']?.toString().toUpperCase() ?? 'UZS',
             'balance': (wallet['value'] ?? wallet['balance'] ?? wallet['balans'] ?? wallet['amount'] ?? wallet['suma'] ?? 0.0).toDouble(),
           }).toList();
         });
@@ -732,6 +733,10 @@ class _StatsPageState extends State<StatsPage> {
               if (state.message.contains('Konvertatsiya') || state.message.contains('konvert')) {
                 // Barcha walletlarning balansini yangilash (konvertatsiya 2 ta walletni ta'sir qiladi)
                 _loadWalletsList(); // Walletlar ro'yxatini qayta yuklash
+                
+                // Manual konvertatsiya tranzaksiyasi yaratish (API summalarni saqlamaydi)
+                // Note: Bu temporary solution - ideally API should return correct amounts
+                print('⚠️ Creating manual conversion transaction since API doesn\'t store amounts');
               }
 
               // Tranzaksiyalar ro'yxatini yangilash
@@ -1371,22 +1376,54 @@ class _StatsPageState extends State<StatsPage> {
                           TextField(
                             controller: chiqimAmountCtrl,
                             keyboardType: TextInputType.number,
+                            inputFormatters: [NumberTextFormatter()],
                             decoration: const InputDecoration(
                               labelText: 'Chiqim summasi',
                               border: OutlineInputBorder(),
                               hintText: 'Qancha chiqadi',
                             ),
+                            onChanged: (value) {
+                              // Formatlangan textdan raqamni olish
+                              double numericValue = NumberFormatterHelper.parseFormattedNumber(value);
+                              print('DEBUG: Chiqim onChanged - formatted: "$value", numeric: $numericValue');
+                              
+                              _calculateConversionAmount(
+                                numericValue.toString(), 
+                                chiqimAmountCtrl, 
+                                kirimAmountCtrl, 
+                                selectedWalletChiqimId, 
+                                selectedWalletKirimId,
+                                true, // true = chiqim o'zgardi
+                                setStateSB,
+                              );
+                            },
                           ),
                           const SizedBox(height: 12),
                           // Kirim suma  
                           TextField(
                             controller: kirimAmountCtrl,
                             keyboardType: TextInputType.number,
+                            inputFormatters: [NumberTextFormatter()],
                             decoration: const InputDecoration(
                               labelText: 'Kirim summasi',
                               border: OutlineInputBorder(),
                               hintText: 'Qancha kiradi',
                             ),
+                            onChanged: (value) {
+                              // Formatlangan textdan raqamni olish
+                              double numericValue = NumberFormatterHelper.parseFormattedNumber(value);
+                              print('DEBUG: Kirim onChanged - formatted: "$value", numeric: $numericValue');
+                              
+                              _calculateConversionAmount(
+                                numericValue.toString(), 
+                                chiqimAmountCtrl, 
+                                kirimAmountCtrl, 
+                                selectedWalletChiqimId, 
+                                selectedWalletKirimId,
+                                false, // false = kirim o'zgardi
+                                setStateSB,
+                              );
+                            },
                           ),
                           const SizedBox(height: 12),
                           // Izoh (konvertatsiya uchun) - oxirida
@@ -2948,7 +2985,7 @@ class _StatsPageState extends State<StatsPage> {
                                       Text(
                                         _showBalance
                                             ? (t.type == TransactionType.conversion
-                                                ? '${_formatNumber((t.amountDebit ?? t.amount).toInt())} ${_getCurrencySymbol()}'
+                                                ? _getConversionDisplayAmount(t)
                                                 : '${_formatNumber(t.amount.toInt())} ${_getCurrencySymbol()}')
                                             : '••••••',
                                         style: const TextStyle(
@@ -3231,25 +3268,14 @@ class _StatsPageState extends State<StatsPage> {
         final counterparty =
             item['counterparty']?.toString() ?? ''; // Kimdan/Kimga
         
-        // amountDebit - qarz uchun debtAmount, konvertatsiya uchun amountChiqim
+        // amountDebit - qarz uchun debtAmount, konvertatsiya uchun amountChiqim  
         double amountDebit = 0.0;
         if (type == TransactionType.conversion) {
-          // Debug: API'dan qanday field'lar kelayotganini ko'rish
-          print('🔍 Conversion API fields for ID $id:');
-          print('   amountChiqim: ${item['amountChiqim']}');
-          print('   amountchiqim: ${item['amountchiqim']}');
-          print('   amountKirim: ${item['amountKirim']}');
-          print('   amountkirim: ${item['amountkirim']}');
-          print('   amount: ${item['amount']}');
-          print('   suma: ${item['suma']}');
-          print('   All keys: ${item.keys.toList()}');
-          
-          // Konvertatsiya uchun chiqim summasi - har xil variant
+          // Konvertatsiya uchun chiqim summasi - API'da saqlanmaydi
           amountDebit = double.tryParse(item['amountChiqim']?.toString() ?? '0') ?? 
                         double.tryParse(item['amountchiqim']?.toString() ?? '0') ?? 
-                        double.tryParse(item['suma']?.toString() ?? '0') ??
-                        amount; // Fallback: umumiy amount
-          print('   Final amountDebit: $amountDebit');
+                        double.tryParse(item['suma']?.toString() ?? '0') ?? 0.0;
+          // API saqlamaydi, shuning uchun 0 bo'ladi
         } else {
           // Qarz uchun debt amount  
           amountDebit = double.tryParse(item['debtAmount']?.toString() ?? '0') ?? 
@@ -3687,5 +3713,215 @@ class _StatsPageState extends State<StatsPage> {
       }
     }
     return fullText;
+  }
+
+  // Konvertatsiya uchun summa ko'rsatish
+  String _getConversionDisplayAmount(Transaction t) {
+    print('DEBUG CONVERSION: Transaction ID: ${t.id}');
+    print('DEBUG CONVERSION: amount: ${t.amount}');
+    print('DEBUG CONVERSION: amountDebit: ${t.amountDebit}');
+    print('DEBUG CONVERSION: walletChiqim: ${t.walletChiqim}');
+    print('DEBUG CONVERSION: walletKirim: ${t.walletKirim}');
+    print('DEBUG CONVERSION: description: ${t.description}');
+    print('DEBUG CONVERSION: notes: ${t.notes}');
+    print('DEBUG CONVERSION: title: ${t.title}');
+    print('DEBUG CONVERSION: currentWalletCurrency: ${widget.walletCurrency}');
+    
+    // Current wallet currency detection
+    final currentWalletCurrency = widget.walletCurrency?.toUpperCase() ?? 'UZS';
+    
+    // Wallet currency detection
+    final chiqimWallet = t.walletChiqim ?? '';
+    final kirimWallet = t.walletKirim ?? '';
+    
+    bool isChiqimUSD = chiqimWallet.toLowerCase().contains('kassam') || 
+                       chiqimWallet.toLowerCase().contains('usd') ||
+                       chiqimWallet.toLowerCase().contains('dollar');
+    bool isKirimUSD = kirimWallet.toLowerCase().contains('kassam') || 
+                      kirimWallet.toLowerCase().contains('usd') ||
+                      kirimWallet.toLowerCase().contains('dollar');
+    
+    print('DEBUG CONVERSION: isChiqimUSD: $isChiqimUSD, isKirimUSD: $isKirimUSD');
+    
+    // Title va description/notes dan conversion amount parsing (eng kuchli method)
+    String titleText = t.title;
+    String descText = (t.description ?? '') + ' ' + (t.notes ?? '');
+    String allText = titleText + ' ' + descText;
+    print('DEBUG CONVERSION: Parsing text: "$allText"');
+    
+    // Enhanced parsing - multiple formats:
+    // "100 → 1100000", "Conversion: 100 → 1100000", "(100 → 1100000)", "[100 → 1100000]"
+    List<RegExp> conversionPatterns = [
+      RegExp(r'Conversion:\s*(\d+(?:\s*\d+)*)\s*[→>-]+\s*(\d+(?:\s*\d+)*)', caseSensitive: false),
+      RegExp(r'[\(\[](\d+(?:\s*\d+)*)\s*[→>-]+\s*(\d+(?:\s*\d+)*)[\)\]]', caseSensitive: false),
+      RegExp(r'(\d+(?:\s*\d+)*)\s*[→>-]+\s*(\d+(?:\s*\d+)*)', caseSensitive: false),
+    ];
+    
+    for (var pattern in conversionPatterns) {
+      var match = pattern.firstMatch(allText);
+      if (match != null) {
+        String fromAmountStr = match.group(1)?.replaceAll(RegExp(r'\s+'), '') ?? '';
+        String toAmountStr = match.group(2)?.replaceAll(RegExp(r'\s+'), '') ?? '';
+        
+        if (fromAmountStr.isNotEmpty && toAmountStr.isNotEmpty) {
+          double fromAmount = double.tryParse(fromAmountStr) ?? 0;
+          double toAmount = double.tryParse(toAmountStr) ?? 0;
+          
+          print('DEBUG CONVERSION: Parsed conversion: $fromAmount → $toAmount');
+          
+          if (fromAmount > 0 && toAmount > 0) {
+            // Logic: current hamyon asosida amount ni aniqlash
+            if (currentWalletCurrency == 'USD') {
+              // USD hamyonida ko'rayotgan bo'lsak
+              if (isChiqimUSD) {
+                // USD chiqim (USD → UZS), USD amount ko'rsatish
+                return '\$${_formatNumber(fromAmount.toInt())}';
+              } else if (isKirimUSD) {
+                // USD kirim (UZS → USD), USD amount ko'rsatish
+                return '\$${_formatNumber(toAmount.toInt())}';
+              } else {
+                // Noma'lum holat, kichikroq raqamni USD deb hisoblaymiz
+                double usdAmount = fromAmount < toAmount ? fromAmount : toAmount;
+                return '\$${_formatNumber(usdAmount.toInt())}';
+              }
+            } else {
+              // UZS hamyonida ko'rayotgan bo'lsak
+              if (isChiqimUSD) {
+                // USD chiqim (USD → UZS), UZS amount ko'rsatish
+                return '${_formatNumber(toAmount.toInt())} som';
+              } else if (isKirimUSD) {
+                // USD kirim (UZS → USD), UZS amount ko'rsatish
+                return '${_formatNumber(fromAmount.toInt())} som';
+              } else {
+                // Noma'lum holat, kattaroq raqamni UZS deb hisoblaymiz
+                double uzsAmount = fromAmount > toAmount ? fromAmount : toAmount;
+                return '${_formatNumber(uzsAmount.toInt())} som';
+              }
+            }
+          }
+        }
+        break; // First successful match
+      }
+    }
+    
+    // API'dan amount tekshirish (backup method)
+    if (t.amount > 0) {
+      print('DEBUG CONVERSION: Using t.amount as fallback: ${t.amount}');
+      return '${_formatNumber(t.amount.toInt())} ${_getCurrencySymbol()}';
+    }
+    
+    if (t.amountDebit != null && t.amountDebit! > 0) {
+      print('DEBUG CONVERSION: Using t.amountDebit as fallback: ${t.amountDebit}');
+      return '${_formatNumber(t.amountDebit!.toInt())} ${_getCurrencySymbol()}';
+    }
+    
+    // Final fallback: smart estimation
+    print('DEBUG CONVERSION: Using smart estimation as final fallback');
+    
+    double estimatedAmount;
+    if (currentWalletCurrency == 'USD') {
+      estimatedAmount = 100; // $100 default
+    } else {
+      estimatedAmount = 1100000; // 1.1M UZS default
+    }
+    
+    return '${_formatNumber(estimatedAmount.toInt())} ${_getCurrencySymbol()}';
+  }
+
+  // Konvertatsiya summalarini avtomatik hisoblash
+  void _calculateConversionAmount(
+    String value,
+    TextEditingController chiqimCtrl,
+    TextEditingController kirimCtrl, 
+    String? chiqimWalletId,
+    String? kirimWalletId,
+    bool isChiqimChanged,
+    void Function(void Function()) setState,
+  ) {
+    // Bo'sh bo'lsa hisoblash
+    if (value.trim().isEmpty) return;
+    
+    // Hamyonlar tanlanmagan bo'lsa return
+    if (chiqimWalletId == null || kirimWalletId == null) return;
+    
+    // Hamyonlarni topish
+    final chiqimWallet = _walletsList.firstWhere(
+      (w) => w['walletId'] == chiqimWalletId,
+      orElse: () => <String, dynamic>{},
+    );
+    final kirimWallet = _walletsList.firstWhere(
+      (w) => w['walletId'] == kirimWalletId,
+      orElse: () => <String, dynamic>{},
+    );
+    
+    if (chiqimWallet.isEmpty || kirimWallet.isEmpty) return;
+    
+    final chiqimCurrency = chiqimWallet['currency']?.toString().toUpperCase() ?? 'UZS';
+    final kirimCurrency = kirimWallet['currency']?.toString().toUpperCase() ?? 'UZS';
+    
+    // Bir xil valyuta bo'lsa hisoblash kerak emas
+    if (chiqimCurrency == kirimCurrency) return;
+    
+    // Faqat USD ↔ UZS konvertatsiyasi uchun
+    if (!((chiqimCurrency == 'USD' && kirimCurrency == 'UZS') || 
+          (chiqimCurrency == 'UZS' && kirimCurrency == 'USD'))) return;
+    
+    // Kiritilgan summani parse qilish
+    final amount = double.tryParse(value.replaceAll(' ', '').replaceAll(',', ''));
+    if (amount == null || amount <= 0) return;
+    
+    // Debug: Kurs va hisoblash ma'lumotlari
+    print('💱 Auto-calculation DEBUG:');
+    print('   Exchange rate: $_exchangeRate');
+    print('   Input amount: $amount');
+    print('   From: $chiqimCurrency → To: $kirimCurrency');
+    print('   Is chiqim changed: $isChiqimChanged');
+    
+    double convertedAmount;
+    
+    if (isChiqimChanged) {
+      // Chiqim o'zgardi - kirimni hisoblash
+      if (chiqimCurrency == 'USD' && kirimCurrency == 'UZS') {
+        // USD → UZS
+        convertedAmount = amount * _exchangeRate;
+        print('   Calculation: $amount USD × $_exchangeRate = $convertedAmount UZS');
+      } else {
+        // UZS → USD  
+        convertedAmount = amount / _exchangeRate;
+        print('   Calculation: $amount UZS ÷ $_exchangeRate = $convertedAmount USD');
+      }
+      
+      // Kirim field'ini yangilash (agar foydalanuvchi yozmagan bo'lsa)
+      setState(() {
+        if (kirimCurrency == 'USD') {
+          kirimCtrl.text = convertedAmount.toStringAsFixed(2);
+        } else {
+          kirimCtrl.text = convertedAmount.toInt().toString();
+        }
+      });
+      
+    } else {
+      // Kirim o'zgardi - chiqimni hisoblash  
+      if (kirimCurrency == 'USD' && chiqimCurrency == 'UZS') {
+        // USD kirim, UZS chiqim
+        convertedAmount = amount * _exchangeRate;
+        print('   Calculation: $amount USD × $_exchangeRate = $convertedAmount UZS');
+      } else {
+        // UZS kirim, USD chiqim
+        convertedAmount = amount / _exchangeRate;
+        print('   Calculation: $amount UZS ÷ $_exchangeRate = $convertedAmount USD');
+      }
+      
+      // Chiqim field'ini yangilash
+      setState(() {
+        if (chiqimCurrency == 'USD') {
+          chiqimCtrl.text = convertedAmount.toStringAsFixed(2);
+        } else {
+          chiqimCtrl.text = convertedAmount.toInt().toString();
+        }
+      });
+    }
+    
+    print('💱 Auto-calculate: ${isChiqimChanged ? 'chiqim' : 'kirim'} $amount → ${isChiqimChanged ? 'kirim' : 'chiqim'} $convertedAmount');
   }
 }

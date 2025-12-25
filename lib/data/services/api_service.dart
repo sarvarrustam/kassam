@@ -872,7 +872,9 @@ Future<Map<String, dynamic>> createTransactionDebt({
         'walletIdChiqim': walletIdChiqim,
         'amountKirim': amountKirim.toInt(),
         'amountChiqim': amountChiqim.toInt(),
-        if (comment != null && comment.isNotEmpty) 'comment': comment,
+        'comment': comment != null && comment.isNotEmpty ? 
+            '$comment (${amountChiqim.toInt()} → ${amountKirim.toInt()})' : 
+            'Conversion: ${amountChiqim.toInt()} → ${amountKirim.toInt()}',
       };
       
       print('💱 ===== FINAL API REQUEST =====');

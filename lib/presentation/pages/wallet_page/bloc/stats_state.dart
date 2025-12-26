@@ -115,6 +115,6 @@ class StatsTransactionDebtCreated extends StatsState {
   });
 
   @override
-  List<Object?> get props => [message, data];
+  List<Object?> get props => [message, data];    ///new
 }
   

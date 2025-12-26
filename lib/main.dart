@@ -49,6 +49,8 @@ class MyApp extends StatelessWidget {
             routerDelegate: appRouter.routerDelegate,
             routeInformationParser: appRouter.routeInformationParser,
             routeInformationProvider: appRouter.routeInformationProvider,
+
+            // home: const EntryPage(  tetettegdvdttttettet
           );
         },
       ),

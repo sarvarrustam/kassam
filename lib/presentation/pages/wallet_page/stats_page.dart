@@ -706,9 +706,9 @@ class _StatsPageState extends State<StatsPage> {
   Widget _buildTransactionDialog() {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(''),
+        title: const Text('Tranzaksiya'),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),

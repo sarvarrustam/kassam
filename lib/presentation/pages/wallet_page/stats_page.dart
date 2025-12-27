@@ -397,112 +397,141 @@ class _StatsPageState extends State<StatsPage> {
     StateSetter setStateSB,
     Function(String?) setSelectedPersonId,
   ) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (navigationContext) => _buildDebtorsDialogScreen(
+          context,
+          debtType,
+          debtPersonCtrl,
+          setStateSB,
+          setSelectedPersonId,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDebtorsDialogScreen(
+    BuildContext context,
+    String debtType,
+    TextEditingController debtPersonCtrl,
+    StateSetter setStateSB,
+    Function(String?) setSelectedPersonId,
+  ) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(debtType == 'qarz_olish' ? 'Kimdan' : 'Kimga'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: _buildDebtorsDialogContent(
+        context,
+        debtType,
+        debtPersonCtrl,
+        setStateSB,
+        setSelectedPersonId,
+      ),
+    );
+  }
+
+  Widget _buildDebtorsDialogContent(
+    BuildContext context,
+    String debtType,
+    TextEditingController debtPersonCtrl,
+    StateSetter setStateSB,
+    Function(String?) setSelectedPersonId,
+  ) {
     final searchController = TextEditingController();
 
-    showDialog(
-      context: context,
-      builder: (ctx) => BlocListener<StatsBloc, StatsState>(
-        bloc: _statsBloc,
-        listener: (context, state) {
-          if (state is StatsDebtorsCreditorsLoaded) {
-            if (Navigator.of(ctx).canPop()) {
-              (ctx as Element).markNeedsBuild();
-            }
+    return BlocListener<StatsBloc, StatsState>(
+      bloc: _statsBloc,
+      listener: (context, state) {
+        if (state is StatsDebtorsCreditorsLoaded) {
+          if (Navigator.of(context).canPop()) {
+            (context as Element).markNeedsBuild();
           }
-        },
-        child: StatefulBuilder(
-          builder: (context, dialogSetState) {
-            _dialogRefreshCallback = dialogSetState;
+        }
+      },
+      child: StatefulBuilder(
+        builder: (context, dialogSetState) {
+          _dialogRefreshCallback = dialogSetState;
 
-            List<dynamic> filteredList = List.from(_debtorsList);
+          List<dynamic> filteredList = List.from(_debtorsList);
 
-            if (searchController.text.isNotEmpty) {
-              final query = searchController.text.toLowerCase();
-              filteredList = _debtorsList.where((person) {
-                final name = person['name']?.toString().toLowerCase() ?? '';
-                final phone = person['telephoneNumber']?.toString() ?? '';
-                return name.contains(query) ||
-                    phone.contains(searchController.text);
-              }).toList();
-            }
+          if (searchController.text.isNotEmpty) {
+            final query = searchController.text.toLowerCase();
+            filteredList = _debtorsList.where((person) {
+              final name = person['name']?.toString().toLowerCase() ?? '';
+              final phone = person['telephoneNumber']?.toString() ?? '';
+              return name.contains(query) ||
+                  phone.contains(searchController.text);
+            }).toList();
+          }
 
-            return AlertDialog(
-              title: Text(debtType == 'qarz_olish' ? 'Kimdan' : 'Kimga'),
-              content: SizedBox(
-                width: double.maxFinite,
-                height: 400,
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: searchController,
-                      decoration: const InputDecoration(
-                        labelText: 'Qidirish',
-                        hintText: 'Ism yoki telefon raqam kiriting',
-                        prefixIcon: Icon(Icons.search),
-                        border: OutlineInputBorder(),
-                      ),
-                      onChanged: (value) {
-                        dialogSetState(() {});
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: filteredList.isEmpty && _debtorsList.isNotEmpty
-                          ? const Center(child: Text('Hech narsa topilmadi'))
-                          : _debtorsList.isEmpty
-                          ? const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(20),
-                                child: Text('Ro\'yxat bo\'sh'),
-                              ),
-                            )
-                          : ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: filteredList.length,
-                              itemBuilder: (ctx, index) {
-                                final person = filteredList[index];
-                                final name = person['name']?.toString() ?? '';
-                                final phone =
-                                    person['telephoneNumber']?.toString() ?? '';
-                                final id = person['id']?.toString() ?? '';
-
-                                return ListTile(
-                                  title: Text(name),
-                                  subtitle: phone.isNotEmpty
-                                      ? Text(phone)
-                                      : null,
-                                  onTap: () {
-                                    setStateSB(() {
-                                      debtPersonCtrl.text = name;
-                                    });
-                                    setSelectedPersonId(id);
-                                    Navigator.pop(ctx);
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                  ],
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              TextField(
+                controller: searchController,
+                decoration: const InputDecoration(
+                  labelText: 'Qidirish',
+                  hintText: 'Ism yoki telefon raqam kiriting',
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(),
                 ),
+                onChanged: (value) {
+                  dialogSetState(() {});
+                },
               ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    _showManualEntryDialog(context, debtPersonCtrl, setStateSB);
+              const SizedBox(height: 16),
+              if (filteredList.isEmpty && _debtorsList.isNotEmpty)
+                const Center(child: Text('Hech narsa topilmadi'))
+              else if (_debtorsList.isEmpty)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Text('Ro\'yxat bo\'sh'),
+                  ),
+                )
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: filteredList.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (ctx, index) {
+                    final person = filteredList[index];
+                    final name = person['name']?.toString() ?? '';
+                    final phone =
+                        person['telephoneNumber']?.toString() ?? '';
+                    final id = person['id']?.toString() ?? '';
+
+                    return ListTile(
+                      title: Text(name),
+                      subtitle:
+                          phone.isNotEmpty ? Text(phone) : null,
+                      onTap: () {
+                        setStateSB(() {
+                          debtPersonCtrl.text = name;
+                        });
+                        setSelectedPersonId(id);
+                        Navigator.pop(context);
+                      },
+                    );
                   },
-                  child: const Text('Qo\'lda qo\'shish'),
                 ),
-                TextButton(
-                  onPressed: () {
-                    _dialogRefreshCallback = null;
-                    Navigator.pop(ctx);
-                  },
-                  child: const Text('Yopish'),
-                ),
-              ],
-            );
-          },
-        ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  _showManualEntryDialog(context, debtPersonCtrl, setStateSB);
+                },
+                child: const Text('Qo\'lda qo\'shish'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -665,9 +694,30 @@ class _StatsPageState extends State<StatsPage> {
     _statsBloc.add(const StatsGetDebtorsCreditors());
 
     // Main dialog for transaction
-    showDialog(
-      context: context,
-      barrierDismissible: true,
+    // Fullscreen navigation bilan ochish
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (navigationContext) => _buildTransactionDialog(),
+      ),
+    );
+  }
+
+  Widget _buildTransactionDialog() {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(''),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: _buildTransactionDialogContent(),
+    );
+  }
+
+  Widget _buildTransactionDialogContent() {
+    return Builder(
       builder: (dialogCtx) {
         TransactionType type = TransactionType.expense;
         String debtType =
@@ -903,17 +953,13 @@ class _StatsPageState extends State<StatsPage> {
           },
           child: StatefulBuilder(
             builder: (context, setStateSB) {
-              return Dialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                         Center(
                           child: Container(
                             width: 40,
@@ -954,26 +1000,8 @@ class _StatsPageState extends State<StatsPage> {
                                         style: const TextStyle(fontSize: 24),
                                       ),
                                     ),
-                                  Text(
-                                    selectedCustomCategory != null
-                                        ? (selectedCustomCategory!['name'] ??
-                                              'Yangi Tranzaksiya')
-                                        : (selectedCategory != null
-                                              ? _getCategoryName(
-                                                  selectedCategory!,
-                                                )
-                                              : 'Yangi Tranzaksiya'),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
                                 ],
                               ),
-                            ),
-                            IconButton(
-                              onPressed: () => Navigator.of(dialogCtx).pop(),
-                              icon: const Icon(Icons.close),
                             ),
                           ],
                         ),
@@ -2211,9 +2239,8 @@ class _StatsPageState extends State<StatsPage> {
                         ),
                       ],
                     ),
-                  ),
-                ),
-              );
+                  ],
+                );
             },
           ),
         );
@@ -2224,60 +2251,76 @@ class _StatsPageState extends State<StatsPage> {
   // TODO: Edit transaction functionality - will be implemented later
   // ignore: unused_element
   void _showEditTransactionSheet(Transaction t) {
-    // Centered dialog for edit
-    showDialog(
-      context: context,
-      barrierDismissible: true,
+    // Fullscreen navigation bilan ochish
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (navigationContext) => _buildEditTransactionDialog(t),
+      ),
+    );
+  }
+
+  Widget _buildEditTransactionDialog(Transaction t) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tranzaksiyani tahrirlash'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: _buildEditTransactionDialogContent(t),
+    );
+  }
+
+  Widget _buildEditTransactionDialogContent(Transaction t) {
+    return Builder(
       builder: (dialogCtx) {
         TransactionType type = t.type;
         final titleCtrl = TextEditingController(text: t.title);
         final amountCtrl = TextEditingController(text: t.amount.toString());
 
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: StatefulBuilder(
-                builder: (context, setStateSB) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          margin: const EdgeInsets.only(bottom: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(2),
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            StatefulBuilder(
+              builder: (context, setStateSB) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
                         ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Tranzaksiyani Tahrirlash',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.of(dialogCtx).pop(),
-                            icon: const Icon(Icons.close),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          ChoiceChip(
-                            label: const Text('Chiqim'),
-                            selected: type == TransactionType.expense,
-                            selectedColor: Colors.redAccent,
-                            backgroundColor: Colors.grey[200],
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Tranzaksiyani Tahrirlash',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.of(dialogCtx).pop(),
+                              icon: const Icon(Icons.close),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            ChoiceChip(
+                              label: const Text('Chiqim'),
+                              selected: type == TransactionType.expense,
+                              selectedColor: Colors.redAccent,
+                              backgroundColor: Colors.grey[200],
                             labelStyle: TextStyle(
                               color: type == TransactionType.expense
                                   ? Colors.white
@@ -2368,20 +2411,17 @@ class _StatsPageState extends State<StatsPage> {
                             },
                             child: const Text('Saqlash'),
                           ),
-                        ],
-                      ),
-                    ],
-                  );
-                },
-              ),
+                      ],
+                    ),
+                  ],
+                );
+              },
             ),
-          ),
+          ],
         );
       },
     );
-  }
-
-  //shu royhatni dizaynlari hama qismi shu yerda
+  }  //shu royhatni dizaynlari hama qismi shu yerda
 
   @override
   Widget build(BuildContext context) {
@@ -3384,6 +3424,247 @@ class _StatsPageState extends State<StatsPage> {
     _isFetchingTransactionTypes = true;
     _statsBloc.add(StatsGetTransactionTypesEvent(type: apiType));
 
+    // Fullscreen navigation bilan ochish
+    Navigator.of(dialogContext).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (navigationContext) => _buildTransactionTypePickerDialog(apiType, onSelected),
+      ),
+    ).then((_) {
+      _isFetchingTransactionTypes = false;
+    });
+  }
+
+  Widget _buildTransactionTypePickerDialog(String apiType, void Function(Map<String, String>) onSelected) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          apiType == 'kirim' ? 'Kirim turi' : 'Chiqim turi',
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: _buildTransactionTypePickerContent(apiType, onSelected),
+    );
+  }
+
+  Widget _buildTransactionTypePickerContent(String apiType, void Function(Map<String, String>) onSelected) {
+    return BlocProvider.value(
+      value: _statsBloc,
+      child: BlocConsumer<StatsBloc, StatsState>(
+        listener: (context, state) {
+          if (state is StatsTransactionTypeCreatedSuccess) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  duration: const Duration(seconds: 2),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+
+            // Ro'yxatni yangilash uchun qayta yuklash
+            _statsBloc.add(StatsGetTransactionTypesEvent(type: apiType));
+          }
+        },
+        builder: (context, state) {
+          final searchCtrl = TextEditingController();
+          String searchQuery = '';
+
+          Widget buildLoading([String? text]) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 12),
+                Text(text ?? 'Turlar yuklanmoqda...'),
+              ],
+            ),
+          );
+
+          if (state is StatsLoading) {
+            return buildLoading();
+          } else if (state is StatsTransactionTypesLoaded) {
+            final allItems = _normalizeTransactionTypeList(
+              state.data,
+              apiType,
+            );
+
+            return StatefulBuilder(
+              builder: (context, setDialogState) {
+                // Filter items based on search
+                final items = searchQuery.isEmpty
+                    ? allItems
+                    : allItems
+                          .where(
+                            (item) => (item['name'] ?? '')
+                                .toLowerCase()
+                                .contains(searchQuery.toLowerCase()),
+                          )
+                          .toList();
+
+                final TextButton addButton = TextButton.icon(
+                  onPressed: () {
+                    _showCreateTypeDialogInline(apiType, setDialogState);
+                  },
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: Text(
+                    apiType == 'kirim'
+                        ? 'Yangi kirim turi qo\'shish'
+                        : 'Yangi chiqim turi qo\'shish',
+                  ),
+                );
+
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    // Search field
+                    TextField(
+                      controller: searchCtrl,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          searchQuery = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Qidirish',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Items list
+                    if (items.isEmpty)
+                      Column(
+                        children: [
+                          Text(
+                            searchQuery.isEmpty
+                                ? 'Turlar topilmadi'
+                                : 'Hech narsa topilmadi',
+                          ),
+                          const SizedBox(height: 12),
+                          addButton,
+                        ],
+                      )
+                    else
+                      Column(
+                        children: [
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: items.length,
+                            separatorBuilder: (_, __) =>
+                                const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final item = items[index];
+                              return ListTile(
+                                leading: Text(
+                                  item['emoji'] ?? '🏷️',
+                                  style: const TextStyle(fontSize: 24),
+                                ),
+                                title: Text(item['name'] ?? ''),
+                                onTap: () {
+                                  onSelected(item);
+                                  Navigator.of(context).pop();
+                                },
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          addButton,
+                        ],
+                      ),
+                  ],
+                );
+              },
+            );
+          } else if (state is StatsError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      state.message,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Yopish'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return buildLoading('Yuklanmoqda...');
+        },
+      ),
+    );
+  }
+
+  Future<void> _showCreateTypeDialogInline(String apiType, StateSetter setDialogState) async {
+    final nameCtrl = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          apiType == 'kirim' ? 'Yangi kirim turi' : 'Yangi chiqim turi',
+        ),
+        content: TextField(
+          controller: nameCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Turi nomi',
+            hintText: 'Masalan: Gaz uchun',
+          ),
+          textInputAction: TextInputAction.done,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Bekor qilish'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = nameCtrl.text.trim();
+              if (name.isEmpty) return;
+              _statsBloc.add(
+                StatsCreateTransactionTypeEvent(
+                  name: name,
+                  type: apiType,
+                ),
+              );
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Saqlash'),
+          ),
+        ],
+      ),
+    );
+  }
+  // Deprecated - use _openTransactionTypePicker instead
+  /*
+  void _openTransactionTypePickerOld({
+    required BuildContext dialogContext,
+    required TransactionType transactionType,
+    required void Function(Map<String, String>) onSelected,
+  }) {
+    final apiType = transactionType == TransactionType.income
+        ? 'kirim'
+        : 'chiqim';
+
+    _isFetchingTransactionTypes = true;
+    _statsBloc.add(StatsGetTransactionTypesEvent(type: apiType));
+
     showDialog(
       context: dialogContext,
       barrierDismissible: true,
@@ -3664,6 +3945,7 @@ class _StatsPageState extends State<StatsPage> {
       _isFetchingTransactionTypes = false;
     });
   }
+  */
 
   List<Map<String, String>> _normalizeTransactionTypeList(
     dynamic data,

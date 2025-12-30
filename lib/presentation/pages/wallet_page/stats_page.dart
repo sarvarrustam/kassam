@@ -1043,205 +1043,343 @@ class _StatsPageState extends State<StatsPage> {
                         ),
                         const SizedBox(height: 16),
                         
-                        // Bitta qatorda scrollable toggle'lar
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              // Kirim tugmasi
-                              GestureDetector(
-                                onTap: () {
-                                  setStateSB(() {
-                                    type = TransactionType.income;
-                                    debtType = ''; // qarz holatini reset qilish
-                                    clearFormData(); // Form ma'lumotlarini tozalash
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: type == TransactionType.income && debtType.isEmpty
-                                        ? Colors.green.shade100
-                                        : Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
+                        // Modern dizaynli tugmalar
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                // Kirim tugmasi
+                                GestureDetector(
+                                  onTap: () {
+                                    setStateSB(() {
+                                      type = TransactionType.income;
+                                      debtType = ''; // qarz holatini reset qilish
+                                      clearFormData(); // Form ma'lumotlarini tozalash
+                                    });
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 14,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: type == TransactionType.income && debtType.isEmpty
+                                          ? LinearGradient(
+                                              colors: [Colors.green.shade400, Colors.green.shade600],
+                                            )
+                                          : null,
                                       color: type == TransactionType.income && debtType.isEmpty
-                                          ? Colors.green.shade700
-                                          : Colors.transparent,
-                                      width: 2,
+                                          ? null
+                                          : Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(25),
+                                      boxShadow: type == TransactionType.income && debtType.isEmpty
+                                          ? [
+                                              BoxShadow(
+                                                color: Colors.green.shade300,
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 3),
+                                              ),
+                                            ]
+                                          : null,
+                                      border: Border.all(
+                                        color: type == TransactionType.income && debtType.isEmpty
+                                            ? Colors.transparent
+                                            : Colors.grey.shade300,
+                                        width: 1.5,
+                                      ),
                                     ),
-                                  ),
-                                  child: Text(
-                                    'kirim',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: type == TransactionType.income && debtType.isEmpty
-                                          ? Colors.green.shade700
-                                          : Colors.grey.shade600,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.arrow_downward,
+                                          size: 20,
+                                          color: type == TransactionType.income && debtType.isEmpty
+                                              ? Colors.white
+                                              : Colors.grey.shade600,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Kirim',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: type == TransactionType.income && debtType.isEmpty
+                                                ? Colors.white
+                                                : Colors.grey.shade700,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              // Chiqim tugmasi
-                              GestureDetector(
-                                onTap: () {
-                                  setStateSB(() {
-                                    type = TransactionType.expense;
-                                    debtType = ''; // qarz holatini reset qilish
-                                    clearFormData(); // Form ma'lumotlarini tozalash
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: type == TransactionType.expense && debtType.isEmpty
-                                        ? Colors.red.shade100
-                                        : Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
+                                // Chiqim tugmasi
+                                GestureDetector(
+                                  onTap: () {
+                                    setStateSB(() {
+                                      type = TransactionType.expense;
+                                      debtType = ''; // qarz holatini reset qilish
+                                      clearFormData(); // Form ma'lumotlarini tozalash
+                                    });
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 14,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: type == TransactionType.expense && debtType.isEmpty
+                                          ? LinearGradient(
+                                              colors: [Colors.red.shade400, Colors.red.shade600],
+                                            )
+                                          : null,
                                       color: type == TransactionType.expense && debtType.isEmpty
-                                          ? Colors.red.shade700
-                                          : Colors.transparent,
-                                      width: 2,
+                                          ? null
+                                          : Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(25),
+                                      boxShadow: type == TransactionType.expense && debtType.isEmpty
+                                          ? [
+                                              BoxShadow(
+                                                color: Colors.red.shade300,
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 3),
+                                              ),
+                                            ]
+                                          : null,
+                                      border: Border.all(
+                                        color: type == TransactionType.expense && debtType.isEmpty
+                                            ? Colors.transparent
+                                            : Colors.grey.shade300,
+                                        width: 1.5,
+                                      ),
                                     ),
-                                  ),
-                                  child: Text(
-                                    'chiqim',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: type == TransactionType.expense && debtType.isEmpty
-                                          ? Colors.red.shade700
-                                          : Colors.grey.shade600,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.arrow_upward,
+                                          size: 20,
+                                          color: type == TransactionType.expense && debtType.isEmpty
+                                              ? Colors.white
+                                              : Colors.grey.shade600,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Chiqim',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: type == TransactionType.expense && debtType.isEmpty
+                                                ? Colors.white
+                                                : Colors.grey.shade700,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              // Qarz olish tugmasi
-                              GestureDetector(
-                                onTap: () {
-                                  setStateSB(() {
-                                    debtType = 'qarz_olish';
-                                    clearFormData(); // Form ma'lumotlarini tozalash
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: debtType == 'qarz_olish'
-                                        ? Colors.blue.shade100
-                                        : Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
+                                // Qarz olish tugmasi
+                                GestureDetector(
+                                  onTap: () {
+                                    setStateSB(() {
+                                      debtType = 'qarz_olish';
+                                      clearFormData(); // Form ma'lumotlarini tozalash
+                                    });
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 14,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: debtType == 'qarz_olish'
+                                          ? LinearGradient(
+                                              colors: [Colors.blue.shade400, Colors.blue.shade600],
+                                            )
+                                          : null,
                                       color: debtType == 'qarz_olish'
-                                          ? Colors.blue.shade700
-                                          : Colors.transparent,
-                                      width: 2,
+                                          ? null
+                                          : Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(25),
+                                      boxShadow: debtType == 'qarz_olish'
+                                          ? [
+                                              BoxShadow(
+                                                color: Colors.blue.shade300,
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 3),
+                                              ),
+                                            ]
+                                          : null,
+                                      border: Border.all(
+                                        color: debtType == 'qarz_olish'
+                                            ? Colors.transparent
+                                            : Colors.grey.shade300,
+                                        width: 1.5,
+                                      ),
                                     ),
-                                  ),
-                                  child: Text(
-                                    'qarz pul olish',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: debtType == 'qarz_olish'
-                                          ? Colors.blue.shade700
-                                          : Colors.grey.shade600,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.request_page,
+                                          size: 20,
+                                          color: debtType == 'qarz_olish'
+                                              ? Colors.white
+                                              : Colors.grey.shade600,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Qarz olish',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: debtType == 'qarz_olish'
+                                                ? Colors.white
+                                                : Colors.grey.shade700,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              // Qarz berish tugmasi
-                              GestureDetector(
-                                onTap: () {
-                                  setStateSB(() {
-                                    debtType = 'qarz_berish';
-                                    clearFormData(); // Form ma'lumotlarini tozalash
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: debtType == 'qarz_berish'
-                                        ? Colors.orange.shade100
-                                        : Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
+                                // Qarz berish tugmasi
+                                GestureDetector(
+                                  onTap: () {
+                                    setStateSB(() {
+                                      debtType = 'qarz_berish';
+                                      clearFormData(); // Form ma'lumotlarini tozalash
+                                    });
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 14,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: debtType == 'qarz_berish'
+                                          ? LinearGradient(
+                                              colors: [Colors.orange.shade400, Colors.orange.shade600],
+                                            )
+                                          : null,
                                       color: debtType == 'qarz_berish'
-                                          ? Colors.orange.shade700
-                                          : Colors.transparent,
-                                      width: 2,
+                                          ? null
+                                          : Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(25),
+                                      boxShadow: debtType == 'qarz_berish'
+                                          ? [
+                                              BoxShadow(
+                                                color: Colors.orange.shade300,
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 3),
+                                              ),
+                                            ]
+                                          : null,
+                                      border: Border.all(
+                                        color: debtType == 'qarz_berish'
+                                            ? Colors.transparent
+                                            : Colors.grey.shade300,
+                                        width: 1.5,
+                                      ),
                                     ),
-                                  ),
-                                  child: Text(
-                                    'qarz pul berish',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: debtType == 'qarz_berish'
-                                          ? Colors.orange.shade700
-                                          : Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              // Konvertatsiya tugmasi
-                              GestureDetector(
-                                onTap: () {
-                                  setStateSB(() {
-                                    debtType = 'konvertatsiya';
-                                    clearFormData(); // Form ma'lumotlarini tozalash
-                                  });
-                                  // Walletlar ro'yxatini qayta yuklash
-                                  _loadWalletsList();
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: debtType == 'konvertatsiya'
-                                        ? Colors.amber.shade100
-                                        : Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: debtType == 'konvertatsiya'
-                                          ? Colors.amber.shade700
-                                          : Colors.transparent,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'konvertatsiya',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: debtType == 'konvertatsiya'
-                                          ? Colors.amber.shade700
-                                          : Colors.grey.shade600,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.send,
+                                          size: 20,
+                                          color: debtType == 'qarz_berish'
+                                              ? Colors.white
+                                              : Colors.grey.shade600,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Qarz berish',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: debtType == 'qarz_berish'
+                                                ? Colors.white
+                                                : Colors.grey.shade700,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
+                                // Konvertatsiya tugmasi
+                                GestureDetector(
+                                  onTap: () {
+                                    setStateSB(() {
+                                      debtType = 'konvertatsiya';
+                                      clearFormData(); // Form ma'lumotlarini tozalash
+                                    });
+                                    // Walletlar ro'yxatini qayta yuklash
+                                    _loadWalletsList();
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 14,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: debtType == 'konvertatsiya'
+                                          ? LinearGradient(
+                                              colors: [Colors.amber.shade400, Colors.amber.shade600],
+                                            )
+                                          : null,
+                                      color: debtType == 'konvertatsiya'
+                                          ? null
+                                          : Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(25),
+                                      boxShadow: debtType == 'konvertatsiya'
+                                          ? [
+                                              BoxShadow(
+                                                color: Colors.amber.shade300,
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 3),
+                                              ),
+                                            ]
+                                          : null,
+                                      border: Border.all(
+                                        color: debtType == 'konvertatsiya'
+                                            ? Colors.transparent
+                                            : Colors.grey.shade300,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.swap_horiz,
+                                          size: 20,
+                                          color: debtType == 'konvertatsiya'
+                                              ? Colors.white
+                                              : Colors.grey.shade600,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Konvertatsiya',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: debtType == 'konvertatsiya'
+                                                ? Colors.white
+                                                : Colors.grey.shade700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -3506,15 +3644,35 @@ class _StatsPageState extends State<StatsPage> {
                           )
                           .toList();
 
-                final TextButton addButton = TextButton.icon(
-                  onPressed: () {
-                    _showCreateTypeDialogInline(apiType, setDialogState);
-                  },
-                  icon: const Icon(Icons.add_circle_outline),
-                  label: Text(
-                    apiType == 'kirim'
-                        ? 'Yangi kirim turi qo\'shish'
-                        : 'Yangi chiqim turi qo\'shish',
+                final Widget addButton = Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Material(
+                    color: const Color(0xFF10b981),
+                    borderRadius: BorderRadius.circular(8),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () {
+                        _showCreateTypeDialogInline(apiType, setDialogState);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Text(
+                          apiType == 'kirim'
+                              ? '+ Yangi kirim turi qo\'shish'
+                              : '+ Yangi chiqim turi qo\'shish',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
                   ),
                 );
 
@@ -3522,18 +3680,48 @@ class _StatsPageState extends State<StatsPage> {
                   padding: const EdgeInsets.all(16),
                   children: [
                     // Search field
-                    TextField(
-                      controller: searchCtrl,
-                      onChanged: (value) {
-                        setDialogState(() {
-                          searchQuery = value;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        labelText: 'Qidirish',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFf9fafb),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFFd1d5db),
+                          width: 1,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: searchCtrl,
+                        onChanged: (value) {
+                          setDialogState(() {
+                            searchQuery = value;
+                          });
+                        },
+                        decoration: const InputDecoration(
+                          hintText: 'Qidirish...',
+                          hintStyle: TextStyle(
+                            color: Color(0xFF9ca3af),
+                            fontSize: 14,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: Color(0xFF9ca3af),
+                            size: 18,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: 8,
+                          ),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xFF374151),
                         ),
                       ),
                     ),
@@ -3559,19 +3747,55 @@ class _StatsPageState extends State<StatsPage> {
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: items.length,
                             separatorBuilder: (_, __) =>
-                                const Divider(height: 1),
+                                const SizedBox(height: 4),
                             itemBuilder: (context, index) {
                               final item = items[index];
-                              return ListTile(
-                                leading: Text(
-                                  item['emoji'] ?? '🏷️',
-                                  style: const TextStyle(fontSize: 24),
+                              final displayName = item['name'] ?? 'Noma\'lum';
+                              
+                              return Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 2,
                                 ),
-                                title: Text(item['name'] ?? ''),
-                                onTap: () {
-                                  onSelected(item);
-                                  Navigator.of(context).pop();
-                                },
+                                child: Material(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(12),
+                                    onTap: () {
+                                      onSelected(item);
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 16,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFf9fafb),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: const Color(0xFFd1d5db),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              displayName,
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w500,
+                                                color: Color(0xFF374151),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               );
                             },
                           ),
@@ -3773,13 +3997,33 @@ class _StatsPageState extends State<StatsPage> {
                               )
                               .toList();
 
-                    final TextButton addButton = TextButton.icon(
-                      onPressed: showCreateTypeDialog,
-                      icon: const Icon(Icons.add_circle_outline),
-                      label: Text(
-                        apiType == 'kirim'
-                            ? 'Yangi kirim turi qo\'shish'
-                            : 'Yangi chiqim turi qo\'shish',
+                    final Widget addButton = Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Material(
+                        color: const Color(0xFF10b981),
+                        borderRadius: BorderRadius.circular(8),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: showCreateTypeDialog,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            child: Text(
+                              apiType == 'kirim'
+                                  ? 'Yangi kirim turi qo\'shish'
+                                  : 'Yangi chiqim turi qo\'shish',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
                       ),
                     );
 
@@ -3808,21 +4052,55 @@ class _StatsPageState extends State<StatsPage> {
                               shrinkWrap: true,
                               itemCount: items.length,
                               separatorBuilder: (_, __) =>
-                                  const Divider(height: 1),
+                                  const SizedBox(height: 4),
                               itemBuilder: (context, index) {
                                 final item = items[index];
                                 final displayName = item['name'] ?? 'Noma\'lum';
-                                final emoji = (item['emoji'] ?? '🏷️').isEmpty
-                                    ? '🏷️'
-                                    : item['emoji']!;
 
-                                return ListTile(
-                                  leading: Text(emoji),
-                                  title: Text(displayName),
-                                  onTap: () {
-                                    Navigator.of(pickerCtx).pop();
-                                    onSelected(item);
-                                  },
+                                return Container(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 2,
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
+                                      onTap: () {
+                                        Navigator.of(pickerCtx).pop();
+                                        onSelected(item);
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 16,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFf9fafb),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: const Color(0xFFd1d5db),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                displayName,
+                                                style: const TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Color(0xFF374151),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 );
                               },
                             ),

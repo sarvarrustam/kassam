@@ -239,7 +239,7 @@ class _HomePageState extends State<HomePage> {
                                                   .toInt();
                                           return _buildBalanceCard(
                                             'Mening Dollarim',
-                                            '${_formatNumber(totalUSD.toInt())} USD',
+                                            '${_formatUSDAmount(totalUSD)} USD',
                                             subtitle:
                                                 '≈ ${_formatNumber(usdToUzsConversion)} UZS',
                                           );
@@ -607,6 +607,17 @@ class _HomePageState extends State<HomePage> {
     return parts.reversed.join('');
   }
 
+  String _formatUSDAmount(double amount) {
+    // USD miqdorini probel bilan formatlash
+    final amountStr = amount.toStringAsFixed(2);
+    final parts = amountStr.split('.');
+    final integerPart = int.parse(parts[0]);
+    final decimalPart = parts[1];
+    
+    final formattedInteger = _formatNumber(integerPart);
+    return '$formattedInteger.$decimalPart';
+  }
+
   Widget _buildTotalBalanceCard(int totalInUZS, double totalInUSD) {
     return Container(
       decoration: BoxDecoration(
@@ -670,7 +681,7 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     Text(
                       _showBalance
-                          ? '${totalInUSD.toStringAsFixed(2)} USD'
+                          ? '${_formatUSDAmount(totalInUSD)} USD'
                           : '••••••',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Colors.white,
@@ -691,7 +702,13 @@ class _HomePageState extends State<HomePage> {
 
   //bu qism meni ano tepadigi plusni bosgand aochladigan showdilaogm
   Widget _buildWalletCard(WalletBalance wallet, int index) {
-    final formattedAmount = _formatNumber(wallet.value.toInt());
+    final String formattedAmount;
+    if (wallet.currency.toUpperCase() == 'USD') {
+      formattedAmount = _formatUSDAmount(wallet.value);
+    } else {
+      formattedAmount = _formatNumber(wallet.value.toInt());
+    }
+    
     final displayText = _showBalance
         ? '$formattedAmount ${wallet.currency}'
         : '•••••• ${wallet.currency}';

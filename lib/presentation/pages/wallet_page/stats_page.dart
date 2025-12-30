@@ -2785,7 +2785,7 @@ class _StatsPageState extends State<StatsPage> {
 
                                 return Text(
                                   _showBalance
-                                      ? '${_formatNumber(_currentWalletBalance.toInt())} ${_getCurrencySymbol()}'
+                                      ? _formatWalletBalanceDisplay(_currentWalletBalance)
                                       : '••••••',
                                   style: Theme.of(context)
                                       .textTheme
@@ -2838,8 +2838,8 @@ class _StatsPageState extends State<StatsPage> {
                                 const SizedBox(height: 4),
                                 Text(
                                   _balanceLoaded
-                                      ? '${_formatNumber(_chiqimTotal.toInt())} ${_getCurrencySymbol()}'
-                                      : '${_formatNumber(_calculateExpenseTotal().toInt())} ${_getCurrencySymbol()}',
+                                      ? _formatStatAmount(_chiqimTotal)
+                                      : _formatStatAmount(_calculateExpenseTotal()),
                                   style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
                                         color: Colors.red.shade300,
@@ -2887,8 +2887,8 @@ class _StatsPageState extends State<StatsPage> {
                                 const SizedBox(height: 4),
                                 Text(
                                   _balanceLoaded
-                                      ? '${_formatNumber(_kirimTotal.toInt())} ${_getCurrencySymbol()}'
-                                      : '${_formatNumber(_calculateIncomeTotal().toInt())} ${_getCurrencySymbol()}',
+                                      ? _formatStatAmount(_kirimTotal)
+                                      : _formatStatAmount(_calculateIncomeTotal()),
                                   style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
                                         color: Colors.white,
@@ -3164,7 +3164,7 @@ class _StatsPageState extends State<StatsPage> {
                                         _showBalance
                                             ? (t.type == TransactionType.conversion
                                                 ? _getConversionDisplayAmount(t)
-                                                : '${_formatNumber(t.amount.toInt())} ${_getCurrencySymbol()}')
+                                                : _formatTransactionAmount(t.amount))
                                             : '••••••',
                                         style: const TextStyle(
                                           color: Colors.white,
@@ -3333,11 +3333,22 @@ class _StatsPageState extends State<StatsPage> {
     return parts.reversed.join('');
   }
 
+  String _formatUSDAmount(double amount) {
+    // USD miqdorini probel bilan formatlash
+    final amountStr = amount.toStringAsFixed(2);
+    final parts = amountStr.split('.');
+    final integerPart = int.parse(parts[0]);
+    final decimalPart = parts[1];
+    
+    final formattedInteger = _formatNumber(integerPart);
+    return '$formattedInteger.$decimalPart';
+  }
+
   String _formatDebtAmount(double amount, String currency) {
     // Debt amount formatting based on currency
     if (currency.toUpperCase() == 'USD') {
-      // USD: show 2 decimal places
-      return '${amount.toStringAsFixed(2)} USD';
+      // USD: show with space formatting and 2 decimal places
+      return '${_formatUSDAmount(amount)} USD';
     } else {
       // UZS: show as integer with space formatting
       return '${_formatNumber(amount.toInt())} ${currency.toUpperCase()}';
@@ -3347,15 +3358,43 @@ class _StatsPageState extends State<StatsPage> {
   String _formatWalletBalance(double balance, String currency) {
     // Wallet balance formatting based on currency
     if (currency.toUpperCase() == 'USD' || currency.toUpperCase() == 'EUR') {
-      // USD/EUR: show 2 decimal places if not whole number
-      if (balance == balance.toInt()) {
-        return '${balance.toInt()}'; // 3.0 → "3"
-      } else {
-        return balance.toStringAsFixed(2); // 3.5 → "3.50"
-      }
+      // USD/EUR: show with space formatting and 2 decimal places
+      return _formatUSDAmount(balance);
     } else {
       // UZS: show as integer with space formatting
       return _formatNumber(balance.toInt());
+    }
+  }
+
+  String _formatStatAmount(double amount) {
+    // Statistics amount formatting (Chiqim/Kirim) based on wallet currency
+    final walletCurrency = widget.walletCurrency?.toUpperCase() ?? 'UZS';
+    if (walletCurrency == 'USD') {
+      return '${_formatUSDAmount(amount)} ${_getCurrencySymbol()}';
+    } else {
+      return '${_formatNumber(amount.toInt())} ${_getCurrencySymbol()}';
+    }
+  }
+
+  String _formatWalletBalanceDisplay(double balance) {
+    // Wallet balance display with currency symbol and proper formatting
+    final walletCurrency = widget.walletCurrency?.toUpperCase() ?? 'UZS';
+    if (walletCurrency == 'USD') {
+      return '${_formatUSDAmount(balance)} ${_getCurrencySymbol()}';
+    } else {
+      return '${_formatNumber(balance.toInt())} ${_getCurrencySymbol()}';
+    }
+  }
+
+  String _formatTransactionAmount(double amount) {
+    // Transaction amount formatting based on wallet currency
+    final walletCurrency = widget.walletCurrency?.toUpperCase() ?? 'UZS';
+    if (walletCurrency == 'USD') {
+      // USD wallet: show amount with space formatting and 2 decimal places
+      return '\$${_formatUSDAmount(amount)}';
+    } else {
+      // UZS wallet: show amount as integer with space formatting
+      return '${_formatNumber(amount.toInt())} ${_getCurrencySymbol()}';
     }
   }
 
@@ -4335,14 +4374,14 @@ class _StatsPageState extends State<StatsPage> {
               // USD hamyonida ko'rayotgan bo'lsak
               if (isChiqimUSD) {
                 // USD chiqim (USD → UZS), USD amount ko'rsatish
-                return '\$${_formatNumber(fromAmount.toInt())}';
+                return '\$${_formatUSDAmount(fromAmount)}';
               } else if (isKirimUSD) {
                 // USD kirim (UZS → USD), USD amount ko'rsatish
-                return '\$${_formatNumber(toAmount.toInt())}';
+                return '\$${_formatUSDAmount(toAmount)}';
               } else {
                 // Noma'lum holat, kichikroq raqamni USD deb hisoblaymiz
                 double usdAmount = fromAmount < toAmount ? fromAmount : toAmount;
-                return '\$${_formatNumber(usdAmount.toInt())}';
+                return '\$${_formatUSDAmount(usdAmount)}';
               }
             } else {
               // UZS hamyonida ko'rayotgan bo'lsak

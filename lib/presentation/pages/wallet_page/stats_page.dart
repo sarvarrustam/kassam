@@ -2877,6 +2877,17 @@ class _StatsPageState extends State<StatsPage> {
                                   return;
                                 }
 
+                                // Izoh majburiy tekshirish
+                                if (comment.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Izoh yozish majburiy!'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                  return;
+                                }
+
                                 print('💱 DEBUG: Chiqim amount: $chiqimAmount');
                                 print('💱 DEBUG: Kirim amount: $kirimAmount');
                                 print(
@@ -2893,9 +2904,7 @@ class _StatsPageState extends State<StatsPage> {
                                     walletIdKirim: selectedWalletKirimId!,
                                     amountChiqim: chiqimAmount,
                                     amountKirim: kirimAmount,
-                                    comment: comment.isNotEmpty
-                                        ? comment
-                                        : 'Valyuta konvertatsiyasi',
+                                    comment: comment,
                                   ),
                                 );
                               } else {

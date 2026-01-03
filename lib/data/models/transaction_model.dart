@@ -1,11 +1,11 @@
 import 'package:equatable/equatable.dart';
 
-enum TransactionType { 
-  income,      // Kirim
-  expense,     // Chiqim
-  loanTaken,   // Qarz olish
-  loanGiven,   // Qarz berish
-  conversion,  // Konvertatsiya
+enum TransactionType {
+  income, // Kirim
+  expense, // Chiqim
+  loanTaken, // Qarz olish
+  loanGiven, // Qarz berish
+  conversion, // Konvertatsiya
 }
 
 enum TransactionCategory {
@@ -40,11 +40,21 @@ class Transaction extends Equatable {
       paymentMethod: json['paymentMethod'] as String?,
       customCategoryName: json['customCategoryName'] as String?,
       customCategoryEmoji: json['customCategoryEmoji'] as String?,
-      exchangeRate: json['exchangeRate'] != null ? (json['exchangeRate'] as num).toDouble() : null,
+      exchangeRate: json['exchangeRate'] != null
+          ? (json['exchangeRate'] as num).toDouble()
+          : null,
       walletKirim: json['walletKirim'] as String?,
       walletChiqim: json['walletChiqim'] as String?,
       counterparty: json['counterparty'] as String?,
-      amountDebit: json['amountDebit'] != null ? (json['amountDebit'] as num).toDouble() : null,
+      amountDebit: json['amountDebit'] != null
+          ? (json['amountDebit'] as num).toDouble()
+          : null,
+      amountKirim: json['amountKirim'] != null
+          ? (json['amountKirim'] as num).toDouble()
+          : null,
+      amountChiqim: json['amountChiqim'] != null
+          ? (json['amountChiqim'] as num).toDouble()
+          : null,
       openingBalance: json['openingBalance'] as bool?,
     );
   }
@@ -66,6 +76,8 @@ class Transaction extends Equatable {
     'walletChiqim': walletChiqim,
     'counterparty': counterparty,
     'amountDebit': amountDebit,
+    'amountKirim': amountKirim,
+    'amountChiqim': amountChiqim,
     'openingBalance': openingBalance,
     'exchangeRate': exchangeRate,
   };
@@ -81,16 +93,20 @@ class Transaction extends Equatable {
   final String? paymentMethod;
   final String? customCategoryName;
   final String? customCategoryEmoji;
-  
+
   // Konvertatsiya uchun qo'shimcha field'lar
-  final String? walletKirim;  // Qaysi hamyonga kirdi
+  final String? walletKirim; // Qaysi hamyonga kirdi
   final String? walletChiqim; // Qaysi hamyondan chiqdi
-  
+
   // Qarz olish/berish uchun qo'shimcha field'lar
   final String? counterparty; // Kimdan/Kimga
-  final double? amountDebit;  // Qarz summasi
+  final double? amountDebit; // Qarz summasi
   final bool? openingBalance; // Avvalgi qarzim (true = ha, false/null = yo'q)
-  
+
+  // Konvertatsiya uchun aniq summalar
+  final double? amountKirim; // Kirim summasi (konvertatsiya)
+  final double? amountChiqim; // Chiqim summasi (konvertatsiya)
+
   // Kurs ma'lumoti (tranzaksiya qilingan paytdagi)
   final double? exchangeRate; // USD/UZS kursi
 
@@ -111,6 +127,8 @@ class Transaction extends Equatable {
     this.walletChiqim,
     this.counterparty,
     this.amountDebit,
+    this.amountKirim,
+    this.amountChiqim,
     this.openingBalance,
     this.exchangeRate, // Kurs qo'shildi
   });
@@ -133,6 +151,8 @@ class Transaction extends Equatable {
     walletChiqim,
     counterparty,
     amountDebit,
+    amountKirim,
+    amountChiqim,
     openingBalance,
     exchangeRate, // Kurs qo'shildi
   ];

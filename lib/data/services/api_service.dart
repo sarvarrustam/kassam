@@ -861,8 +861,8 @@ class ApiService {
         'amountKirim': amountKirim,
         'amountChiqim': amountChiqim,
         'comment': comment != null && comment.isNotEmpty
-            ? '$comment ($amountChiqim → $amountKirim)'
-            : 'Conversion: $amountChiqim → $amountKirim',
+            ? comment  // Faqat foydalanuvchi yozgan izoh
+            : 'Konvertatsiya',  // Agar bo'sh bo'lsa oddiy matn
       };
 
       print('💱 ===== FINAL API REQUEST =====');

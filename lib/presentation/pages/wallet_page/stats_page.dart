@@ -2027,8 +2027,10 @@ class _StatsPageState extends State<StatsPage> {
                         // Chiqim suma
                         TextField(
                           controller: chiqimAmountCtrl,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [NumberTextFormatter()],
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          inputFormatters: [DecimalNumberTextFormatter()],
                           decoration: const InputDecoration(
                             labelText: 'Chiqim summasi',
                             border: OutlineInputBorder(),
@@ -2059,8 +2061,10 @@ class _StatsPageState extends State<StatsPage> {
                         // Kirim suma
                         TextField(
                           controller: kirimAmountCtrl,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [NumberTextFormatter()],
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          inputFormatters: [DecimalNumberTextFormatter()],
                           decoration: const InputDecoration(
                             labelText: 'Kirim summasi',
                             border: OutlineInputBorder(),
@@ -4209,20 +4213,29 @@ class _StatsPageState extends State<StatsPage> {
         final walletKirim = item['walletKirim']?.toString() ?? '';
         final walletChiqim = item['walletChiqim']?.toString() ?? '';
 
+        // Konvertatsiya uchun aniq summalar
+        double? amountKirim;
+        double? amountChiqim;
+
+        if (type == TransactionType.conversion) {
+          amountKirim = double.tryParse(item['amountKirim']?.toString() ?? '0');
+          amountChiqim = double.tryParse(
+            item['amountChiqim']?.toString() ?? '0',
+          );
+          print(
+            '💱 Conversion amounts: chiqim=$amountChiqim, kirim=$amountKirim',
+          );
+        }
+
         // Qarz pul olish/berish uchun qo'shimcha ma'lumotlar
         final counterparty =
             item['counterparty']?.toString() ?? ''; // Kimdan/Kimga
 
-        // amountDebit - qarz uchun debtAmount, konvertatsiya uchun amountChiqim
+        // amountDebit - qarz uchun debtAmount
         double amountDebit = 0.0;
         if (type == TransactionType.conversion) {
-          // Konvertatsiya uchun chiqim summasi - API'da saqlanmaydi
-          amountDebit =
-              double.tryParse(item['amountChiqim']?.toString() ?? '0') ??
-              double.tryParse(item['amountchiqim']?.toString() ?? '0') ??
-              double.tryParse(item['suma']?.toString() ?? '0') ??
-              0.0;
-          // API saqlamaydi, shuning uchun 0 bo'ladi
+          // Konvertatsiya uchun amountDebit = amountChiqim
+          amountDebit = amountChiqim ?? 0.0;
         } else {
           // Qarz uchun debt amount
           amountDebit =
@@ -4304,6 +4317,8 @@ class _StatsPageState extends State<StatsPage> {
           walletChiqim: walletChiqim,
           counterparty: counterparty, // Kimdan/Kimga
           amountDebit: amountDebit, // Qarz summasi
+          amountKirim: amountKirim, // Konvertatsiya kirim summasi
+          amountChiqim: amountChiqim, // Konvertatsiya chiqim summasi
           openingBalance: item['openingBalance'] as bool?, // Avvalgi qarzim
           exchangeRate:
               exchangeRate ?? _exchangeRate, // API dan kelgan yoki joriy kurs
@@ -5067,10 +5082,10 @@ class _StatsPageState extends State<StatsPage> {
     print('DEBUG CONVERSION: Transaction ID: ${t.id}');
     print('DEBUG CONVERSION: amount: ${t.amount}');
     print('DEBUG CONVERSION: amountDebit: ${t.amountDebit}');
+    print('DEBUG CONVERSION: amountKirim: ${t.amountKirim}');
+    print('DEBUG CONVERSION: amountChiqim: ${t.amountChiqim}');
     print('DEBUG CONVERSION: walletChiqim: ${t.walletChiqim}');
     print('DEBUG CONVERSION: walletKirim: ${t.walletKirim}');
-    print('DEBUG CONVERSION: description: ${t.description}');
-    print('DEBUG CONVERSION: notes: ${t.notes}');
     print('DEBUG CONVERSION: title: ${t.title}');
     print('DEBUG CONVERSION: currentWalletCurrency: ${widget.walletCurrency}');
 
@@ -5084,17 +5099,6 @@ class _StatsPageState extends State<StatsPage> {
     print('🔍 WALLET DETECTION:');
     print('   chiqimWalletName: "$chiqimWalletName"');
     print('   kirimWalletName: "$kirimWalletName"');
-    print('   _walletsList length: ${_walletsList.length}');
-
-    // Debug: Barcha wallet nomlarini ko'rsatish
-    if (_walletsList.isNotEmpty) {
-      print('   Available wallets:');
-      for (var w in _walletsList) {
-        print(
-          '      - "${w['walletName']}" (currency: ${w['currency']}, ID: ${w['walletId']})',
-        );
-      }
-    }
 
     // Wallet listidan to'g'ri currency ni topish
     final chiqimWalletData = _walletsList.firstWhere(
@@ -5105,15 +5109,6 @@ class _StatsPageState extends State<StatsPage> {
       (w) => w['walletName']?.toString() == kirimWalletName,
       orElse: () => <String, dynamic>{},
     );
-
-    print('   chiqimWalletData found: ${chiqimWalletData.isNotEmpty}');
-    print('   kirimWalletData found: ${kirimWalletData.isNotEmpty}');
-    if (chiqimWalletData.isNotEmpty) {
-      print('   chiqimWalletData: $chiqimWalletData');
-    }
-    if (kirimWalletData.isNotEmpty) {
-      print('   kirimWalletData: $kirimWalletData');
-    }
 
     final chiqimCurrency =
         chiqimWalletData['currency']?.toString().toUpperCase() ?? 'UZS';
@@ -5126,15 +5121,42 @@ class _StatsPageState extends State<StatsPage> {
     print('   chiqimCurrency: $chiqimCurrency (isUSD: $isChiqimUSD)');
     print('   kirimCurrency: $kirimCurrency (isUSD: $isKirimUSD)');
 
-    print(
-      'DEBUG CONVERSION: chiqimWallet: "$chiqimWalletName" ($chiqimCurrency)',
-    );
-    print('DEBUG CONVERSION: kirimWallet: "$kirimWalletName" ($kirimCurrency)');
-    print(
-      'DEBUG CONVERSION: isChiqimUSD: $isChiqimUSD, isKirimUSD: $isKirimUSD',
-    );
+    // BIRINCHI: API'dan to'g'ridan-to'g'ri amountKirim va amountChiqim ishlatish
+    if (t.amountKirim != null &&
+        t.amountKirim! > 0 &&
+        t.amountChiqim != null &&
+        t.amountChiqim! > 0) {
+      print(
+        '✅ Using API amounts: chiqim=${t.amountChiqim}, kirim=${t.amountKirim}',
+      );
 
-    // Title va description/notes dan conversion amount parsing (eng kuchli method)
+      // Current hamyonga qarab to'g'ri summani ko'rsatish
+      if (currentWalletCurrency == 'USD') {
+        // USD hamyonida
+        if (isKirimUSD) {
+          // USD kirim - kirim summasini ko'rsatish
+          print('   → USD wallet, USD kirim: showing amountKirim');
+          return '\$${_formatUSDAmount(t.amountKirim!)}';
+        } else if (isChiqimUSD) {
+          // USD chiqim - chiqim summasini ko'rsatish
+          print('   → USD wallet, USD chiqim: showing amountChiqim');
+          return '\$${_formatUSDAmount(t.amountChiqim!)}';
+        }
+      } else {
+        // UZS hamyonida
+        if (isKirimUSD) {
+          // USD kirim, UZS chiqim - chiqim summasini ko'rsatish
+          print('   → UZS wallet, USD kirim: showing amountChiqim');
+          return '${_formatNumberWithDecimal(t.amountChiqim!)} som';
+        } else if (isChiqimUSD) {
+          // USD chiqim, UZS kirim - kirim summasini ko'rsatish
+          print('   → UZS wallet, USD chiqim: showing amountKirim');
+          return '${_formatNumberWithDecimal(t.amountKirim!)} som';
+        }
+      }
+    }
+
+    // IKKINCHI: Comment'dan parse qilish (eski usul - backup)
     String titleText = t.title;
     String descText = (t.description ?? '') + ' ' + (t.notes ?? '');
     String allText = titleText + ' ' + descText;

@@ -2,60 +2,57 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class ApiService {
-
-  String baseUrl = 'https://master.cloudhoff.uz/'; 
+  String baseUrl = 'https://master.cloudhoff.uz/';
 
   //https://master.cloudhoff.uz/Kassam/hs/KassamUrl/getSms
 
-  String  _username = "Администратор";  
-  String  _password = "1230";  
+  String _username = "Администратор";
+  String _password = "1230";
 
-   String? apiKey = null;  
-   Duration connectTimeout = Duration(seconds: 30);
-   Duration receiveTimeout = Duration(seconds: 30);
-  
-  
+  String? apiKey = null;
+  Duration connectTimeout = Duration(seconds: 30);
+  Duration receiveTimeout = Duration(seconds: 30);
 
   //final String getSms = 'Agrowide/hs/KassamUrl/getSms';
   final String getSms = 'Kassam/hs/KassamUrl/getSms';
   final String checkSms = 'Kassam/hs/KassamUrl/getCheckSms';
   final String profileSave = 'Kassam/hs/KassamUrl/profileSave';
   final String getUser = 'Kassam/hs/KassamUrl/getUser';
-  
+
   // Location endpoints
   final String getState = 'Kassam/hs/KassamUrl/getState';
   final String getRegion = 'Kassam/hs/KassamUrl/getRegion';
   final String getDistricts = 'Kassam/hs/KassamUrl/getDistricts';
-  
+
   // Wallet endpoints
-  final String getWalletsTotalBalans = 'Kassam/hs/KassamUrl/getWalletsTotalBalans';
+  final String getWalletsTotalBalans =
+      'Kassam/hs/KassamUrl/getWalletsTotalBalans';
   final String getWalletsBalans = 'Kassam/hs/KassamUrl/getWalletsBalans';
   final String walletCreate = 'Kassam/hs/KassamUrl/walletCreate';
   final String getKurs = 'Kassam/hs/KassamUrl/getKurs';
   final String kursCreate = 'Kassam/hs/KassamUrl/kursCreate';
-  
+
   // Transaction endpoints
   final String transactionCreate = 'Kassam/hs/KassamUrl/transactionCreate';
-  final String transactionConversionCreate = 'Kassam/hs/KassamUrl/transactionConversionCreate';
+  final String transactionConversionCreate =
+      'Kassam/hs/KassamUrl/transactionConversionCreate';
   final String getTransaction = 'Kassam/hs/KassamUrl/getTransaction';
   final String getTransactionTypes = 'Kassam/hs/KassamUrl/getTransactionTypes';
-  final String transactionTypesCreate = 'Kassam/hs/KassamUrl/transactionTypesCreate';
+  final String transactionTypesCreate =
+      'Kassam/hs/KassamUrl/transactionTypesCreate';
   final String getWalletBalance = 'Kassam/hs/KassamUrl/getWalletBalance';
   final String getDebtorsCreditors = 'Kassam/hs/KassamUrl/getDebtorsCreditors';
-  final String transactionDebtsCreate = 'Kassam/hs/KassamUrl/transactionDebtsCreate';
-  final String debtorCreditorCreate = 'Kassam/hs/KassamUrl/debtorCreditorCreate';
-
-
+  final String transactionDebtsCreate =
+      'Kassam/hs/KassamUrl/transactionDebtsCreate';
+  final String debtorCreditorCreate =
+      'Kassam/hs/KassamUrl/debtorCreditorCreate';
 
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal() {
     _initDio();
   }
-
-
 
   late final Dio _dio;
   String? _authToken;
@@ -71,57 +68,59 @@ class ApiService {
         contentType: 'application/json',
       ),
     );
-    
+
     // JSON Interceptor - String bo'lsa parse qilish
-    _dio.interceptors.add(InterceptorsWrapper(
-      onResponse: (response, handler) {
-        if (response.data is String) {
-          final dataStr = response.data.toString().trim();
-          // HTML response ni tekshirish
-          if (dataStr.startsWith('<!DOCTYPE') || dataStr.startsWith('<html')) {
-            print('⚠️ Server HTML qaytardi (500 error)');
-            // HTML ni error ga o'tkazish
-            throw DioException(
-              requestOptions: response.requestOptions,
-              response: response,
-              type: DioExceptionType.badResponse,
-              message: 'Server ichki xatolik (500)',
-            );
-          }
-          // JSON parse qilish
-          if (dataStr.startsWith('{')) {
-            try {
-              response.data = jsonDecode(response.data);
-            } catch (e) {
-              print('JSON parse error: $e');
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onResponse: (response, handler) {
+          if (response.data is String) {
+            final dataStr = response.data.toString().trim();
+            // HTML response ni tekshirish
+            if (dataStr.startsWith('<!DOCTYPE') ||
+                dataStr.startsWith('<html')) {
+              print('⚠️ Server HTML qaytardi (500 error)');
+              // HTML ni error ga o'tkazish
+              throw DioException(
+                requestOptions: response.requestOptions,
+                response: response,
+                type: DioExceptionType.badResponse,
+                message: 'Server ichki xatolik (500)',
+              );
+            }
+            // JSON parse qilish
+            if (dataStr.startsWith('{')) {
+              try {
+                response.data = jsonDecode(response.data);
+              } catch (e) {
+                print('JSON parse error: $e');
+              }
             }
           }
-        }
-        handler.next(response);
-      },
-    ));
+          handler.next(response);
+        },
+      ),
+    );
   }
-  
+
   /// Headers qurish
   Map<String, String> getHeaders() {
     final Map<String, String> headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      
     };
-    
+
     // API Key
     if (apiKey != null) {
       headers['X-API-Key'] = apiKey!;
     }
-    
+
     // Basic Auth
     if (_username.isNotEmpty && _password.isNotEmpty) {
       final credentials = '$_username:$_password';
       final base64Credentials = base64.encode(utf8.encode(credentials));
       headers['Authorization'] = 'Basic $base64Credentials';
     }
-    
+
     return headers;
   }
 
@@ -131,7 +130,6 @@ class ApiService {
     _dio.options.headers['Authorization'] = 'Bearer $token';
   }
 
-  
   Future<Map<String, dynamic>> get(
     String endpoint, {
     Map<String, dynamic>? queryParams,
@@ -141,13 +139,13 @@ class ApiService {
       print('GET Request: $baseUrl$endpoint');
       print('Query Params: $queryParams');
       if (token != null) print('Token: $token');
-      
+
       // Headers (getHeaders() ni ishlatish - Basic Auth bilan)
       final headers = getHeaders();
       if (token != null) {
         headers['token'] = token;
       }
-      
+
       final response = await _dio.get(
         endpoint,
         queryParameters: queryParams,
@@ -156,11 +154,10 @@ class ApiService {
 
       print('Response Status: ${response.statusCode}');
       print('Response Data: ${response.data}');
-     
 
       if (response.statusCode == 200 && response.data != null) {
         final responseData = response.data;
-        
+
         // Agar Map bo'lmasa
         if (responseData is! Map) {
           print('WARNING: Response Map emas: ${responseData.runtimeType}');
@@ -171,16 +168,17 @@ class ApiService {
             'data': {},
           };
         }
-        
+
         // 1C formatini tekshirish
         if (responseData.containsKey('error')) {
           final hasError = responseData['error'] == true;
-          
+
           if (hasError) {
             // Error holati
-            final errorMessage = responseData['errorMassage'] ?? 
-                                responseData['message'] ?? 
-                                'Xatolik';
+            final errorMessage =
+                responseData['errorMassage'] ??
+                responseData['message'] ??
+                'Xatolik';
             return {
               'success': false,
               'error': errorMessage,
@@ -189,9 +187,10 @@ class ApiService {
             };
           } else {
             // Success holati
-            final successMessage = responseData['errorMassage'] ?? 
-                                  responseData['message'] ?? 
-                                  'Muvaffaqiyatli';
+            final successMessage =
+                responseData['errorMassage'] ??
+                responseData['message'] ??
+                'Muvaffaqiyatli';
             return {
               'success': true,
               'message': successMessage,
@@ -200,13 +199,9 @@ class ApiService {
             };
           }
         }
-        
+
         // Agar 1C formati bo'lmasa, oddiy success qaytarish
-        return {
-          'success': true,
-          'data': responseData,
-          'errorCode': 0,
-        };
+        return {'success': true, 'data': responseData, 'errorCode': 0};
       }
 
       return {
@@ -220,9 +215,11 @@ class ApiService {
       print('Error Message: ${e.message}');
       if (e.response?.data != null) {
         print('Response Data Type: ${e.response?.data.runtimeType}');
-        print('Response Data (first 200 chars): ${e.response?.data.toString().substring(0, 200)}...');
+        print(
+          'Response Data (first 200 chars): ${e.response?.data.toString().substring(0, 200)}...',
+        );
       }
-      
+
       return {
         'success': false,
         'error': _handleError(e),
@@ -230,10 +227,9 @@ class ApiService {
         'data': {},
       };
     } catch (e, stackTrace) {
-
       print('Unexpected Error: $e');
       print('Stack Trace: $stackTrace');
-      
+
       return {
         'success': false,
         'error': 'Kutilmagan xatolik: ${e.toString()}',
@@ -243,7 +239,6 @@ class ApiService {
     }
   }
 
- 
   Future<Map<String, dynamic>> post(
     String endpoint, {
     Map<String, dynamic>? body,
@@ -258,15 +253,15 @@ class ApiService {
       if (token != null) {
         print('   - token: $token');
       }
-      
+
       // Headers (getHeaders() ni ishlatish - Basic Auth bilan)
       final headers = getHeaders();
       if (token != null) {
         headers['token'] = token;
       }
-      
+
       print('🔵 Final headers: $headers');
-      
+
       Response response;
       try {
         response = await _dio.post(
@@ -283,13 +278,13 @@ class ApiService {
       } catch (dioError) {
         print('🔴 Dio Error Type: ${dioError.runtimeType}');
         print('🔴 Dio Error: $dioError');
-        
+
         // DioException bo'lsa, response bormi tekshiramiz
         if (dioError is DioException && dioError.response != null) {
           final errorResponse = dioError.response!;
           print('🔴 Error Response Status: ${errorResponse.statusCode}');
           print('🔴 Error Response Data: ${errorResponse.data}');
-          
+
           return {
             'success': false,
             'error': 'Server xatolik (${errorResponse.statusCode})',
@@ -297,7 +292,7 @@ class ApiService {
             'data': {},
           };
         }
-        
+
         return {
           'success': false,
           'error': 'Tarmoq xatoligi',
@@ -313,7 +308,7 @@ class ApiService {
       // 500 yoki boshqa xatolik statuslarini tekshirish
       if (response.statusCode != null && response.statusCode! >= 400) {
         String errorMsg = 'Server xatoligi (${response.statusCode})';
-        
+
         // Agar 1C format qaytarsa
         if (response.data is Map) {
           final errorData = response.data as Map;
@@ -323,7 +318,7 @@ class ApiService {
             errorMsg = errorData['message'].toString();
           }
         }
-        
+
         return {
           'success': false,
           'error': errorMsg,
@@ -334,7 +329,7 @@ class ApiService {
 
       if (response.statusCode == 200 && response.data != null) {
         final responseData = response.data;
-        
+
         // Agar String bo'lsa (HTML)
         if (responseData is String) {
           return {
@@ -344,7 +339,7 @@ class ApiService {
             'data': {},
           };
         }
-        
+
         // Agar Map bo'lmasa
         if (responseData is! Map) {
           return {
@@ -354,15 +349,16 @@ class ApiService {
             'data': {},
           };
         }
-        
+
         // 1C format: error maydonini tekshirish
         final hasError = responseData['error'] == true;
-        
+
         if (hasError) {
           // Error holati
-          final errorMessage = responseData['errorMassage'] ?? 
-                              responseData['message'] ?? 
-                              'Xatolik';
+          final errorMessage =
+              responseData['errorMassage'] ??
+              responseData['message'] ??
+              'Xatolik';
           return {
             'success': false,
             'error': errorMessage,
@@ -371,9 +367,10 @@ class ApiService {
           };
         } else {
           // Success holati
-          final successMessage = responseData['errorMassage'] ?? 
-                                responseData['message'] ?? 
-                                'Muvaffaqiyatli';
+          final successMessage =
+              responseData['errorMassage'] ??
+              responseData['message'] ??
+              'Muvaffaqiyatli';
           return {
             'success': true,
             'message': successMessage,
@@ -421,10 +418,7 @@ class ApiService {
       final sp = await SharedPreferences.getInstance();
       final token = sp.getString('auth_token') ?? _authToken;
 
-      final response = await get(
-        getKurs,
-        token: token,
-      );
+      final response = await get(getKurs, token: token);
       return response;
     } catch (e) {
       return {
@@ -441,19 +435,12 @@ class ApiService {
       // SharedPreferences'dan token olish
       final sp = await SharedPreferences.getInstance();
       final token = sp.getString('auth_token') ?? _authToken;
-      
-      print('💵 Token: $token');
-      
-      final body = {
-        'kurs': kurs.toInt(),
-        'currency': 'usd',
-      };
 
-      final response = await post(
-        kursCreate,
-        body: body,
-        token: token,
-      );
+      print('💵 Token: $token');
+
+      final body = {'kurs': kurs.toInt(), 'currency': 'usd'};
+
+      final response = await post(kursCreate, body: body, token: token);
       return response;
     } catch (e) {
       return {
@@ -478,10 +465,10 @@ class ApiService {
     try {
       final sp = await SharedPreferences.getInstance();
       final token = sp.getString('auth_token') ?? _authToken;
-      
+
       print('📝 Creating transaction: type=$type, amount=$amount');
       print('📝 Token: $token');
-      
+
       final body = {
         'walletId': walletId,
         'transactionTypesId': transactionTypesId,
@@ -493,12 +480,8 @@ class ApiService {
         if (exchangeRate != null) 'kurs': exchangeRate, // Server compatibility
       };
 
-      final response = await post(
-        transactionCreate,
-        body: body,
-        token: token,
-      );
-      
+      final response = await post(transactionCreate, body: body, token: token);
+
       print('📝 Transaction response: $response');
       return response;
     } catch (e) {
@@ -524,10 +507,12 @@ class ApiService {
     try {
       final sp = await SharedPreferences.getInstance();
       final token = sp.getString('auth_token') ?? _authToken;
-      
-      print('📝 Transaction creating: type=$type, amount=$amount, category=$category');
+
+      print(
+        '📝 Transaction creating: type=$type, amount=$amount, category=$category',
+      );
       print('📝 Token: $token');
-      
+
       final body = {
         'walletId': walletId,
         'amount': amount,
@@ -537,11 +522,7 @@ class ApiService {
         'date': date ?? DateTime.now().toIso8601String(),
       };
 
-      final response = await post(
-        transactionCreate,
-        body: body,
-        token: token,
-      );
+      final response = await post(transactionCreate, body: body, token: token);
       return response;
     } catch (e) {
       return {
@@ -558,12 +539,12 @@ class ApiService {
     try {
       final sp = await SharedPreferences.getInstance();
       final token = sp.getString('auth_token') ?? _authToken;
-      
+
       print('📊 Getting transaction types: $type...');
       print('📊 Token: $token');
 
       final queryParams = {'type': type};
-      
+
       final response = await get(
         getTransactionTypes,
         queryParams: queryParams,
@@ -591,10 +572,7 @@ class ApiService {
 
       print('➕ Creating transaction type: name=$name, type=$type');
 
-      final body = {
-        'name': name,
-        'type': type,
-      };
+      final body = {'name': name, 'type': type};
 
       final response = await post(
         transactionTypesCreate,
@@ -617,13 +595,15 @@ class ApiService {
   Future<Map<String, dynamic>> getTransactions({
     required String walletId,
     required String fromDate, // Format: dd.MM.yyyy
-    required String toDate,   // Format: dd.MM.yyyy
+    required String toDate, // Format: dd.MM.yyyy
   }) async {
     try {
       final sp = await SharedPreferences.getInstance();
       final token = sp.getString('auth_token') ?? _authToken;
 
-      print('📊 Getting transactions: walletId=$walletId, from=$fromDate, to=$toDate');
+      print(
+        '📊 Getting transactions: walletId=$walletId, from=$fromDate, to=$toDate',
+      );
       print('📊 Token: $token');
 
       final queryParams = {
@@ -655,13 +635,15 @@ class ApiService {
   Future<Map<String, dynamic>> getWalletBalanceData({
     required String walletId,
     required String fromDate, // Format: dd.MM.yyyy
-    required String toDate,   // Format: dd.MM.yyyy
+    required String toDate, // Format: dd.MM.yyyy
   }) async {
     try {
       final sp = await SharedPreferences.getInstance();
       final token = sp.getString('auth_token') ?? _authToken;
 
-      print('💰 Getting wallet balance: walletId=$walletId, from=$fromDate, to=$toDate');
+      print(
+        '💰 Getting wallet balance: walletId=$walletId, from=$fromDate, to=$toDate',
+      );
       print('💰 Token: $token');
 
       final queryParams = {
@@ -698,10 +680,7 @@ class ApiService {
       print('👥 Getting debtors/creditors list');
       print('👥 Token: $token');
 
-      final response = await get(
-        getDebtorsCreditors,
-        token: token,
-      );
+      final response = await get(getDebtorsCreditors, token: token);
 
       print('👥 Debtors/creditors response: $response');
       return response;
@@ -722,24 +701,21 @@ class ApiService {
     required String telephoneNumber,
   }) async {
     print('👤 Creating debtor/creditor: $name, $telephoneNumber');
-    
+
     try {
       // SharedPreferences'dan token olish
       final sp = await SharedPreferences.getInstance();
       final token = sp.getString('auth_token') ?? _authToken;
       print('👤 Token: $token');
-      
-      final body = {
-        'name': name,
-        'telephoneNumber': telephoneNumber,
-      };
-      
+
+      final body = {'name': name, 'telephoneNumber': telephoneNumber};
+
       // Custom headers bilan
       final headers = getHeaders();
       if (token != null && token.isNotEmpty) {
         headers['token'] = token;
       }
-      
+
       Response response;
       try {
         response = await _dio.post(
@@ -760,12 +736,12 @@ class ApiService {
           'data': null,
         };
       }
-      
+
       print('👤 Response: ${response.data}');
-      
+
       if (response.statusCode == 200) {
         final data = response.data;
-        
+
         if (data['error'] == false) {
           print('👤 Debtor/creditor created successfully');
           return {
@@ -799,7 +775,7 @@ class ApiService {
     }
   }
 
-Future<Map<String, dynamic>> createTransactionDebt({
+  Future<Map<String, dynamic>> createTransactionDebt({
     //required String transactionTypesId,
     required String type, // qarzPulBerish, qarzPulOlish
     required String walletId,
@@ -811,34 +787,46 @@ Future<Map<String, dynamic>> createTransactionDebt({
     String? comment,
   }) async {
     print('💰 Creating transaction debt: $type, amount: $amount');
-    
+
     try {
       // SharedPreferences'dan token olish
       final sp = await SharedPreferences.getInstance();
       final token = sp.getString('auth_token') ?? _authToken;
       print('💰 Token: $token');
-      
+
       final body = {
         'type': type,
         'walletId': walletId,
         'debtorCreditorId': debtorCreditorId,
         'previousDebt': previousDebt,
         'currency': currency.toLowerCase(),
-        'amount': amount.toInt(),
-        'amountDebt': currency.toLowerCase() == 'usd' ? amountDebt : amountDebt.toInt(),
-        'summa': amount.toInt(), // Server compatibility  
-        'sumaQarz': currency.toLowerCase() == 'usd' ? amountDebt : amountDebt.toInt(), // Server compatibility
+        'amount': currency.toLowerCase() == 'usd' ? amount : amount.toInt(),
+        'amountDebt': currency.toLowerCase() == 'usd'
+            ? amountDebt
+            : amountDebt.toInt(),
+        'summa': currency.toLowerCase() == 'usd'
+            ? amount
+            : amount.toInt(), // Server compatibility
+        'sumaQarz': currency.toLowerCase() == 'usd'
+            ? amountDebt
+            : amountDebt.toInt(), // Server compatibility
         if (comment != null && comment.isNotEmpty) 'comment': comment,
       };
-      
+
       print('💰 Request body: $body');
-      
+      print('💰 USD Precision check:');
+      print('   - Original amount: $amount');
+      print('   - Original amountDebt: $amountDebt');
+      print('   - Sent amount: ${body['amount']}');
+      print('   - Sent amountDebt: ${body['amountDebt']}');
+      print('   - Currency: ${currency.toLowerCase()}');
+
       final response = await post(
         transactionDebtsCreate,
         body: body,
         token: token,
       );
-      
+
       print('💰 Response: $response');
       return response;
     } catch (e) {
@@ -860,36 +848,36 @@ Future<Map<String, dynamic>> createTransactionDebt({
     String? comment,
   }) async {
     print('💱 Creating conversion: $amountChiqim → $amountKirim');
-    
+
     try {
       final sp = await SharedPreferences.getInstance();
       final token = sp.getString('auth_token') ?? _authToken;
       print('💱 Token: $token');
-      
+
       final body = {
         'type': 'konvertatsiya',
         'walletIdKirim': walletIdKirim,
         'walletIdChiqim': walletIdChiqim,
-        'amountKirim': amountKirim.toInt(),
-        'amountChiqim': amountChiqim.toInt(),
-        'comment': comment != null && comment.isNotEmpty ? 
-            '$comment (${amountChiqim.toInt()} → ${amountKirim.toInt()})' : 
-            'Conversion: ${amountChiqim.toInt()} → ${amountKirim.toInt()}',
+        'amountKirim': amountKirim,
+        'amountChiqim': amountChiqim,
+        'comment': comment != null && comment.isNotEmpty
+            ? '$comment ($amountChiqim → $amountKirim)'
+            : 'Conversion: $amountChiqim → $amountKirim',
       };
-      
+
       print('💱 ===== FINAL API REQUEST =====');
       print('💱 Endpoint: $transactionConversionCreate');
       print('💱 Method: POST');
       print('💱 Request body: $body');
       print('💱 Headers: ${getHeaders()}');
       print('💱 ==============================');
-      
+
       final response = await post(
         transactionConversionCreate,
         body: body,
         token: token,
       );
-      
+
       print('💱 ===== API RESPONSE =====');
       print('💱 Response: $response');
       print('💱 =========================');
@@ -904,8 +892,5 @@ Future<Map<String, dynamic>> createTransactionDebt({
     }
   }
 
-
-//add new methods here. gdgdghdghdgghdhgh
-
+  //add new methods here. gdgdghdghdgghdhgh
 }
-

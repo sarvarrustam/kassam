@@ -166,6 +166,9 @@ class _StatsPageState extends State<StatsPage> {
                       wallet['id']?.toString() ??
                       '',
                   'name': wallet['name']?.toString() ?? 'Wallet',
+                  'walletName':
+                      wallet['name']?.toString() ??
+                      'Wallet', // walletName qo'shildi
                   'currency':
                       wallet['currency']?.toString() ??
                       wallet['type']?.toString().toUpperCase() ??
@@ -185,7 +188,7 @@ class _StatsPageState extends State<StatsPage> {
         print('📱 Loaded ${_walletsList.length} wallets for conversion');
         _walletsList.forEach((w) {
           print(
-            '   💰 ${w['name']} (${w['currency']}) - Balance: ${w['balance']} - ID: ${w['walletId']}',
+            '   💰 ${w['name']} / ${w['walletName']} (${w['currency']}) - Balance: ${w['balance']} - ID: ${w['walletId']}',
           );
         });
       } else {
@@ -3830,16 +3833,29 @@ class _StatsPageState extends State<StatsPage> {
                                         height: 20,
                                       ), // Tepada bo'sh joy
                                       Text(
-                                        _showBalance
-                                            ? (t.type ==
-                                                      TransactionType.conversion
-                                                  ? _getConversionDisplayAmount(
-                                                      t,
-                                                    )
-                                                  : _formatTransactionAmount(
-                                                      t.amount,
-                                                    ))
-                                            : '••••••',
+                                        () {
+                                          String displayText;
+                                          if (_showBalance) {
+                                            if (t.type ==
+                                                TransactionType.conversion) {
+                                              displayText =
+                                                  _getConversionDisplayAmount(
+                                                    t,
+                                                  );
+                                              print(
+                                                '💰 DISPLAYING conversion for ID ${t.id.substring(0, 8)}: "$displayText"',
+                                              );
+                                            } else {
+                                              displayText =
+                                                  _formatTransactionAmount(
+                                                    t.amount,
+                                                  );
+                                            }
+                                          } else {
+                                            displayText = '••••••';
+                                          }
+                                          return displayText;
+                                        }(),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
@@ -4010,9 +4026,13 @@ class _StatsPageState extends State<StatsPage> {
   String _formatNumberWithDecimal(double number) {
     // Kasr qismli raqamlarni formatlash
     // Agar kasr qism bor bo'lsa, ko'rsatadi
+    print('📊 _formatNumberWithDecimal called with: $number');
+
     if (number == number.toInt()) {
       // Kasr qism yo'q, faqat butun qismni qaytarish
-      return _formatNumber(number.toInt());
+      final result = _formatNumber(number.toInt());
+      print('   → No decimal part, returning: "$result"');
+      return result;
     }
 
     // Kasr qism bor
@@ -4025,7 +4045,9 @@ class _StatsPageState extends State<StatsPage> {
     // Butun qismni formatlash
     final formattedInteger = _formatNumber(integerPart);
 
-    return '$formattedInteger.$decimalStr';
+    final result = '$formattedInteger.$decimalStr';
+    print('   → With decimal part, returning: "$result"');
+    return result;
   }
 
   String _formatUSDAmount(double amount) {
@@ -5046,19 +5068,59 @@ class _StatsPageState extends State<StatsPage> {
     // Current wallet currency detection
     final currentWalletCurrency = widget.walletCurrency?.toUpperCase() ?? 'UZS';
 
-    // Wallet currency detection
-    final chiqimWallet = t.walletChiqim ?? '';
-    final kirimWallet = t.walletKirim ?? '';
+    // Wallet currency detection - _walletsList dan topish
+    final chiqimWalletName = t.walletChiqim ?? '';
+    final kirimWalletName = t.walletKirim ?? '';
 
-    bool isChiqimUSD =
-        chiqimWallet.toLowerCase().contains('kassam') ||
-        chiqimWallet.toLowerCase().contains('usd') ||
-        chiqimWallet.toLowerCase().contains('dollar');
-    bool isKirimUSD =
-        kirimWallet.toLowerCase().contains('kassam') ||
-        kirimWallet.toLowerCase().contains('usd') ||
-        kirimWallet.toLowerCase().contains('dollar');
+    print('🔍 WALLET DETECTION:');
+    print('   chiqimWalletName: "$chiqimWalletName"');
+    print('   kirimWalletName: "$kirimWalletName"');
+    print('   _walletsList length: ${_walletsList.length}');
 
+    // Debug: Barcha wallet nomlarini ko'rsatish
+    if (_walletsList.isNotEmpty) {
+      print('   Available wallets:');
+      for (var w in _walletsList) {
+        print(
+          '      - "${w['walletName']}" (currency: ${w['currency']}, ID: ${w['walletId']})',
+        );
+      }
+    }
+
+    // Wallet listidan to'g'ri currency ni topish
+    final chiqimWalletData = _walletsList.firstWhere(
+      (w) => w['walletName']?.toString() == chiqimWalletName,
+      orElse: () => <String, dynamic>{},
+    );
+    final kirimWalletData = _walletsList.firstWhere(
+      (w) => w['walletName']?.toString() == kirimWalletName,
+      orElse: () => <String, dynamic>{},
+    );
+
+    print('   chiqimWalletData found: ${chiqimWalletData.isNotEmpty}');
+    print('   kirimWalletData found: ${kirimWalletData.isNotEmpty}');
+    if (chiqimWalletData.isNotEmpty) {
+      print('   chiqimWalletData: $chiqimWalletData');
+    }
+    if (kirimWalletData.isNotEmpty) {
+      print('   kirimWalletData: $kirimWalletData');
+    }
+
+    final chiqimCurrency =
+        chiqimWalletData['currency']?.toString().toUpperCase() ?? 'UZS';
+    final kirimCurrency =
+        kirimWalletData['currency']?.toString().toUpperCase() ?? 'UZS';
+
+    bool isChiqimUSD = chiqimCurrency == 'USD';
+    bool isKirimUSD = kirimCurrency == 'USD';
+
+    print('   chiqimCurrency: $chiqimCurrency (isUSD: $isChiqimUSD)');
+    print('   kirimCurrency: $kirimCurrency (isUSD: $isKirimUSD)');
+
+    print(
+      'DEBUG CONVERSION: chiqimWallet: "$chiqimWalletName" ($chiqimCurrency)',
+    );
+    print('DEBUG CONVERSION: kirimWallet: "$kirimWalletName" ($kirimCurrency)');
     print(
       'DEBUG CONVERSION: isChiqimUSD: $isChiqimUSD, isKirimUSD: $isKirimUSD',
     );
@@ -5070,18 +5132,18 @@ class _StatsPageState extends State<StatsPage> {
     print('DEBUG CONVERSION: Parsing text: "$allText"');
 
     // Enhanced parsing - multiple formats:
-    // "100 → 1100000", "Conversion: 100 → 1100000", "(100 → 1100000)", "[100 → 1100000]"
+    // "100 → 1100000", "Conversion: 100 → 1100000", "(100 → 1100000)", "(10000.0 → 0.83)"
     List<RegExp> conversionPatterns = [
       RegExp(
-        r'Conversion:\s*(\d+(?:\s*\d+)*)\s*[→>-]+\s*(\d+(?:\s*\d+)*)',
+        r'Conversion:\s*(\d+(?:\.\d+)?(?:\s*\d+)*)\s*[→>-]+\s*(\d+(?:\.\d+)?(?:\s*\d+)*)',
         caseSensitive: false,
       ),
       RegExp(
-        r'[\(\[](\d+(?:\s*\d+)*)\s*[→>-]+\s*(\d+(?:\s*\d+)*)[\)\]]',
+        r'[\(\[](\d+(?:\.\d+)?(?:\s*\d+)*)\s*[→>-]+\s*(\d+(?:\.\d+)?(?:\s*\d+)*)[\)\]]',
         caseSensitive: false,
       ),
       RegExp(
-        r'(\d+(?:\s*\d+)*)\s*[→>-]+\s*(\d+(?:\s*\d+)*)',
+        r'(\d+(?:\.\d+)?(?:\s*\d+)*)\s*[→>-]+\s*(\d+(?:\.\d+)?(?:\s*\d+)*)',
         caseSensitive: false,
       ),
     ];
@@ -5094,11 +5156,21 @@ class _StatsPageState extends State<StatsPage> {
         String toAmountStr =
             match.group(2)?.replaceAll(RegExp(r'\s+'), '') ?? '';
 
+        print('🔍 REGEX MATCH FOUND:');
+        print('   Raw group(1): "${match.group(1)}"');
+        print('   Raw group(2): "${match.group(2)}"');
+        print('   Cleaned fromAmountStr: "$fromAmountStr"');
+        print('   Cleaned toAmountStr: "$toAmountStr"');
+
         if (fromAmountStr.isNotEmpty && toAmountStr.isNotEmpty) {
           double fromAmount = double.tryParse(fromAmountStr) ?? 0;
           double toAmount = double.tryParse(toAmountStr) ?? 0;
 
-          print('DEBUG CONVERSION: Parsed conversion: $fromAmount → $toAmount');
+          print('   Parsed fromAmount: $fromAmount');
+          print('   Parsed toAmount: $toAmount');
+          print(
+            '   Current wallet: $currentWalletCurrency, isChiqimUSD: $isChiqimUSD, isKirimUSD: $isKirimUSD',
+          );
 
           if (fromAmount > 0 && toAmount > 0) {
             // Logic: current hamyon asosida amount ni aniqlash
@@ -5106,12 +5178,15 @@ class _StatsPageState extends State<StatsPage> {
               // USD hamyonida ko'rayotgan bo'lsak
               if (isChiqimUSD) {
                 // USD chiqim (USD → UZS), USD amount ko'rsatish
+                print('   ✅ BRANCH: USD wallet, USD chiqim -> show fromAmount');
                 return '\$${_formatUSDAmount(fromAmount)}';
               } else if (isKirimUSD) {
                 // USD kirim (UZS → USD), USD amount ko'rsatish
+                print('   ✅ BRANCH: USD wallet, USD kirim -> show toAmount');
                 return '\$${_formatUSDAmount(toAmount)}';
               } else {
                 // Noma'lum holat, kichikroq raqamni USD deb hisoblaymiz
+                print('   ✅ BRANCH: USD wallet, unknown -> show smaller');
                 double usdAmount = fromAmount < toAmount
                     ? fromAmount
                     : toAmount;
@@ -5121,12 +5196,19 @@ class _StatsPageState extends State<StatsPage> {
               // UZS hamyonida ko'rayotgan bo'lsak
               if (isChiqimUSD) {
                 // USD chiqim (USD → UZS), UZS amount ko'rsatish (kasr bilan)
+                print(
+                  '   ✅ BRANCH: UZS wallet, USD chiqim -> show toAmount: $toAmount',
+                );
                 return '${_formatNumberWithDecimal(toAmount)} som';
               } else if (isKirimUSD) {
                 // USD kirim (UZS → USD), UZS amount ko'rsatish (kasr bilan)
+                print(
+                  '   ✅ BRANCH: UZS wallet, USD kirim -> show fromAmount: $fromAmount',
+                );
                 return '${_formatNumberWithDecimal(fromAmount)} som';
               } else {
                 // Noma'lum holat, kattaroq raqamni UZS deb hisoblaymiz
+                print('   ✅ BRANCH: UZS wallet, unknown -> show larger');
                 double uzsAmount = fromAmount > toAmount
                     ? fromAmount
                     : toAmount;
@@ -5206,17 +5288,18 @@ class _StatsPageState extends State<StatsPage> {
         (chiqimCurrency == 'UZS' && kirimCurrency == 'USD')))
       return;
 
-    // Kiritilgan summani parse qilish
+    // Kiritilgan summani parse qilish - probel va vergulni olib tashlash
     final amount = double.tryParse(
       value.replaceAll(' ', '').replaceAll(',', ''),
     );
     if (amount == null || amount <= 0) return;
 
     // Debug: Kurs va hisoblash ma'lumotlari
-    print('💱 Auto-calculation DEBUG:');
+    print('💱 ===== AUTO-CALCULATION DEBUG =====');
     print('   Exchange rate: $_exchangeRate');
-    print('   Input amount: $amount');
-    print('   From: $chiqimCurrency → To: $kirimCurrency');
+    print('   Input value (string): "$value"');
+    print('   Parsed amount: $amount');
+    print('   From currency: $chiqimCurrency → To currency: $kirimCurrency');
     print('   Is chiqim changed: $isChiqimChanged');
 
     double convertedAmount;
@@ -5227,23 +5310,25 @@ class _StatsPageState extends State<StatsPage> {
         // USD → UZS
         convertedAmount = amount * _exchangeRate;
         print(
-          '   Calculation: $amount USD × $_exchangeRate = $convertedAmount UZS',
+          '   ✅ Calculation: $amount USD × $_exchangeRate = $convertedAmount UZS',
         );
       } else {
         // UZS → USD
         convertedAmount = amount / _exchangeRate;
         print(
-          '   Calculation: $amount UZS ÷ $_exchangeRate = $convertedAmount USD',
+          '   ✅ Calculation: $amount UZS ÷ $_exchangeRate = $convertedAmount USD',
         );
       }
 
-      // Kirim field'ini yangilash (agar foydalanuvchi yozmagan bo'lsa)
+      // Kirim field'ini yangilash
+      final newKirimText = kirimCurrency == 'USD'
+          ? convertedAmount.toStringAsFixed(2)
+          : convertedAmount.toInt().toString();
+
+      print('   📝 Setting kirim field to: "$newKirimText"');
+
       setState(() {
-        if (kirimCurrency == 'USD') {
-          kirimCtrl.text = convertedAmount.toStringAsFixed(2);
-        } else {
-          kirimCtrl.text = convertedAmount.toInt().toString();
-        }
+        kirimCtrl.text = newKirimText;
       });
     } else {
       // Kirim o'zgardi - chiqimni hisoblash
@@ -5251,28 +5336,29 @@ class _StatsPageState extends State<StatsPage> {
         // USD kirim, UZS chiqim
         convertedAmount = amount * _exchangeRate;
         print(
-          '   Calculation: $amount USD × $_exchangeRate = $convertedAmount UZS',
+          '   ✅ Calculation: $amount USD × $_exchangeRate = $convertedAmount UZS',
         );
       } else {
         // UZS kirim, USD chiqim
         convertedAmount = amount / _exchangeRate;
         print(
-          '   Calculation: $amount UZS ÷ $_exchangeRate = $convertedAmount USD',
+          '   ✅ Calculation: $amount UZS ÷ $_exchangeRate = $convertedAmount USD',
         );
       }
 
       // Chiqim field'ini yangilash
+      final newChiqimText = chiqimCurrency == 'USD'
+          ? convertedAmount.toStringAsFixed(2)
+          : convertedAmount.toInt().toString();
+
+      print('   📝 Setting chiqim field to: "$newChiqimText"');
+
       setState(() {
-        if (chiqimCurrency == 'USD') {
-          chiqimCtrl.text = convertedAmount.toStringAsFixed(2);
-        } else {
-          chiqimCtrl.text = convertedAmount.toInt().toString();
-        }
+        chiqimCtrl.text = newChiqimText;
       });
     }
 
-    print(
-      '💱 Auto-calculate: ${isChiqimChanged ? 'chiqim' : 'kirim'} $amount → ${isChiqimChanged ? 'kirim' : 'chiqim'} $convertedAmount',
-    );
+    print('   💚 Auto-calculation completed');
+    print('   ====================================');
   }
 }

@@ -556,7 +556,26 @@ class _StatsPageState extends State<StatsPage> {
     TextEditingController debtPersonCtrl,
     StateSetter setStateSB,
     Function(String?) setSelectedPersonId,
-  ) {
+  ) async {
+    // Dialog ochilishidan OLDIN API'dan to'g'ridan-to'g'ri ma'lumot olish
+    print('👥 Opening Kimdan dialog - loading debtors/creditors directly from API...');
+    
+    try {
+      final apiService = ApiService();
+      final response = await apiService.getDebtorsCreditorsList();
+      
+      if (response['success'] == true && response['data'] != null) {
+        setState(() {
+          _debtorsList = response['data'] is List ? response['data'] as List : [];
+          print('✅ Loaded ${_debtorsList.length} debtors/creditors for dialog');
+        });
+      } else {
+        print('⚠️ Failed to load debtors: ${response['message']}');
+      }
+    } catch (e) {
+      print('❌ Error loading debtors: $e');
+    }
+    
     Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -659,17 +678,37 @@ class _StatsPageState extends State<StatsPage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              TextField(
-                controller: searchController,
-                decoration: const InputDecoration(
-                  labelText: 'Qidirish',
-                  hintText: 'Ism yoki telefon raqam kiriting',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (value) {
-                  dialogSetState(() {});
-                },
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: searchController,
+                      decoration: const InputDecoration(
+                        labelText: 'Qidirish',
+                        hintText: 'Ism yoki telefon raqam kiriting',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (value) {
+                        dialogSetState(() {});
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10b981),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.add, color: Colors.white),
+                      tooltip: 'Yangi odam qo\'shish',
+                      onPressed: () {
+                        _showManualEntryDialog(context, debtPersonCtrl, setStateSB);
+                      },
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 
@@ -892,13 +931,6 @@ class _StatsPageState extends State<StatsPage> {
                     );
                   },
                 ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  _showManualEntryDialog(context, debtPersonCtrl, setStateSB);
-                },
-                child: const Text('Qo\'lda qo\'shish'),
-              ),
             ],
           );
         },
@@ -988,67 +1020,78 @@ class _StatsPageState extends State<StatsPage> {
               final name = nameController.text.trim();
               final phone = phoneController.text.trim();
 
-              if (name.isNotEmpty) {
-                // Telefon raqam validatsiyasi
-                if (phone.isNotEmpty &&
-                    !RegExp(r'^\+998\d{9}$').hasMatch(phone)) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Telefon raqam to\'g\'ri formatda kiriting: +998901234567',
-                      ),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
-
-                // Yangi odamni darhol ro'yxatga qo'shish (dialog'da ko'rinishi uchun)
-                final newPerson = {
-                  'id': DateTime.now().millisecondsSinceEpoch
-                      .toString(), // Vaqtinchalik ID
-                  'name': name,
-                  'telephoneNumber': phone,
-                };
-
-                setState(() {
-                  _debtorsList.add(newPerson);
-
-                  // Dialog'ni ham yangilash
-                  if (_dialogRefreshCallback != null) {
-                    _dialogRefreshCallback!(() {});
-                  }
-                });
-
-                // API orqali bazaga qo'shish
-                _statsBloc.add(
-                  StatsCreateDebtorCreditor(name: name, telephoneNumber: phone),
-                );
-
-                // Field'ga ham qo'yish
-                setStateSB(() {
-                  debtPersonCtrl.text = name;
-                });
-
-                // Dialog yopish
-                Navigator.pop(ctx);
-
-                // Success message
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('$name ro\'yxatga qo\'shildi!'),
-                    backgroundColor: Colors.green,
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              } else {
+              // Ism va telefon raqam ikkalasi ham bo'lishi kerak
+              if (name.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Ism kiritish majburiy'),
                     backgroundColor: Colors.red,
                   ),
                 );
+                return;
               }
+
+              if (phone.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Telefon raqam kiritish majburiy'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
+              // Telefon raqam formatini tekshirish
+              if (!RegExp(r'^\+998\d{9}$').hasMatch(phone)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Telefon raqam to\'g\'ri formatda kiriting: +998901234567',
+                    ),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
+              // Yangi odamni darhol ro'yxatga qo'shish (dialog'da ko'rinishi uchun)
+              final newPerson = {
+                'id': DateTime.now().millisecondsSinceEpoch
+                    .toString(), // Vaqtinchalik ID
+                'name': name,
+                'telephoneNumber': phone,
+              };
+
+              setState(() {
+                _debtorsList.add(newPerson);
+
+                // Dialog'ni ham yangilash
+                if (_dialogRefreshCallback != null) {
+                  _dialogRefreshCallback!(() {});
+                }
+              });
+
+              // API orqali bazaga qo'shish
+              _statsBloc.add(
+                StatsCreateDebtorCreditor(name: name, telephoneNumber: phone),
+              );
+
+              // Field'ga ham qo'yish
+              setStateSB(() {
+                debtPersonCtrl.text = name;
+              });
+
+              // Dialog yopish
+              Navigator.pop(ctx);
+
+              // Success message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$name ro\'yxatga qo\'shildi!'),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
             },
             child: const Text('Qo\'shish'),
           ),
@@ -4355,6 +4398,10 @@ class _StatsPageState extends State<StatsPage> {
         ? 'kirim'
         : 'chiqim';
 
+    print('🔍 OPENING TRANSACTION TYPE PICKER:');
+    print('   transactionType: $transactionType');
+    print('   apiType: $apiType');
+
     _isFetchingTransactionTypes = true;
     _statsBloc.add(StatsGetTransactionTypesEvent(type: apiType));
 
@@ -4412,6 +4459,8 @@ class _StatsPageState extends State<StatsPage> {
           }
         },
         builder: (context, state) {
+          print('🎨 BUILDER CALLED: state type = ${state.runtimeType}');
+
           final searchCtrl = TextEditingController();
           String searchQuery = '';
 
@@ -4427,9 +4476,20 @@ class _StatsPageState extends State<StatsPage> {
           );
 
           if (state is StatsLoading) {
+            print('   → Showing loading...');
             return buildLoading();
           } else if (state is StatsTransactionTypesLoaded) {
+            print('   → Data loaded, normalizing...');
             final allItems = _normalizeTransactionTypeList(state.data, apiType);
+            print('   → Normalized items count: ${allItems.length}');
+            print('   → Expected apiType: $apiType');
+            
+            // Debug: Birinchi 3 ta elementni ko'rsatish
+            if (allItems.isNotEmpty) {
+              for (int i = 0; i < (allItems.length > 3 ? 3 : allItems.length); i++) {
+                print('   → Item $i: name="${allItems[i]['name']}", type="${allItems[i]['type']}"');
+              }
+            }
 
             return StatefulBuilder(
               builder: (context, setDialogState) {
@@ -4610,6 +4670,7 @@ class _StatsPageState extends State<StatsPage> {
               },
             );
           } else if (state is StatsError) {
+            print('   → Error state: ${state.message}');
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -4632,6 +4693,7 @@ class _StatsPageState extends State<StatsPage> {
             );
           }
 
+          print('   → Unknown state, showing default loading...');
           return buildLoading('Yuklanmoqda...');
         },
       ),

@@ -210,8 +210,11 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
       if (response['success'] == true) {
         final data = response['data'];
         print('👥 Debtors/creditors data: $data');
+        print('👥 EMITTING StatsDebtorsCreditorsLoaded state...');
 
         emit(StatsDebtorsCreditorsLoaded(data: data));
+        
+        print('👥 State emitted successfully');
       } else {
         final errorMsg = response['error'] ?? 'Qarzkorlar ro\'yxatini yuklashda xatolik';
         emit(StatsError(errorMsg));

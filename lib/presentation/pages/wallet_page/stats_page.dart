@@ -9,6 +9,7 @@ import 'package:kassam/core/services/connectivity_service.dart';
 import 'package:kassam/presentation/pages/no_internet_page.dart';
 import 'dart:convert';
 import 'package:kassam/core/services/number_formatter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class StatsPage extends StatefulWidget {
   final String? walletId;
@@ -866,12 +867,51 @@ class _StatsPageState extends State<StatsPage> {
                           children: [
                             if (phone.isNotEmpty) ...[
                               const SizedBox(height: 4),
-                              Text(
-                                phone,
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 14,
-                                ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      phone,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  InkWell(
+                                    onTap: () async {
+                                      final Uri launchUri = Uri(
+                                        scheme: 'tel',
+                                        path: phone,
+                                      );
+                                      if (await canLaunchUrl(launchUri)) {
+                                        await launchUrl(launchUri);
+                                      } else {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Telefon qo\'ng\'iroqini amalga oshirib bo\'lmadi'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade50,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Icon(
+                                        Icons.phone,
+                                        size: 18,
+                                        color: Colors.green.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                             const SizedBox(height: 8),

@@ -2117,7 +2117,7 @@ class _StatsPageState extends State<StatsPage> {
                           decoration: const InputDecoration(
                             labelText: 'Chiqim summasi',
                             border: OutlineInputBorder(),
-                            hintText: 'Qancha chiqadi',
+                            hintText: 'Qancha chiqadi', //uu
                           ),
                           onChanged: (value) {
                             // Formatlangan textdan raqamni olish

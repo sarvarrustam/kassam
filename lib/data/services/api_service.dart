@@ -1,8 +1,18 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:alice/alice.dart';
+import 'package:alice_dio/alice_dio_adapter.dart';
+import 'package:alice/model/alice_configuration.dart';
 
 class ApiService {
+  static final Alice alice = Alice(
+    configuration: AliceConfiguration(
+      showNotification: true,
+      showInspectorOnShake: true,
+    ),
+  );
+  
   String baseUrl = 'https://master.cloudhoff.uz/';
 
   //https://master.cloudhoff.uz/Kassam/hs/KassamUrl/getSms
@@ -68,6 +78,11 @@ class ApiService {
         contentType: 'application/json',
       ),
     );
+
+    // Alice Interceptor - HTTP so'rovlarni ko'rish uchun
+    final aliceDioAdapter = AliceDioAdapter();
+    _dio.interceptors.add(aliceDioAdapter);
+    alice.addAdapter(aliceDioAdapter);
 
     // JSON Interceptor - String bo'lsa parse qilish
     _dio.interceptors.add(

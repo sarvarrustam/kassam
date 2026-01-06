@@ -109,6 +109,7 @@ class _RootLayoutState extends State<RootLayout> {
 }
 
 final GoRouter appRouter = GoRouter(
+  navigatorKey: GlobalKey<NavigatorState>(),
   initialLocation: '/splash',
   redirect: (context, state) async {
     // Splash, version-update, PIN setup/verify page'lardan redirect qilmaslik

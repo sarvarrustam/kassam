@@ -2111,7 +2111,7 @@ class _StatsPageState extends State<StatsPage> {
                         TextField(
                           controller: chiqimAmountCtrl,
                           keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
+                            decimal: false,
                           ),
                           inputFormatters: [DecimalNumberTextFormatter()],
                           decoration: const InputDecoration(
@@ -2145,7 +2145,7 @@ class _StatsPageState extends State<StatsPage> {
                         TextField(
                           controller: kirimAmountCtrl,
                           keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
+                            decimal: false,
                           ),
                           inputFormatters: [DecimalNumberTextFormatter()],
                           decoration: const InputDecoration(
@@ -2233,7 +2233,7 @@ class _StatsPageState extends State<StatsPage> {
                             border: OutlineInputBorder(),
                           ),
                           keyboardType: TextInputType.numberWithOptions(
-                            decimal: true,
+                            decimal: false,
                           ),
                           onChanged: (value) {
                             final clean = value.replaceAll(' ', '');
@@ -2446,7 +2446,7 @@ class _StatsPageState extends State<StatsPage> {
                             border: OutlineInputBorder(),
                           ),
                           keyboardType: TextInputType.numberWithOptions(
-                            decimal: true,
+                            decimal: false,
                           ),
                           onChanged: (value) {
                             final clean = value.replaceAll(' ', '');
@@ -3170,7 +3170,7 @@ class _StatsPageState extends State<StatsPage> {
                       controller: amountCtrl,
                       decoration: const InputDecoration(labelText: 'Summа'),
                       keyboardType: TextInputType.numberWithOptions(
-                        decimal: true,
+                        decimal: false,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -3999,9 +3999,39 @@ class _StatsPageState extends State<StatsPage> {
             ),
           ), // SingleChildScrollView
         ), // RefreshIndicator (body)
-        floatingActionButton: FloatingActionButton(
-          onPressed: _showAddTransactionSheet,
-          child: const Icon(Icons.add),
+        floatingActionButton: Stack(
+          children: [
+            // HTTP Inspector button - pastda
+            Positioned(
+              bottom: 80,
+              right: 0,
+              child: FloatingActionButton(
+                onPressed: () {
+                  ApiService.alice.showInspector();
+                },
+                backgroundColor: Colors.orange,
+                heroTag: 'http_inspector',
+                child: const Text(
+                  'HTTP',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            // Add transaction button - yuqorida
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: FloatingActionButton(
+                onPressed: _showAddTransactionSheet,
+                heroTag: 'add_transaction',
+                child: const Icon(Icons.add),
+              ),
+            ),
+          ],
         ),
       ),
     );

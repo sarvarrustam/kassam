@@ -5,6 +5,7 @@ import 'package:kassam/core/services/connectivity_service.dart';
 import 'package:kassam/data/models/wallet_balance_model.dart';
 import 'package:kassam/presentation/blocs/user/user_bloc.dart';
 import 'package:kassam/presentation/pages/no_internet_page.dart';
+import 'package:kassam/data/services/api_service.dart';
 import '../../theme/app_colors.dart';
 
 import 'bloc/home_bloc.dart';
@@ -500,6 +501,26 @@ class _HomePageState extends State<HomePage> {
                 ),
               );
             },
+          ),
+          // HTTP Inspector FAB
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: FloatingActionButton(
+              onPressed: () {
+                ApiService.alice.showInspector();
+              },
+              backgroundColor: Colors.orange,
+              heroTag: 'http_inspector_home',
+              child: const Text(
+                'HTTP',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
           ),
         ],
       ),

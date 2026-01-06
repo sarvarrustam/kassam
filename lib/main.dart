@@ -8,10 +8,15 @@ import 'package:kassam/arch/bloc/theme_bloc.dart';
 import 'package:kassam/presentation/pages/entry_pages/bloc/auth_bloc.dart';
 import 'package:kassam/presentation/pages/home_page/bloc/home_bloc.dart';
 import 'package:kassam/presentation/blocs/user/user_bloc.dart';
+import 'package:kassam/data/services/api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppPreferencesService().initialize();
+  
+  // Alice uchun navigatorKey o'rnatish (go_router'dan)
+  ApiService.alice.setNavigatorKey(appRouter.routerDelegate.navigatorKey);
+  
   runApp(const MyApp());
 }
 

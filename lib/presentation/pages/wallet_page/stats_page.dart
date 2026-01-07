@@ -68,10 +68,10 @@ class _StatsPageState extends State<StatsPage> {
     if (widget.walletId != null) {
       _selectedWalletId = widget.walletId;
     }
-    _loadExchangeRate(); // Kursni yuklash
+    // _loadExchangeRate() olib tashlandi - kurs endi tranzaksiyalardan kelyapti
     _loadCustomCategories();
     _loadInitialTransactions();
-    _loadWalletsList(); // Walletlar ro'yxatini yuklash
+    // _loadWalletsList() olib tashlandi - faqat konvertatsiya dialogida kerak bo'lganda yuklanadi
   }
 
   Future<void> _loadExchangeRate() async {

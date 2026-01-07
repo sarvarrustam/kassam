@@ -732,7 +732,7 @@ class _HomePageState extends State<HomePage> {
         // Stats page'dan qaytganda hamyonlarni yangilash
         if (mounted) {
           context.read<HomeBloc>().add(HomeGetWalletsEvent());
-          context.read<HomeBloc>().add(HomeGetTotalBalancesEvent());
+          // HomeGetTotalBalancesEvent() olib tashlandi - tranzaksiya sahifasiga o'tganda getWalletsBalans kerak emas
         }
       },
       child: Container(

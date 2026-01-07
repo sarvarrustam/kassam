@@ -42,7 +42,9 @@ class Transaction extends Equatable {
       customCategoryEmoji: json['customCategoryEmoji'] as String?,
       exchangeRate: json['exchangeRate'] != null
           ? (json['exchangeRate'] as num).toDouble()
-          : null,
+          : (json['kurs'] != null
+              ? _parseKurs(json['kurs'].toString())
+              : null),
       walletKirim: json['walletKirim'] as String?,
       walletChiqim: json['walletChiqim'] as String?,
       counterparty: json['counterparty'] as String?,
@@ -270,5 +272,17 @@ class Transaction extends Equatable {
       case TransactionCategory.other:
         return '📝';
     }
+  }
+}
+
+// Helper function to parse kurs string "12 000" -> 12000.0
+double? _parseKurs(String kursString) {
+  try {
+    // Remove spaces and parse
+    final cleaned = kursString.replaceAll(' ', '').replaceAll(',', '');
+    return double.tryParse(cleaned);
+  } catch (e) {
+    print('Error parsing kurs: $e');
+    return null;
   }
 }

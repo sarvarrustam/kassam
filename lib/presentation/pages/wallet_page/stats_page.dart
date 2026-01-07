@@ -1928,10 +1928,9 @@ class _StatsPageState extends State<StatsPage> {
                         // Chiqim suma
                         TextField(
                           controller: chiqimAmountCtrl,
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            DecimalNumberTextFormatter(),
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                           ],
                           decoration: const InputDecoration(
                             labelText: 'Chiqim summasi',
@@ -1963,10 +1962,9 @@ class _StatsPageState extends State<StatsPage> {
                         // Kirim suma
                         TextField(
                           controller: kirimAmountCtrl,
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            DecimalNumberTextFormatter(),
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                           ],
                           decoration: const InputDecoration(
                             labelText: 'Kirim summasi',
@@ -2052,9 +2050,9 @@ class _StatsPageState extends State<StatsPage> {
                             labelText: 'Summa',
                             border: OutlineInputBorder(),
                           ),
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                           ],
                           onChanged: (value) {
                             final clean = value.replaceAll(' ', '');
@@ -2266,9 +2264,9 @@ class _StatsPageState extends State<StatsPage> {
                             labelText: 'Summa',
                             border: OutlineInputBorder(),
                           ),
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                           ],
                           onChanged: (value) {
                             final clean = value.replaceAll(' ', '');
@@ -2972,9 +2970,9 @@ class _StatsPageState extends State<StatsPage> {
                     TextField(
                       controller: amountCtrl,
                       decoration: const InputDecoration(labelText: 'Summа'),
-                      keyboardType: TextInputType.number,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
+                        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                       ],
                     ),
                     const SizedBox(height: 16),

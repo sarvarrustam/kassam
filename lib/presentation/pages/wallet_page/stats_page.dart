@@ -1002,21 +1002,27 @@ class _StatsPageState extends State<StatsPage> {
     Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (navigationContext) => _buildTransactionDialog(),
+        builder: (transactionContext) => _buildTransactionDialog(transactionContext),
       ),
     );
   }
 
-  Widget _buildTransactionDialog() {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tranzaksiya'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+  Widget _buildTransactionDialog(BuildContext transactionContext) {
+    return WillPopScope(
+      onWillPop: () async {
+        // Telefon back tugmasi - dialogni yopish
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Tranzaksiya'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(transactionContext),
+          ),
         ),
+        body: _buildTransactionDialogContent(),
       ),
-      body: _buildTransactionDialogContent(),
     );
   }
 

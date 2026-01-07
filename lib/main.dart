@@ -9,6 +9,7 @@ import 'package:kassam/presentation/pages/entry_pages/bloc/auth_bloc.dart';
 import 'package:kassam/presentation/pages/home_page/bloc/home_bloc.dart';
 import 'package:kassam/presentation/blocs/user/user_bloc.dart';
 import 'package:kassam/data/services/api_service.dart';
+import 'package:kassam/presentation/widgets/global_http_inspector_button.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +55,14 @@ class MyApp extends StatelessWidget {
             routerDelegate: appRouter.routerDelegate,
             routeInformationParser: appRouter.routeInformationParser,
             routeInformationProvider: appRouter.routeInformationProvider,
+            builder: (context, child) {
+              return Stack(
+                children: [
+                  child ?? const SizedBox.shrink(),
+                  const GlobalHttpInspectorButton(),
+                ],
+              );
+            },
 
             // home: const EntryPage(  tetettegdvdttttettet
           );

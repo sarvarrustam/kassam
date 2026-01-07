@@ -502,26 +502,6 @@ class _HomePageState extends State<HomePage> {
               );
             },
           ),
-          // HTTP Inspector FAB
-          Positioned(
-            bottom: 20,
-            right: 20,
-            child: FloatingActionButton(
-              onPressed: () {
-                ApiService.alice.showInspector();
-              },
-              backgroundColor: Colors.orange,
-              heroTag: 'http_inspector_home',
-              child: const Text(
-                'HTTP',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );

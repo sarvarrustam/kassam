@@ -8,8 +8,8 @@ import 'package:alice/model/alice_configuration.dart';
 class ApiService {
   static final Alice alice = Alice(
     configuration: AliceConfiguration(
-      showNotification: true,
-      showInspectorOnShake: true,
+      showNotification: false, // Notification o'chirildi - faqat tugma orqali
+      showInspectorOnShake: false, // Shake ham o'chirildi
     ),
   );
   

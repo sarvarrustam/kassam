@@ -994,8 +994,8 @@ class _StatsPageState extends State<StatsPage> {
   void _showAddTransactionSheet() {
     print('🔄 Opening new transaction dialog - resetting state...');
 
-    // API: GET /debtor-creditor/list - Qarzkorlar va kreditorlar ro'yxatini olish
-    _statsBloc.add(const StatsGetDebtorsCreditors());
+    // StatsGetDebtorsCreditors() olib tashlandi - + tugmasi bosilganda API chaqirilmasin
+    // Faqat ichkaridagi qarz tugmalarini bosganda API chaqiriladi
 
     // Main dialog for transaction
     // Fullscreen navigation bilan ochish

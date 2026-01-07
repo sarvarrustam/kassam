@@ -473,8 +473,8 @@ class _StatsPageState extends State<StatsPage> {
     Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (navigationContext) => _buildDebtorsDialogScreen(
-          context,
+        builder: (dialogContext) => _buildDebtorsDialogScreen(
+          dialogContext,
           debtType,
           debtPersonCtrl,
           setStateSB,
@@ -485,7 +485,7 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   Widget _buildDebtorsDialogScreen(
-    BuildContext context,
+    BuildContext dialogContext,
     String debtType,
     TextEditingController debtPersonCtrl,
     StateSetter setStateSB,
@@ -506,12 +506,12 @@ class _StatsPageState extends State<StatsPage> {
             onPressed: () {
               _dialogRefreshCallback = null;
               print('🧹 Dialog manually closed, callback cleared');
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
             },
           ),
         ),
         body: _buildDebtorsDialogContent(
-          context,
+          dialogContext,
           debtType,
           debtPersonCtrl,
           setStateSB,
@@ -522,7 +522,7 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   Widget _buildDebtorsDialogContent(
-    BuildContext context,
+    BuildContext dialogContext,
     String debtType,
     TextEditingController debtPersonCtrl,
     StateSetter setStateSB,
@@ -532,15 +532,15 @@ class _StatsPageState extends State<StatsPage> {
 
     return BlocListener<StatsBloc, StatsState>(
       bloc: _statsBloc,
-      listener: (context, state) {
+      listener: (listenerContext, state) {
         if (state is StatsDebtorsCreditorsLoaded) {
-          if (Navigator.of(context).canPop()) {
-            (context as Element).markNeedsBuild();
+          if (Navigator.of(listenerContext).canPop()) {
+            (listenerContext as Element).markNeedsBuild();
           }
         }
       },
       child: StatefulBuilder(
-        builder: (context, dialogSetState) {
+        builder: (builderContext, dialogSetState) {
           _dialogRefreshCallback = dialogSetState;
 
           List<dynamic> filteredList = List.from(_debtorsList);
@@ -592,7 +592,7 @@ class _StatsPageState extends State<StatsPage> {
                       icon: const Icon(Icons.add, color: Colors.white),
                       tooltip: 'Yangi odam qo\'shish',
                       onPressed: () {
-                        _showManualEntryDialog(context, debtPersonCtrl, setStateSB);
+                        _showManualEntryDialog(dialogContext, debtPersonCtrl, setStateSB);
                       },
                     ),
                   ),
@@ -815,7 +815,7 @@ class _StatsPageState extends State<StatsPage> {
                           setSelectedPersonId(id);
                           _dialogRefreshCallback = null;
                           print('🧹 Person selected, callback cleared');
-                          Navigator.pop(context);
+                          Navigator.pop(dialogContext);
                         },
                       ),
                     );
@@ -1939,7 +1939,7 @@ class _StatsPageState extends State<StatsPage> {
                           controller: chiqimAmountCtrl,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                            DecimalNumberTextFormatter(),
                           ],
                           decoration: const InputDecoration(
                             labelText: 'Chiqim summasi',
@@ -1973,7 +1973,7 @@ class _StatsPageState extends State<StatsPage> {
                           controller: kirimAmountCtrl,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                            DecimalNumberTextFormatter(),
                           ],
                           decoration: const InputDecoration(
                             labelText: 'Kirim summasi',
@@ -2061,8 +2061,50 @@ class _StatsPageState extends State<StatsPage> {
                           ),
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                            DecimalNumberTextFormatter(),
                           ],
+                          onChanged: (value) {
+                            setStateSB(() {
+                              // Hamyon valyutasini hisobga olish
+                              final walletCurrency =
+                                  widget.walletCurrency?.toUpperCase() ?? 'UZS';
+
+                              if (value.isNotEmpty) {
+                                final cleanAmount =
+                                    value.replaceAll(' ', '').replaceAll(',', '');
+                                final numericAmount =
+                                    double.tryParse(cleanAmount) ?? 0;
+
+                                if (walletCurrency == 'USD') {
+                                  // USD hamyon
+                                  if (selectedCurrency == 'UZS') {
+                                    // USD summani UZS ko'rinishda
+                                    final convertedAmount =
+                                        numericAmount * _exchangeRate;
+                                    displayedAmount =
+                                        _formatNumber(convertedAmount.toInt());
+                                  } else {
+                                    // USD summani USD ko'rinishda
+                                    displayedAmount = value;
+                                  }
+                                } else {
+                                  // UZS hamyon
+                                  if (selectedCurrency == 'USD') {
+                                    // UZS summani USD ko'rinishda
+                                    final convertedAmount =
+                                        numericAmount / _exchangeRate;
+                                    displayedAmount =
+                                        convertedAmount.toStringAsFixed(2);
+                                  } else {
+                                    // UZS summani UZS ko'rinishda
+                                    displayedAmount = value;
+                                  }
+                                }
+                              } else {
+                                displayedAmount = '0';
+                              }
+                            });
+                          },
                         ),
                       if (debtType.isNotEmpty && debtType != 'konvertatsiya')
                         const SizedBox(height: 12),
@@ -2216,7 +2258,7 @@ class _StatsPageState extends State<StatsPage> {
                           ),
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                            DecimalNumberTextFormatter(),
                           ],
                         ),
                       if (debtType.isEmpty || debtType == 'konvertatsiya')
@@ -5126,7 +5168,7 @@ class _StatsPageState extends State<StatsPage> {
       // Kirim field'ini yangilash
       final newKirimText = kirimCurrency == 'USD'
           ? convertedAmount.toStringAsFixed(2)
-          : convertedAmount.toInt().toString();
+          : NumberFormatterHelper.formatNumber(convertedAmount);
 
       print('   📝 Setting kirim field to: "$newKirimText"');
 
@@ -5152,7 +5194,7 @@ class _StatsPageState extends State<StatsPage> {
       // Chiqim field'ini yangilash
       final newChiqimText = chiqimCurrency == 'USD'
           ? convertedAmount.toStringAsFixed(2)
-          : convertedAmount.toInt().toString();
+          : NumberFormatterHelper.formatNumber(convertedAmount);
 
       print('   📝 Setting chiqim field to: "$newChiqimText"');
 

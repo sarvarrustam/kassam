@@ -55,7 +55,6 @@ class DecimalNumberTextFormatter extends TextInputFormatter {
     // Faqat bitta nuqta bo'lishi kerak
     int dotCount = '.'.allMatches(text).length;
     if (dotCount > 1) {
-      // Agar bir nechta nuqta bo'lsa, oxirgi nuqtadan tashqari barchasini olib tashlash
       int lastDotIndex = text.lastIndexOf('.');
       text =
           text.substring(0, lastDotIndex).replaceAll('.', '') +
@@ -96,6 +95,7 @@ class DecimalNumberTextFormatter extends TextInputFormatter {
     } else {
       // Nuqta yo'q - oddiy formatlash
       String formatted = _formatWithSpaces(text);
+      
       return TextEditingValue(
         text: formatted,
         selection: TextSelection.collapsed(offset: formatted.length),

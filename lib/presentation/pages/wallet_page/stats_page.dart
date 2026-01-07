@@ -2054,65 +2054,6 @@ class _StatsPageState extends State<StatsPage> {
                           inputFormatters: [
                             FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                           ],
-                          onChanged: (value) {
-                            final clean = value.replaceAll(' ', '');
-                            if (clean.isEmpty) {
-                              setStateSB(() {
-                                displayedAmount = '0';
-                              });
-                              return;
-                            }
-                            try {
-                              final parts = clean.split('.');
-                              final intPart = int.parse(parts[0]);
-                              final formatted = _formatNumber(intPart);
-                              final decimal = parts.length > 1
-                                  ? '.${parts[1]}'
-                                  : '';
-                              final newText = formatted + decimal;
-
-                              if (amountCtrl.text != newText) {
-                                amountCtrl.value = TextEditingValue(
-                                  text: newText,
-                                  selection: TextSelection.collapsed(
-                                    offset: newText.length,
-                                  ),
-                                );
-                              }
-
-                              // SumaQarz uchun displayedAmount ni yangilash
-                              setStateSB(() {
-                                // Hamyon valyutasiga qarab ko'rsatish
-                                final walletCurrency =
-                                    widget.walletCurrency?.toUpperCase() ??
-                                    'UZS';
-                                if (walletCurrency == selectedCurrency) {
-                                  // Bir xil valyuta - original qiymatni ko'rsatish
-                                  displayedAmount = newText;
-                                } else if (walletCurrency == 'USD' &&
-                                    selectedCurrency == 'UZS') {
-                                  // USD hamyondan UZS ko'rinish
-                                  final usdAmount = double.tryParse(clean) ?? 0;
-                                  final uzsAmount = usdAmount * _exchangeRate;
-                                  displayedAmount = _formatNumber(
-                                    uzsAmount.toInt(),
-                                  );
-                                } else if (walletCurrency == 'UZS' &&
-                                    selectedCurrency == 'USD') {
-                                  // UZS hamyondan USD ko'rinish
-                                  final uzsAmount = double.tryParse(clean) ?? 0;
-                                  final usdAmount = uzsAmount / _exchangeRate;
-                                  displayedAmount = usdAmount.toStringAsFixed(
-                                    2,
-                                  );
-                                } else {
-                                  displayedAmount = newText;
-                                }
-                              });
-                            } catch (e) {
-                              // Invalid format
-                            }
-                          },
                         ),
                       if (debtType.isNotEmpty && debtType != 'konvertatsiya')
                         const SizedBox(height: 12),
@@ -2268,30 +2209,6 @@ class _StatsPageState extends State<StatsPage> {
                           inputFormatters: [
                             FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                           ],
-                          onChanged: (value) {
-                            final clean = value.replaceAll(' ', '');
-                            if (clean.isEmpty) return;
-                            try {
-                              final parts = clean.split('.');
-                              final intPart = int.parse(parts[0]);
-                              final formatted = _formatNumber(intPart);
-                              final decimal = parts.length > 1
-                                  ? '.${parts[1]}'
-                                  : '';
-                              final newText = formatted + decimal;
-
-                              if (amountCtrl.text != newText) {
-                                amountCtrl.value = TextEditingValue(
-                                  text: newText,
-                                  selection: TextSelection.collapsed(
-                                    offset: newText.length,
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              // Invalid format
-                            }
-                          },
                         ),
                       if (debtType.isEmpty || debtType == 'konvertatsiya')
                         const SizedBox(height: 12),

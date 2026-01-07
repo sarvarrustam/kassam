@@ -1701,13 +1701,17 @@ class _StatsPageState extends State<StatsPage> {
                               ),
                               // Konvertatsiya tugmasi
                               GestureDetector(
-                                onTap: () {
+                                onTap: () async {
+                                  // Avval walletlarni yuklash
+                                  print('🔄 Loading wallets for konvertatsiya...');
+                                  await _loadWalletsList();
+                                  print('✅ Wallets loaded: ${_walletsList.length} items');
+                                  
+                                  // Keyin konvertatsiya rejimini yoqish
                                   setStateSB(() {
                                     debtType = 'konvertatsiya';
                                     clearFormData(); // Form ma'lumotlarini tozalash
                                   });
-                                  // Walletlar ro'yxatini qayta yuklash
-                                  _loadWalletsList();
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
@@ -4153,7 +4157,11 @@ class _StatsPageState extends State<StatsPage> {
           MaterialPageRoute(
             fullscreenDialog: true,
             builder: (navigationContext) =>
-                _buildTransactionTypePickerDialog(apiType, onSelected),
+                _buildTransactionTypePickerDialog(
+                  navigationContext, 
+                  apiType, 
+                  onSelected,
+                ),
           ),
         )
         .then((_) {
@@ -4162,22 +4170,33 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   Widget _buildTransactionTypePickerDialog(
+    BuildContext pickerContext,
     String apiType,
     void Function(Map<String, String>) onSelected,
   ) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(apiType == 'kirim' ? 'Kirim turi' : 'Chiqim turi'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
+    return WillPopScope(
+      onWillPop: () async {
+        // Telefon back tugmasi bosganida - faqat dialog yopiladi
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(apiType == 'kirim' ? 'Kirim turi' : 'Chiqim turi'),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () {
+              // Dialog contextini yopish - faqat type picker oynasini yopadi
+              Navigator.pop(pickerContext);
+            },
+          ),
         ),
+        body: _buildTransactionTypePickerContent(pickerContext, apiType, onSelected),
       ),
-      body: _buildTransactionTypePickerContent(apiType, onSelected),
     );
   }
 
   Widget _buildTransactionTypePickerContent(
+    BuildContext pickerContext,
     String apiType,
     void Function(Map<String, String>) onSelected,
   ) {
@@ -4377,7 +4396,7 @@ class _StatsPageState extends State<StatsPage> {
                                     borderRadius: BorderRadius.circular(12),
                                     onTap: () {
                                       onSelected(item);
-                                      Navigator.of(context).pop();
+                                      Navigator.pop(pickerContext);
                                     },
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(
@@ -4914,13 +4933,17 @@ class _StatsPageState extends State<StatsPage> {
     print('   chiqimWalletName: "$chiqimWalletName"');
     print('   kirimWalletName: "$kirimWalletName"');
 
-    // Wallet listidan to'g'ri currency ni topish
+    // Wallet listidan to'g'ri currency ni topish - 'name' va 'walletName' ikkalasini ham tekshirish
     final chiqimWalletData = _walletsList.firstWhere(
-      (w) => w['walletName']?.toString() == chiqimWalletName,
+      (w) => 
+          w['walletName']?.toString() == chiqimWalletName ||
+          w['name']?.toString() == chiqimWalletName,
       orElse: () => <String, dynamic>{},
     );
     final kirimWalletData = _walletsList.firstWhere(
-      (w) => w['walletName']?.toString() == kirimWalletName,
+      (w) => 
+          w['walletName']?.toString() == kirimWalletName ||
+          w['name']?.toString() == kirimWalletName,
       orElse: () => <String, dynamic>{},
     );
 
@@ -4932,8 +4955,11 @@ class _StatsPageState extends State<StatsPage> {
     bool isChiqimUSD = chiqimCurrency == 'USD';
     bool isKirimUSD = kirimCurrency == 'USD';
 
+    print('   chiqimWalletData: $chiqimWalletData');
+    print('   kirimWalletData: $kirimWalletData');
     print('   chiqimCurrency: $chiqimCurrency (isUSD: $isChiqimUSD)');
     print('   kirimCurrency: $kirimCurrency (isUSD: $isKirimUSD)');
+    print('   currentWalletCurrency: $currentWalletCurrency');
 
     // BIRINCHI: API'dan to'g'ridan-to'g'ri amountKirim va amountChiqim ishlatish
     if (t.amountKirim != null &&
@@ -4946,26 +4972,40 @@ class _StatsPageState extends State<StatsPage> {
 
       // Current hamyonga qarab to'g'ri summani ko'rsatish
       if (currentWalletCurrency == 'USD') {
-        // USD hamyonida
-        if (isKirimUSD) {
-          // USD kirim - kirim summasini ko'rsatish
-          print('   → USD wallet, USD kirim: showing amountKirim');
-          return '\$${_formatUSDAmount(t.amountKirim!)}';
-        } else if (isChiqimUSD) {
-          // USD chiqim - chiqim summasini ko'rsatish
+        // USD hamyonida - USD summani ko'rsatish
+        if (isChiqimUSD) {
+          // USD chiqim - chiqim summasini ko'rsatish (USD → UZS konvertatsiya)
           print('   → USD wallet, USD chiqim: showing amountChiqim');
           return '\$${_formatUSDAmount(t.amountChiqim!)}';
+        } else if (isKirimUSD) {
+          // USD kirim - kirim summasini ko'rsatish (UZS → USD konvertatsiya)
+          print('   → USD wallet, USD kirim: showing amountKirim');
+          return '\$${_formatUSDAmount(t.amountKirim!)}';
+        } else {
+          // Wallet topilmadi, lekin USD hamyonida - eng kichik qiymatni ko'rsatish
+          print('   → USD wallet, wallets not found: using smaller amount');
+          final smallerAmount = t.amountChiqim! < t.amountKirim! 
+              ? t.amountChiqim! 
+              : t.amountKirim!;
+          return '\$${_formatUSDAmount(smallerAmount)}';
         }
       } else {
-        // UZS hamyonida
+        // UZS hamyonida - UZS summani ko'rsatish
         if (isKirimUSD) {
-          // USD kirim, UZS chiqim - chiqim summasini ko'rsatish
+          // USD kirim, UZS chiqim - chiqim summasini ko'rsatish (UZS → USD konvertatsiya)
           print('   → UZS wallet, USD kirim: showing amountChiqim');
           return '${_formatNumberWithDecimal(t.amountChiqim!)} som';
         } else if (isChiqimUSD) {
-          // USD chiqim, UZS kirim - kirim summasini ko'rsatish
+          // USD chiqim, UZS kirim - kirim summasini ko'rsatish (USD → UZS konvertatsiya)
           print('   → UZS wallet, USD chiqim: showing amountKirim');
           return '${_formatNumberWithDecimal(t.amountKirim!)} som';
+        } else {
+          // Wallet topilmadi, lekin UZS hamyonida - eng katta qiymatni ko'rsatish
+          print('   → UZS wallet, wallets not found: using larger amount');
+          final largerAmount = t.amountChiqim! > t.amountKirim! 
+              ? t.amountChiqim! 
+              : t.amountKirim!;
+          return '${_formatNumberWithDecimal(largerAmount)} som';
         }
       }
     }

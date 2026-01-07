@@ -555,10 +555,18 @@ class _StatsPageState extends State<StatsPage> {
             }).toList();
           }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Row(
+          return RefreshIndicator(
+            onRefresh: () async {
+              // API: GET /debtor-creditor/list - Pull to refresh
+              _statsBloc.add(const StatsGetDebtorsCreditors());
+              
+              // 1 soniya kutamiz (API javobi kelguncha)
+              await Future.delayed(const Duration(seconds: 1));
+            },
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Row(
                 children: [
                   Expanded(
                     child: TextField(
@@ -813,7 +821,8 @@ class _StatsPageState extends State<StatsPage> {
                     );
                   },
                 ),
-            ],
+              ],
+            ),
           );
         },
       ),
@@ -4195,9 +4204,17 @@ class _StatsPageState extends State<StatsPage> {
                           )
                           .toList();
 
-                return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    // API: GET /transaction-types/list - Pull to refresh
+                    _statsBloc.add(StatsGetTransactionTypesEvent(type: apiType));
+                    
+                    // 1 soniya kutamiz
+                    await Future.delayed(const Duration(seconds: 1));
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
                     // Search field va Add button qatori
                     Row(
                       children: [
@@ -4356,7 +4373,8 @@ class _StatsPageState extends State<StatsPage> {
                           const SizedBox(height: 16),
                         ],
                       ),
-                  ],
+                    ],
+                  ),
                 );
               },
             );

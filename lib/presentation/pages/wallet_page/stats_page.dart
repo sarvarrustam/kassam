@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kassam/presentation/theme/app_colors.dart';
 import 'package:kassam/data/models/transaction_model.dart';
@@ -50,13 +51,6 @@ class _StatsPageState extends State<StatsPage> {
   // Qarzkorlar ro'yxati (API dan)
   List<dynamic> _debtorsList = [];
 
-  // Local qarz tracking (vaqtinchalik yechim)
-  Map<String, Map<String, double>> _localDebts = {};
-  // Structure: {personId: {'uzsXaqqim': amount, 'uzsQarzim': amount, 'usdXaqqim': amount, 'usdQarzim': amount}}
-
-  // Oxirgi qarz operatsiyasi ma'lumotlari (listener uchun)
-  Map<String, dynamic>? _lastDebtOperation;
-
   // Walletlar ro'yxati (konvertatsiya uchun)
   List<Map<String, dynamic>> _walletsList = [];
 
@@ -78,8 +72,6 @@ class _StatsPageState extends State<StatsPage> {
     _loadCustomCategories();
     _loadInitialTransactions();
     _loadWalletsList(); // Walletlar ro'yxatini yuklash
-    // Qarzkorlar ro'yxatini oldindan yuklash
-    _statsBloc.add(const StatsGetDebtorsCreditors());
   }
 
   Future<void> _loadExchangeRate() async {
@@ -225,6 +217,7 @@ class _StatsPageState extends State<StatsPage> {
 
       print('🔍 Date range: $fromDateStr - $toDateStr');
 
+      // API: GET /transaction/list - Tranzaksiyalar ro'yxatini olish
       _statsBloc.add(
         StatsGetTransactionsEvent(
           walletId: _selectedWalletId!,
@@ -233,7 +226,7 @@ class _StatsPageState extends State<StatsPage> {
         ),
       );
 
-      // Balance ham yuklash
+      // API: GET /wallet/balance - Hamyon balansini olish
       print('🔍 Requesting wallet balance...');
       _statsBloc.add(
         StatsGetWalletBalanceEvent(
@@ -425,87 +418,6 @@ class _StatsPageState extends State<StatsPage> {
     );
   }
 
-  // Manual qarz miqdorini yangilash funksiyasi
-  void _updateDebtorAmountManually(
-    String personId,
-    double amount,
-    String currency,
-    bool isDebt,
-  ) {
-    print(
-      '🔄 Manual update: personId=$personId, amount=$amount, currency=$currency, isDebt=$isDebt',
-    );
-
-    // Local cache'ni yangilash
-    if (!_localDebts.containsKey(personId)) {
-      _localDebts[personId] = {
-        'uzsXaqqim': 0.0,
-        'uzsQarzim': 0.0,
-        'usdXaqqim': 0.0,
-        'usdQarzim': 0.0,
-      };
-    }
-
-    String key = '';
-    if (currency.toUpperCase() == 'UZS') {
-      key = isDebt ? 'uzsXaqqim' : 'uzsQarzim';
-    } else if (currency.toUpperCase() == 'USD') {
-      key = isDebt ? 'usdXaqqim' : 'usdQarzim';
-    }
-
-    if (key.isNotEmpty) {
-      _localDebts[personId]![key] =
-          (_localDebts[personId]![key] ?? 0.0) + amount;
-      print('🔄 Local debt updated: $personId -> ${_localDebts[personId]}');
-      print('🔄 Total local debts now: ${_localDebts.length} people');
-    }
-
-    // setState() ni faqat widget hali mounted bo'lsa chaqirish
-    if (mounted) {
-      setState(() {
-        for (int i = 0; i < _debtorsList.length; i++) {
-          if (_debtorsList[i]['id'] == personId) {
-            final person = Map<String, dynamic>.from(_debtorsList[i]);
-
-            if (currency == 'UZS') {
-              if (isDebt) {
-                // Siz qarz bergansiz (sizga qarz)
-                final current =
-                    double.tryParse(person['uzsXaqqim']?.toString() ?? '0') ??
-                    0.0;
-                person['uzsXaqqim'] = (current + amount).toString();
-              } else {
-                // Siz qarz olgansiz (sizdan qarz)
-                final current =
-                    double.tryParse(person['uzsQarzim']?.toString() ?? '0') ??
-                    0.0;
-                person['uzsQarzim'] = (current + amount).toString();
-              }
-            } else if (currency == 'USD') {
-              if (isDebt) {
-                final current =
-                    double.tryParse(person['usdXaqqim']?.toString() ?? '0') ??
-                    0.0;
-                person['usdXaqqim'] = (current + amount).toString();
-              } else {
-                final current =
-                    double.tryParse(person['usdQarzim']?.toString() ?? '0') ??
-                    0.0;
-                person['usdQarzim'] = (current + amount).toString();
-              }
-            }
-
-            _debtorsList[i] = person;
-            print(
-              '🔄 Updated person: ${person['name']} - UZS(${person['uzsXaqqim']}/${person['uzsQarzim']}) USD(${person['usdXaqqim']}/${person['usdQarzim']})',
-            );
-            break;
-          }
-        }
-      });
-    }
-  }
-
   Widget _buildDebtRow(
     String label,
     double amount,
@@ -557,26 +469,7 @@ class _StatsPageState extends State<StatsPage> {
     TextEditingController debtPersonCtrl,
     StateSetter setStateSB,
     Function(String?) setSelectedPersonId,
-  ) async {
-    // Dialog ochilishidan OLDIN API'dan to'g'ridan-to'g'ri ma'lumot olish
-    print('👥 Opening Kimdan dialog - loading debtors/creditors directly from API...');
-    
-    try {
-      final apiService = ApiService();
-      final response = await apiService.getDebtorsCreditorsList();
-      
-      if (response['success'] == true && response['data'] != null) {
-        setState(() {
-          _debtorsList = response['data'] is List ? response['data'] as List : [];
-          print('✅ Loaded ${_debtorsList.length} debtors/creditors for dialog');
-        });
-      } else {
-        print('⚠️ Failed to load debtors: ${response['message']}');
-      }
-    } catch (e) {
-      print('❌ Error loading debtors: $e');
-    }
-    
+  ) {
     Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -635,20 +528,6 @@ class _StatsPageState extends State<StatsPage> {
     StateSetter setStateSB,
     Function(String?) setSelectedPersonId,
   ) {
-    // Dialog ochilganda local cache ma'lumotlarini chiqarish
-    print('📋 Dialog opened. Local cache status:');
-    print('   Total cached debts: ${_localDebts.length}');
-    if (_localDebts.isEmpty) {
-      print('   Local cache is empty');
-    } else {
-      _localDebts.forEach((personId, debts) {
-        final person = _debtorsList.firstWhere(
-          (p) => p['id'] == personId,
-          orElse: () => {'name': 'Unknown ID: $personId'},
-        );
-        print('   ${person['name']} ($personId): $debts');
-      });
-    }
     final searchController = TextEditingController();
 
     return BlocListener<StatsBloc, StatsState>(
@@ -756,50 +635,18 @@ class _StatsPageState extends State<StatsPage> {
                         ) ??
                         0.0;
 
-                    // Local cache'dan qarz miqdorlarini olish
-                    final localDebt = _localDebts[id];
+                    // Faqat API ma'lumotlarini ko'rsatish
+                    final uzsXaqqim = apiUzsXaqqim;
+                    final uzsQarzim = apiUzsQarzim;
+                    final usdXaqqim = apiUsdXaqqim;
+                    final usdQarzim = apiUsdQarzim;
 
                     print(
                       '🔍 Processing $name (ID: ${id.substring(0, 8)}...):',
                     );
                     print(
-                      '   API: UZS($apiUzsXaqqim/$apiUzsQarzim) USD($apiUsdXaqqim/$apiUsdQarzim)',
+                      '   API: UZS($uzsXaqqim/$uzsQarzim) USD($usdXaqqim/$usdQarzim)',
                     );
-                    print('   Local cache exists: ${localDebt != null}');
-                    if (localDebt != null) {
-                      print('   Local data: $localDebt');
-                    }
-
-                    // Agar API'dan haqiqiy ma'lumotlar kelgan bo'lsa, local cache'ni tozalash
-                    bool hasRealApiData =
-                        apiUzsXaqqim > 0 ||
-                        apiUzsQarzim > 0 ||
-                        apiUsdXaqqim > 0 ||
-                        apiUsdQarzim > 0;
-
-                    double uzsXaqqim, uzsQarzim, usdXaqqim, usdQarzim;
-
-                    if (hasRealApiData) {
-                      // Haqiqiy API ma'lumotlari mavjud - faqat API'dan foydalanish
-                      uzsXaqqim = apiUzsXaqqim;
-                      uzsQarzim = apiUzsQarzim;
-                      usdXaqqim = apiUsdXaqqim;
-                      usdQarzim = apiUsdQarzim;
-
-                      // Bu odam uchun local cache'ni tozalash
-                      if (_localDebts.containsKey(id)) {
-                        _localDebts.remove(id);
-                        print(
-                          '🧹 Cleaned local cache for $name - using real API data',
-                        );
-                      }
-                    } else {
-                      // API'da ma'lumot yo'q - local cache'dan foydalanish
-                      uzsXaqqim = localDebt?['uzsXaqqim'] ?? 0.0;
-                      uzsQarzim = localDebt?['uzsQarzim'] ?? 0.0;
-                      usdXaqqim = localDebt?['usdXaqqim'] ?? 0.0;
-                      usdQarzim = localDebt?['usdQarzim'] ?? 0.0;
-                    }
 
                     // Debug: har bir odam uchun ma'lumotlarni ko'rsatish
                     bool hasAnyDebt =
@@ -819,11 +666,6 @@ class _StatsPageState extends State<StatsPage> {
                       print(
                         '💰 $name - UZS: ${uzsXaqqim.toInt()}/${uzsQarzim.toInt()}, USD: ${usdXaqqim}/${usdQarzim}',
                       );
-                      if (hasRealApiData) {
-                        print('   ✅ HAQIQIY API ma\'lumotlari ishlatildi');
-                      } else {
-                        print('   📱 Local cache ma\'lumotlari ishlatildi');
-                      }
                     }
 
                     return Container(
@@ -1111,7 +953,7 @@ class _StatsPageState extends State<StatsPage> {
                 }
               });
 
-              // API orqali bazaga qo'shish
+              // API: POST /debtor-creditor/create - Yangi qarzkor/kreditor yaratish
               _statsBloc.add(
                 StatsCreateDebtorCreditor(name: name, telephoneNumber: phone),
               );
@@ -1143,7 +985,7 @@ class _StatsPageState extends State<StatsPage> {
   void _showAddTransactionSheet() {
     print('🔄 Opening new transaction dialog - resetting state...');
 
-    // Qarzkorlar ro'yxatini yuklash
+    // API: GET /debtor-creditor/list - Qarzkorlar va kreditorlar ro'yxatini olish
     _statsBloc.add(const StatsGetDebtorsCreditors());
 
     // Main dialog for transaction
@@ -1254,7 +1096,7 @@ class _StatsPageState extends State<StatsPage> {
                 );
               }
 
-              // Tranzaksiyalar ro'yxatini yangilash
+              // Tranzaksiya yaratilgandan keyin ma'lumotlarni yangilash
               if (_selectedWalletId != null) {
                 final now = DateTime.now();
                 final fromDate = DateTime(now.year, now.month, 1);
@@ -1265,6 +1107,7 @@ class _StatsPageState extends State<StatsPage> {
                 final toDateStr =
                     '${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}';
 
+                // API: GET /transaction/list - Tranzaksiya yaratilgandan keyin ro'yxatni yangilash
                 _statsBloc.add(
                   StatsGetTransactionsEvent(
                     walletId: _selectedWalletId!,
@@ -1273,7 +1116,7 @@ class _StatsPageState extends State<StatsPage> {
                   ),
                 );
 
-                // Balance ham yangilash
+                // API: GET /wallet/balance - Tranzaksiya yaratilgandan keyin balansni yangilash
                 _statsBloc.add(
                   StatsGetWalletBalanceEvent(
                     walletId: _selectedWalletId!,
@@ -1374,37 +1217,14 @@ class _StatsPageState extends State<StatsPage> {
                 ),
               );
 
-              // Ro'yxatni qayta yuklash (backup uchun)
-              _statsBloc.add(const StatsGetDebtorsCreditors());
+              // API: GET /debtor-creditor/list - Yangilangan qarzkorlar ro'yxati (1 soniyadan keyin)
+              Future.delayed(const Duration(seconds: 1), () {
+                _statsBloc.add(const StatsGetDebtorsCreditors());
+              });
             } else if (state is StatsTransactionDebtCreated) {
               // Qarz operatsiyasi yaratilganda
               print('💰 Transaction debt created: ${state.data}');
               print('💰 Full debt transaction response: ${state.toString()}');
-
-              // Response'dan qarz ma'lumotlarini olish va manual update qilish
-              if (state.data != null && state.data is Map) {
-                final debtData = state.data as Map<String, dynamic>;
-                final personId = debtData['debtorCreditorId']?.toString();
-                final amount = debtData['amount']?.toString();
-                final currency = debtData['currency']?.toString() ?? 'uzs';
-                final debtType = debtData['type']?.toString();
-                final isDebt =
-                    debtType == 'qarzPulBerish'; // true = siz berganingiz
-
-                print(
-                  '💰 Extracted debt info: personId=$personId, amount=$amount, currency=$currency, type=$debtType, isDebt=$isDebt',
-                );
-
-                // Manual ravishda ro'yxatni yangilash
-                if (personId != null && amount != null) {
-                  _updateDebtorAmountManually(
-                    personId,
-                    double.tryParse(amount) ?? 0.0,
-                    currency.toUpperCase(),
-                    isDebt,
-                  );
-                }
-              }
 
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -1414,15 +1234,12 @@ class _StatsPageState extends State<StatsPage> {
                 ),
               );
 
-              // MUHIM: Qarzkorlar ro'yxatini qayta yuklash (qarz miqdorlari yangilanishi uchun)
+              // API: GET /debtor-creditor/list - Qarz yaratilgandan keyin ro'yxatni yangilash
               print('🔄 Debt transaction completed, reloading debtors...');
 
-              // Darhol qayta yuklash
-              _statsBloc.add(const StatsGetDebtorsCreditors());
-
-              // 2 soniya kutib, yana qayta yuklash (API update uchun vaqt)
-              Future.delayed(const Duration(seconds: 2), () {
-                print('🔄 Second reload after debt transaction...');
+              // 1 soniya kutib qayta yuklash (API update uchun vaqt)
+              Future.delayed(const Duration(seconds: 1), () {
+                print('🔄 Reloading debtors after debt transaction...');
                 _statsBloc.add(const StatsGetDebtorsCreditors());
               });
 
@@ -1439,6 +1256,7 @@ class _StatsPageState extends State<StatsPage> {
                 final toDateStr =
                     '${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}';
 
+                // API: GET /transaction/list - Qarz tranzaksiyasidan keyin ro'yxatni yangilash
                 _statsBloc.add(
                   StatsGetTransactionsEvent(
                     walletId: _selectedWalletId!,
@@ -1447,7 +1265,7 @@ class _StatsPageState extends State<StatsPage> {
                   ),
                 );
 
-                // Balance ham yangilash
+                // API: GET /wallet/balance - Qarz tranzaksiyasidan keyin balansni yangilash
                 _statsBloc.add(
                   StatsGetWalletBalanceEvent(
                     walletId: _selectedWalletId!,
@@ -2110,10 +1928,11 @@ class _StatsPageState extends State<StatsPage> {
                         // Chiqim suma
                         TextField(
                           controller: chiqimAmountCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: false,
-                          ),
-                          inputFormatters: [DecimalNumberTextFormatter()],
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            DecimalNumberTextFormatter(),
+                          ],
                           decoration: const InputDecoration(
                             labelText: 'Chiqim summasi',
                             border: OutlineInputBorder(),
@@ -2144,10 +1963,11 @@ class _StatsPageState extends State<StatsPage> {
                         // Kirim suma
                         TextField(
                           controller: kirimAmountCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: false,
-                          ),
-                          inputFormatters: [DecimalNumberTextFormatter()],
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            DecimalNumberTextFormatter(),
+                          ],
                           decoration: const InputDecoration(
                             labelText: 'Kirim summasi',
                             border: OutlineInputBorder(),
@@ -2189,7 +2009,7 @@ class _StatsPageState extends State<StatsPage> {
                       if (debtType.isNotEmpty && debtType != 'konvertatsiya')
                         GestureDetector(
                           onTap: () {
-                            // Har safar qarzkorlar ro'yxatini yangilash (qarz miqdorlarini yangilash uchun)
+                            // API: GET /debtor-creditor/list - Dialog ochishdan oldin ro'yxatni yangilash
                             print(
                               '🔄 Refreshing debtors list before showing dialog...',
                             );
@@ -2232,9 +2052,10 @@ class _StatsPageState extends State<StatsPage> {
                             labelText: 'Summa',
                             border: OutlineInputBorder(),
                           ),
-                          keyboardType: TextInputType.numberWithOptions(
-                            decimal: false,
-                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           onChanged: (value) {
                             final clean = value.replaceAll(' ', '');
                             if (clean.isEmpty) {
@@ -2445,9 +2266,10 @@ class _StatsPageState extends State<StatsPage> {
                             labelText: 'Summa',
                             border: OutlineInputBorder(),
                           ),
-                          keyboardType: TextInputType.numberWithOptions(
-                            decimal: false,
-                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           onChanged: (value) {
                             final clean = value.replaceAll(' ', '');
                             if (clean.isEmpty) return;
@@ -2784,6 +2606,20 @@ class _StatsPageState extends State<StatsPage> {
                                   return;
                                 }
 
+                                // Izohni tekshirish (bo'sh bo'lmasligi kerak)
+                                if (comment.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Iltimos, izoh yozing!',
+                                      ),
+                                      duration: Duration(seconds: 2),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                  return;
+                                }
+
                                 // Qarz operatsiyasi API'si
                                 double debtAmount = 0.0;
                                 try {
@@ -2810,41 +2646,7 @@ class _StatsPageState extends State<StatsPage> {
                                   '   - displayedAmount: "$displayedAmount"',
                                 );
 
-                                // Oxirgi qarz operatsiyasi ma'lumotlarini saqlash
-                                _lastDebtOperation = {
-                                  'personId': selectedPersonId!,
-                                  'amount': debtAmount,
-                                  'currency': selectedCurrency,
-                                  'isDebt': debtType == 'qarz_berish',
-                                };
-                                print(
-                                  '💾 Saved debt operation: $_lastDebtOperation',
-                                );
-
-                                // Darhol local cache'ni yangilash (API natijasini kutmasdan)
-                                print('⚡ Immediately updating local cache...');
-                                _updateDebtorAmountManually(
-                                  selectedPersonId!,
-                                  debtAmount,
-                                  selectedCurrency,
-                                  debtType == 'qarz_berish',
-                                );
-
-                                // Dialog refresh callback'ni chaqirish
-                                if (_dialogRefreshCallback != null && mounted) {
-                                  print('🔄 Refreshing dialog immediately...');
-                                  try {
-                                    final callback = _dialogRefreshCallback;
-                                    if (callback != null) {
-                                      callback(() {});
-                                    }
-                                  } catch (e) {
-                                    print(
-                                      '⚠️ Immediate dialog refresh failed: $e',
-                                    );
-                                  }
-                                }
-
+                                // API: POST /transaction/debt/create - Qarz berish/olish tranzaksiyasi yaratish
                                 _statsBloc.add(
                                   StatsCreateTransactionDebt(
                                     type: debtType == 'qarz_berish'
@@ -2985,6 +2787,7 @@ class _StatsPageState extends State<StatsPage> {
                                 );
 
                                 // Konvertatsiya API call
+                                // API: POST /transaction/conversion/create - Konvertatsiya tranzaksiyasi yaratish
                                 _statsBloc.add(
                                   StatsCreateTransactionConversion(
                                     walletIdChiqim: selectedWalletChiqimId!,
@@ -3028,7 +2831,7 @@ class _StatsPageState extends State<StatsPage> {
                                     ? 'kirim'
                                     : 'chiqim';
 
-                                // BLoC orqali API'ga transaction yuborish
+                                // API: POST /transaction/create - Oddiy kirim/chiqim tranzaksiyasi yaratish
                                 _statsBloc.add(
                                   StatsCreateTransactionEvent(
                                     walletId: _selectedWalletId!,
@@ -3169,9 +2972,10 @@ class _StatsPageState extends State<StatsPage> {
                     TextField(
                       controller: amountCtrl,
                       decoration: const InputDecoration(labelText: 'Summа'),
-                      keyboardType: TextInputType.numberWithOptions(
-                        decimal: false,
-                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -3250,48 +3054,11 @@ class _StatsPageState extends State<StatsPage> {
           if (state is StatsTransactionCreatedSuccess) {
             print('✅ Transaction created success: ${state.message}');
 
-            // Agar qarz operatsiyasi bo'lsa (xabar matnidan aniqlash)
-            if ((state.message.toLowerCase().contains('qarz') ||
-                    state.message.toLowerCase().contains('debt')) &&
-                _lastDebtOperation != null) {
-              print(
-                '💰 This is a debt transaction, manually updating debtors...',
-              );
-              print('💰 Using saved operation: $_lastDebtOperation');
-
-              // Manual update qilish
-              _updateDebtorAmountManually(
-                _lastDebtOperation!['personId'],
-                _lastDebtOperation!['amount'].toDouble(),
-                _lastDebtOperation!['currency'],
-                _lastDebtOperation!['isDebt'],
-              );
-
-              // Dialog refresh callback'ni chaqirish (agar mavjud bo'lsa)
-              if (_dialogRefreshCallback != null && mounted) {
-                print('🔄 Refreshing dialog...');
-                try {
-                  final callback = _dialogRefreshCallback;
-                  if (callback != null) {
-                    callback(() {});
-                  }
-                } catch (e) {
-                  print('⚠️ Dialog refresh failed: $e');
-                }
-              }
-
-              // Ma'lumotni tozalash
-              _lastDebtOperation = null;
-
-              // Qarzkorlar ro'yxatini qayta yuklash
+            // API: GET /debtor-creditor/list - Tranzaksiya muvaffaqiyatli yaratilgandan keyin yangilash
+            Future.delayed(const Duration(seconds: 1), () {
+              print('🔄 Reloading debtors after transaction...');
               _statsBloc.add(const StatsGetDebtorsCreditors());
-
-              // 3 soniya kutib qayta yuklash (backend update uchun)
-              Future.delayed(const Duration(seconds: 3), () {
-                print('🔄 Delayed reload of debtors after debt transaction...');
-                _statsBloc.add(const StatsGetDebtorsCreditors());
-              });
-            }
+            });
 
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -3333,40 +3100,6 @@ class _StatsPageState extends State<StatsPage> {
             );
           } else if (state is StatsError && !_isFetchingTransactionTypes) {
             print('❌ StatsError received: ${state.message}');
-
-            // Agar qarz operatsiyasi xatolik bergan bo'lsa ham local cache'ni yangilash
-            if ((state.message.toLowerCase().contains('qarz') ||
-                    state.message.toLowerCase().contains('debt')) &&
-                _lastDebtOperation != null) {
-              print(
-                '💰 Debt operation failed, but updating local cache anyway...',
-              );
-              print('💰 Using saved operation: $_lastDebtOperation');
-
-              // Manual update qilish
-              _updateDebtorAmountManually(
-                _lastDebtOperation!['personId'],
-                _lastDebtOperation!['amount'].toDouble(),
-                _lastDebtOperation!['currency'],
-                _lastDebtOperation!['isDebt'],
-              );
-
-              // Dialog refresh callback'ni chaqirish (agar mavjud bo'lsa)
-              if (_dialogRefreshCallback != null && mounted) {
-                print('🔄 Refreshing dialog after error...');
-                try {
-                  final callback = _dialogRefreshCallback;
-                  if (callback != null) {
-                    callback(() {});
-                  }
-                } catch (e) {
-                  print('⚠️ Error dialog refresh failed: $e');
-                }
-              }
-
-              // Ma'lumotni tozalash
-              _lastDebtOperation = null;
-            }
 
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -3455,6 +3188,7 @@ class _StatsPageState extends State<StatsPage> {
               final toDateStr =
                   '${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}';
 
+              // API: GET /transaction/list - Pull-to-refresh orqali tranzaksiyalarni yangilash
               _statsBloc.add(
                 StatsGetTransactionsEvent(
                   walletId: _selectedWalletId!,
@@ -3463,7 +3197,7 @@ class _StatsPageState extends State<StatsPage> {
                 ),
               );
 
-              // Balance ham yangilash
+              // API: GET /wallet/balance - Pull-to-refresh orqali balansni yangilash
               _statsBloc.add(
                 StatsGetWalletBalanceEvent(
                   walletId: _selectedWalletId!,
@@ -4473,6 +4207,7 @@ class _StatsPageState extends State<StatsPage> {
     print('   apiType: $apiType');
 
     _isFetchingTransactionTypes = true;
+    // API: GET /transaction-types/list - Tranzaksiya turlarini (kategoriyalarni) yuklash
     _statsBloc.add(StatsGetTransactionTypesEvent(type: apiType));
 
     // Fullscreen navigation bilan ochish
@@ -4524,7 +4259,7 @@ class _StatsPageState extends State<StatsPage> {
               );
             }
 
-            // Ro'yxatni yangilash uchun qayta yuklash
+            // API: GET /transaction-types/list - Yangi tur yaratilgandan keyin ro'yxatni yangilash
             _statsBloc.add(StatsGetTransactionTypesEvent(type: apiType));
           }
         },
@@ -4798,6 +4533,7 @@ class _StatsPageState extends State<StatsPage> {
             onPressed: () {
               final name = nameCtrl.text.trim();
               if (name.isEmpty) return;
+              // API: POST /transaction-types/create - Yangi tranzaksiya turi (kategoriya) yaratish
               _statsBloc.add(
                 StatsCreateTransactionTypeEvent(name: name, type: apiType),
               );

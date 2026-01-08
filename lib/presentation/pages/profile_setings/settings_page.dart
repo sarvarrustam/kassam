@@ -6,6 +6,7 @@ import '../../theme/app_colors.dart';
 import '../../../arch/bloc/theme_bloc.dart';
 
 import '../../../data/services/app_preferences_service.dart';
+import '../../../data/services/biometric_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -15,6 +16,33 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  final _biometricService = BiometricService();
+  bool _isBiometricAvailable = false;
+  bool _isBiometricEnabled = false;
+  String _biometricType = 'Biometrik';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometricAvailability();
+  }
+
+  Future<void> _checkBiometricAvailability() async {
+    final isSupported = await _biometricService.isDeviceSupported();
+    final canCheck = await _biometricService.canCheckBiometrics();
+    final types = await _biometricService.getAvailableBiometrics();
+    final prefs = AppPreferencesService();
+    final isEnabled = await prefs.isBiometricEnabled();
+
+    if (mounted) {
+      setState(() {
+        _isBiometricAvailable = isSupported && canCheck && types.isNotEmpty;
+        _isBiometricEnabled = isEnabled;
+        _biometricType = _biometricService.getBiometricTypeName(types);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ThemeBloc, ThemeState>(
@@ -157,6 +185,113 @@ class _SettingsPageState extends State<SettingsPage> {
                         context.push('/profile');
                       },
                     ),
+                    const SizedBox(height: 16),
+                    _buildSettingItem(
+                      context,
+                      icon: Icons.lock_outline,
+                      title: 'PIN Kod',
+                      subtitle: 'PIN kod o\'rnatish va o\'zgartirish',
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () async {
+                        final prefs = AppPreferencesService();
+                        final hasPinCode = await prefs.hasPinCode();
+                        
+                        if (!context.mounted) return;
+                        
+                        if (hasPinCode) {
+                          // PIN kod bor - o'zgartirish uchun avval tekshirish
+                          final result = await context.push('/pin-verify');
+                          if (result == true && context.mounted) {
+                            // Verify muvaffaqiyatli - yangi PIN o'rnatish
+                            context.push('/pin-setup');
+                          }
+                        } else {
+                          // PIN kod yo'q - yangi o'rnatish
+                          context.push('/pin-setup');
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    // Security Section - Biometric
+                    if (_isBiometricAvailable) ...[
+                      Text(
+                        'Xavfsizlik',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildSettingItem(
+                        context,
+                        icon: Icons.fingerprint,
+                        title: _biometricType,
+                        subtitle: _isBiometricEnabled 
+                            ? 'Yoqilgan - ${_biometricType} yordamida kirish' 
+                            : 'O\'chirilgan - Faqat PIN kod orqali kirish',
+                        trailing: Switch(
+                          value: _isBiometricEnabled,
+                          onChanged: (value) async {
+                            final prefs = AppPreferencesService();
+                            final hasPinCode = await prefs.hasPinCode();
+                            
+                            if (!hasPinCode) {
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Avval PIN kod o\'rnating!',
+                                  ),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                              return;
+                            }
+
+                            if (value) {
+                              // Yoqish - biometrik test qilish
+                              final authenticated = await _biometricService.authenticate(
+                                localizedReason: 'Biometrik autentifikatsiyani yoqish uchun tasdiqlang',
+                              );
+
+                              if (authenticated) {
+                                await prefs.setBiometricEnabled(true);
+                                setState(() {
+                                  _isBiometricEnabled = true;
+                                });
+                                
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '$_biometricType muvaffaqiyatli yoqildi',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            } else {
+                              // O'chirish
+                              await prefs.setBiometricEnabled(false);
+                              setState(() {
+                                _isBiometricEnabled = false;
+                              });
+                              
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    '$_biometricType o\'chirildi',
+                                  ),
+                                  backgroundColor: Colors.grey,
+                                ),
+                              );
+                            }
+                          },
+                          activeColor: AppColors.primaryGreen,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     const SizedBox(height: 16),
                     // _buildSettingItem(
                     //   context,

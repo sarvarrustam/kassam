@@ -23,6 +23,7 @@ dependencies:
   url_launcher: ^6.2.0
   alice: ^1.0.0
   alice_dio: ^1.0.0
+  local_auth: ^2.2.0
 
 dev_dependencies:
   flutter_test:

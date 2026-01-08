@@ -11,6 +11,7 @@ class AppPreferencesService {
   static const String _userDataKey = 'user_data';
   static const String _pinCodeKey = 'pin_code';
   static const String _hasPinCodeKey = 'has_pin_code';
+  static const String _biometricEnabledKey = 'biometric_enabled';
   static const String _appVersionKey = 'app_version';
   static const String _isFirstRunKey = 'is_first_run';
 
@@ -184,6 +185,18 @@ class AppPreferencesService {
   Future<int?> getAppVersion() async {
     await _ensureInitialized();
     return _prefs.getInt(_appVersionKey);
+  }
+
+  // Enable/disable biometric authentication
+  Future<void> setBiometricEnabled(bool enabled) async {
+    await _ensureInitialized();
+    await _prefs.setBool(_biometricEnabledKey, enabled);
+  }
+
+  // Check if biometric authentication is enabled
+  Future<bool> isBiometricEnabled() async {
+    await _ensureInitialized();
+    return _prefs.getBool(_biometricEnabledKey) ?? false;
   }
 
   // Ensure preferences are initialized

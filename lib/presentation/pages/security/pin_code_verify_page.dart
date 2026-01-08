@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kassam/data/services/app_preferences_service.dart';
+import 'package:kassam/data/services/biometric_service.dart';
 import 'package:kassam/presentation/theme/app_colors.dart';
 
 class PinCodeVerifyPage extends StatefulWidget {
@@ -12,8 +13,43 @@ class PinCodeVerifyPage extends StatefulWidget {
 
 class _PinCodeVerifyPageState extends State<PinCodeVerifyPage> {
   final _pinController = TextEditingController();
+  final _biometricService = BiometricService();
   String _errorMessage = '';
   int _attemptCount = 0;
+  bool _isBiometricAvailable = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tryBiometricAuth();
+  }
+
+  Future<void> _tryBiometricAuth() async {
+    final prefs = AppPreferencesService();
+    final isBiometricEnabled = await prefs.isBiometricEnabled();
+    final isAvailable = await _biometricService.isDeviceSupported();
+    final canCheck = await _biometricService.canCheckBiometrics();
+
+    setState(() {
+      _isBiometricAvailable = isAvailable && canCheck && isBiometricEnabled;
+    });
+
+    if (_isBiometricAvailable) {
+      // Biometrik autentifikatsiyani avtomatik sinab ko'rish
+      final authenticated = await _biometricService.authenticate(
+        localizedReason: 'Ilovaga kirish uchun autentifikatsiya qiling',
+      );
+
+      if (authenticated && mounted) {
+        final canPop = Navigator.of(context).canPop();
+        if (canPop) {
+          Navigator.of(context).pop(true);
+        } else {
+          context.go('/home');
+        }
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -50,7 +86,14 @@ class _PinCodeVerifyPageState extends State<PinCodeVerifyPage> {
     if (_pinController.text == savedPin) {
       // PIN to'g'ri
       if (mounted) {
-        context.go('/home');
+        // Agar sozlamalardan kelingan bo'lsa, true qaytarish
+        // Aks holda home ga o'tish
+        final canPop = Navigator.of(context).canPop();
+        if (canPop) {
+          Navigator.of(context).pop(true);
+        } else {
+          context.go('/home');
+        }
       }
     } else {
       // PIN xato
@@ -216,7 +259,11 @@ class _PinCodeVerifyPageState extends State<PinCodeVerifyPage> {
           const SizedBox(height: 16),
           _buildNumberRow(['7', '8', '9']),
           const SizedBox(height: 16),
-          _buildNumberRow(['', '0', 'delete']),
+          _buildNumberRow([
+            _isBiometricAvailable ? 'biometric' : '',
+            '0',
+            'delete',
+          ]),
         ],
       ),
     );
@@ -228,6 +275,16 @@ class _PinCodeVerifyPageState extends State<PinCodeVerifyPage> {
       children: numbers.map((number) {
         if (number.isEmpty) {
           return const SizedBox(width: 80, height: 80);
+        }
+        if (number == 'biometric') {
+          return _buildNumberButton(
+            onPressed: _tryBiometricAuth,
+            child: const Icon(
+              Icons.fingerprint,
+              color: AppColors.primaryGreen,
+              size: 32,
+            ),
+          );
         }
         if (number == 'delete') {
           return _buildNumberButton(

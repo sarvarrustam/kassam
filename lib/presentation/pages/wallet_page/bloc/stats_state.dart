@@ -117,4 +117,16 @@ class StatsTransactionDebtCreated extends StatsState {
   @override
   List<Object?> get props => [message, data];    ///new
 }
+
+/// Tranzaksiya o'chirildi
+class StatsTransactionDeleted extends StatsState {
+  final String message;
+
+  const StatsTransactionDeleted({
+    required this.message,
+  });
+
+  @override
+  List<Object?> get props => [message];
+}
   

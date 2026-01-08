@@ -57,6 +57,7 @@ class ApiService {
       'Kassam/hs/KassamUrl/transactionDebtsCreate';
   final String debtorCreditorCreate =
       'Kassam/hs/KassamUrl/debtorCreditorCreate';
+  final String transactionDelete = 'Kassam/hs/KassamUrl/transactionDelete';
 
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
@@ -902,6 +903,41 @@ class ApiService {
       return {
         'success': false,
         'message': 'Internetga ulanishda xatolik',
+        'data': null,
+      };
+    }
+  }
+
+  /// Tranzaksiyani o'chirish
+  Future<Map<String, dynamic>> deleteTransaction({
+    required String transactionId,
+  }) async {
+    print('🗑️ Deleting transaction: $transactionId');
+
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final token = sp.getString('auth_token') ?? _authToken;
+      print('🗑️ Token: $token');
+
+      final body = {
+        'transactionId': transactionId,
+      };
+
+      print('🗑️ Request body: $body');
+
+      final response = await post(
+        transactionDelete,
+        body: body,
+        token: token,
+      );
+
+      print('🗑️ Response: $response');
+      return response;
+    } catch (e) {
+      print('🗑️ ❌ Exception in deleteTransaction: $e');
+      return {
+        'success': false,
+        'message': 'Tranzaksiyani o\'chirishda xatolik',
         'data': null,
       };
     }

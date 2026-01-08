@@ -36,6 +36,10 @@ class _StatsPageState extends State<StatsPage> {
   DateTime? _filterEndDate;
   bool _showBalance = true; // Balance visibility toggle
   bool _isFetchingTransactionTypes = false; // API dan tur yuklash flag
+  Set<String> _deletingTransactionIds = {}; // O'chirilayotgan tranzaksiyalar ID lari
+  bool _isCreatingTransaction = false; // Oddiy tranzaksiya yaratish
+  bool _isCreatingDebtTransaction = false; // Qarz tranzaksiyasi yaratish
+  bool _isCreatingConversion = false; // Konvertatsiya yaratish
   List<Map<String, String>> _customCategories = [];
   final ConnectivityService _connectivityService = ConnectivityService();
 
@@ -1090,6 +1094,14 @@ class _StatsPageState extends State<StatsPage> {
             }
 
             if (state is StatsTransactionCreatedSuccess) {
+              // Loading holatlarini o'chirish
+              if (mounted) {
+                setState(() {
+                  _isCreatingTransaction = false;
+                  _isCreatingConversion = false;
+                });
+              }
+
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
@@ -1241,6 +1253,13 @@ class _StatsPageState extends State<StatsPage> {
               print('💰 Transaction debt created: ${state.data}');
               print('💰 Full debt transaction response: ${state.toString()}');
 
+              // Loading holatini o'chirish
+              if (mounted) {
+                setState(() {
+                  _isCreatingDebtTransaction = false;
+                });
+              }
+
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
@@ -1295,8 +1314,55 @@ class _StatsPageState extends State<StatsPage> {
 
               // Dialog yopish
               Navigator.of(dialogCtx).pop();
+            } else if (state is StatsTransactionDeleted) {
+              // Tranzaksiya o'chirilganda
+              print('🗑️ Transaction deleted successfully');
+
+              if (mounted) {
+                setState(() {
+                  _deletingTransactionIds.clear(); // Barcha IDlarni tozalash
+                });
+              }
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+
+              // Tranzaksiyalarni qayta yuklash
+              if (_selectedWalletId != null) {
+                final now = DateTime.now();
+                final fromDate = DateTime(now.year, now.month, 1);
+                final toDate = DateTime(now.year, now.month + 1, 0);
+
+                final fromDateStr =
+                    '${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}';
+                final toDateStr =
+                    '${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}';
+
+                _statsBloc.add(
+                  StatsGetTransactionsEvent(
+                    walletId: _selectedWalletId!,
+                    fromDate: fromDateStr,
+                    toDate: toDateStr,
+                  ),
+                );
+              }
             } else if (state is StatsError) {
               print('❌ StatsError received: ${state.message}');
+              
+              if (mounted) {
+                setState(() {
+                  _deletingTransactionIds.clear(); // Xatolikda ham tozalash
+                  _isCreatingTransaction = false;
+                  _isCreatingDebtTransaction = false;
+                  _isCreatingConversion = false;
+                });
+              }
+              
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
@@ -1311,7 +1377,12 @@ class _StatsPageState extends State<StatsPage> {
           },
           child: StatefulBuilder(
             builder: (context, setStateSB) {
-              return ListView(
+              return BlocBuilder<StatsBloc, StatsState>(
+                bloc: _statsBloc,
+                builder: (context, blocState) {
+                  final isLoading = blocState is StatsLoading;
+                  
+                  return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
                   Column(
@@ -2534,7 +2605,9 @@ class _StatsPageState extends State<StatsPage> {
                           ),
                           const SizedBox(width: 8),
                           ElevatedButton(
-                            onPressed: () async {
+                            onPressed: isLoading
+                                ? null
+                                : () async {
                               if (_selectedWalletId == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -2621,6 +2694,11 @@ class _StatsPageState extends State<StatsPage> {
                                 print(
                                   '   - displayedAmount: "$displayedAmount"',
                                 );
+
+                                // Loading holatini o'rnatish
+                                setState(() {
+                                  _isCreatingDebtTransaction = true;
+                                });
 
                                 // API: POST /transaction/debt/create - Qarz berish/olish tranzaksiyasi yaratish
                                 _statsBloc.add(
@@ -2762,6 +2840,11 @@ class _StatsPageState extends State<StatsPage> {
                                   '💱 DEBUG: WalletIdKirim: $selectedWalletKirimId',
                                 );
 
+                                // Loading holatini o'rnatish
+                                setState(() {
+                                  _isCreatingConversion = true;
+                                });
+
                                 // Konvertatsiya API call
                                 // API: POST /transaction/conversion/create - Konvertatsiya tranzaksiyasi yaratish
                                 _statsBloc.add(
@@ -2807,6 +2890,11 @@ class _StatsPageState extends State<StatsPage> {
                                     ? 'kirim'
                                     : 'chiqim';
 
+                                // Loading holatini o'rnatish
+                                setState(() {
+                                  _isCreatingTransaction = true;
+                                });
+
                                 // API: POST /transaction/create - Oddiy kirim/chiqim tranzaksiyasi yaratish
                                 _statsBloc.add(
                                   StatsCreateTransactionEvent(
@@ -2827,13 +2915,24 @@ class _StatsPageState extends State<StatsPage> {
                               //   Navigator.of(dialogCtx).pop();
                               // }
                             },
-                            child: const Text('OK'),
+                            child: isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text('OK'),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ],
+              );
+                },
               );
             },
           ),
@@ -3669,30 +3768,67 @@ class _StatsPageState extends State<StatsPage> {
                                         ),
                                       ),
                                       const SizedBox(height: 12),
-                                      Row(
-                                        children: [
-                                          GestureDetector(
-                                            onTap: () {
-                                              // Edit disabled - hech narsa qilmaydi
-                                            },
-                                            child: const Icon(
-                                              Icons.edit,
-                                              color: Colors.white38,
-                                              size: 18,
+                                      GestureDetector(
+                                        onTap: () async {
+                                          if (t.id == null || _deletingTransactionIds.contains(t.id)) return;
+                                          
+                                          // Tasdiqlash dialogi
+                                          final confirmed = await showDialog<bool>(
+                                            context: context,
+                                            builder: (ctx) => AlertDialog(
+                                              title: const Text('O\'chirish'),
+                                              content: const Text(
+                                                'Ushbu tranzaksiyani o\'chirishni xohlaysizmi?',
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.of(ctx).pop(false),
+                                                  child: const Text('Yo\'q'),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () => Navigator.of(ctx).pop(true),
+                                                  child: const Text(
+                                                    'Ha',
+                                                    style: TextStyle(color: Colors.red),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          GestureDetector(
-                                            onTap: () {
-                                              // Delete disabled - hech narsa qilmaydi
-                                            },
-                                            child: const Icon(
-                                              Icons.delete,
-                                              color: Colors.white38,
-                                              size: 18,
-                                            ),
-                                          ),
-                                        ],
+                                          );
+
+                                          if (confirmed == true && !_deletingTransactionIds.contains(t.id)) {
+                                            // Loading holatini o'rnatish (faqat shu ID uchun)
+                                            setState(() {
+                                              _deletingTransactionIds.add(t.id!);
+                                            });
+                                            
+                                            // Ro'yxatdan darhol o'chirish
+                                            setState(() {
+                                              _transactions.removeWhere((trans) => trans.id == t.id);
+                                            });
+                                            
+                                            // BLoC orqali API ga o'chirish
+                                            _statsBloc.add(
+                                              StatsDeleteTransactionEvent(
+                                                transactionId: t.id!,
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        child: _deletingTransactionIds.contains(t.id)
+                                            ? const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: CircularProgressIndicator(
+                                                  color: Colors.white,
+                                                  strokeWidth: 2,
+                                                ),
+                                              )
+                                            : const Icon(
+                                                Icons.delete,
+                                                color: Colors.white,
+                                                size: 20,
+                                              ),
                                       ),
                                     ],
                                   ),
@@ -3917,8 +4053,8 @@ class _StatsPageState extends State<StatsPage> {
       // USD wallet: show amount with space formatting and 2 decimal places
       return '\$${_formatUSDAmount(amount)}';
     } else {
-      // UZS wallet: show amount as integer with space formatting
-      return '${_formatNumber(amount.toInt())} ${_getCurrencySymbol()}';
+      // UZS wallet: show amount with decimal if present, space formatting
+      return '${_formatNumberWithDecimal(amount)} ${_getCurrencySymbol()}';
     }
   }
 

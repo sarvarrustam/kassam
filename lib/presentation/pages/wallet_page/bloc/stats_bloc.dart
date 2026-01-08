@@ -18,6 +18,7 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
     on<StatsCreateDebtorCreditor>(_onCreateDebtorCreditor);
     on<StatsCreateTransactionDebt>(_onCreateTransactionDebt);
     on<StatsCreateTransactionConversion>(_onCreateTransactionConversion);
+    on<StatsDeleteTransactionEvent>(_onDeleteTransaction);
 //  on<StatsCreateDebtorCreditor>(_onCreateDebtorCreditor);
 //     on<StatsCreateTransactionDebt>(_onCreateTransactionDebt);  
 
@@ -311,6 +312,33 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
         print('💱 ❌ Conversion API FAILED!');
         print('💱 📝 Response: $result');
         emit(StatsError(result['message'] ?? 'Konvertatsiya yaratishda xatolik'));
+      }
+    } catch (e) {
+      emit(StatsError('Xatolik: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onDeleteTransaction(
+    StatsDeleteTransactionEvent event,
+    Emitter<StatsState> emit,
+  ) async {
+    try {
+      emit(const StatsLoading());
+      
+      print('🗑️ Deleting transaction: ${event.transactionId}');
+      
+      final result = await _apiService.deleteTransaction(
+        transactionId: event.transactionId,
+      );
+
+      if (result['success']) {
+        print('🗑️ ✅ Transaction deleted successfully!');
+        emit(StatsTransactionDeleted(
+          message: result['message'] ?? 'Tranzaksiya o\'chirildi',
+        ));
+      } else {
+        print('🗑️ ❌ Delete failed!');
+        emit(StatsError(result['message'] ?? 'Tranzaksiyani o\'chirishda xatolik'));
       }
     } catch (e) {
       emit(StatsError('Xatolik: ${e.toString()}'));

@@ -174,3 +174,15 @@ class StatsCreateTransactionConversion extends StatsEvent {
     comment,
   ];
 }
+
+/// Tranzaksiyani o'chirish event
+class StatsDeleteTransactionEvent extends StatsEvent {
+  final String transactionId;
+
+  const StatsDeleteTransactionEvent({
+    required this.transactionId,
+  });
+
+  @override
+  List<Object?> get props => [transactionId];
+}

@@ -249,23 +249,45 @@ class _SettingsPageState extends State<SettingsPage> {
 
                             if (value) {
                               // Yoqish - biometrik test qilish
-                              final authenticated = await _biometricService.authenticate(
-                                localizedReason: 'Biometrik autentifikatsiyani yoqish uchun tasdiqlang',
-                              );
+                              try {
+                                final authenticated = await _biometricService.authenticate(
+                                  localizedReason: 'Biometrik autentifikatsiyani yoqish uchun tasdiqlang',
+                                );
 
-                              if (authenticated) {
-                                await prefs.setBiometricEnabled(true);
-                                setState(() {
-                                  _isBiometricEnabled = true;
-                                });
-                                
+                                if (authenticated) {
+                                  await prefs.setBiometricEnabled(true);
+                                  setState(() {
+                                    _isBiometricEnabled = true;
+                                  });
+                                  
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '$_biometricType muvaffaqiyatli yoqildi',
+                                      ),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                } else {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Autentifikatsiya bekor qilindi',
+                                      ),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
                                 if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      '$_biometricType muvaffaqiyatli yoqildi',
+                                      'Xatolik yuz berdi: $e',
                                     ),
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: Colors.red,
                                   ),
                                 );
                               }

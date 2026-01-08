@@ -44,12 +44,25 @@ class BiometricService {
     try {
       final isSupported = await isDeviceSupported();
       final canCheck = await canCheckBiometrics();
+      final availableBiometrics = await getAvailableBiometrics();
+
+      print('🔐 Biometric check:');
+      print('   - Device supported: $isSupported');
+      print('   - Can check biometrics: $canCheck');
+      print('   - Available biometrics: $availableBiometrics');
 
       if (!isSupported || !canCheck) {
+        print('❌ Biometric not available');
         return false;
       }
 
-      return await _auth.authenticate(
+      if (availableBiometrics.isEmpty) {
+        print('❌ No biometrics enrolled');
+        return false;
+      }
+
+      print('✅ Starting authentication...');
+      final result = await _auth.authenticate(
         localizedReason: localizedReason,
         authMessages: const <AuthMessages>[
           AndroidAuthMessages(
@@ -74,12 +87,15 @@ class BiometricService {
         options: AuthenticationOptions(
           useErrorDialogs: useErrorDialogs,
           stickyAuth: stickyAuth,
-          biometricOnly: true,
+          biometricOnly: false, // Allow device credentials as fallback
         ),
       );
+      
+      print('Authentication result: $result');
+      return result;
     } catch (e) {
-      print('Authentication error: $e');
-      return false;
+      print('❌ Authentication error: $e');
+      rethrow; // Re-throw to let caller handle
     }
   }
 

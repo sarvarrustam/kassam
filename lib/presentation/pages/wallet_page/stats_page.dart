@@ -4073,8 +4073,8 @@ class _StatsPageState extends State<StatsPage> {
       // USD/EUR: show with space formatting and 2 decimal places
       return _formatUSDAmount(balance);
     } else {
-      // UZS: show as integer with space formatting
-      return _formatNumber(balance.toInt());
+      // UZS: show with decimal if present, space formatting
+      return _formatNumberWithDecimal(balance);
     }
   }
 
@@ -4084,7 +4084,7 @@ class _StatsPageState extends State<StatsPage> {
     if (walletCurrency == 'USD') {
       return '${_formatUSDAmount(amount)} ${_getCurrencySymbol()}';
     } else {
-      return '${_formatNumber(amount.toInt())} ${_getCurrencySymbol()}';
+      return '${_formatNumberWithDecimal(amount)} ${_getCurrencySymbol()}';
     }
   }
 
@@ -4094,7 +4094,7 @@ class _StatsPageState extends State<StatsPage> {
     if (walletCurrency == 'USD') {
       return '${_formatUSDAmount(balance)} ${_getCurrencySymbol()}';
     } else {
-      return '${_formatNumber(balance.toInt())} ${_getCurrencySymbol()}';
+      return '${_formatNumberWithDecimal(balance)} ${_getCurrencySymbol()}';
     }
   }
 

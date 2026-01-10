@@ -230,7 +230,7 @@ class _HomePageState extends State<HomePage> {
                                               totalUZS / _exchangeRate;
                                           return _buildBalanceCard(
                                             'Mening Pulim',
-                                            '${_formatNumber(totalUZS.toInt())} UZS',
+                                            '${_formatUZSAmount(totalUZS)} UZS',
                                             subtitle:
                                                 '≈ ${uzsToUsdConversion.toStringAsFixed(2)} USD',
                                           );

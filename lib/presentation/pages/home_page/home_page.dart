@@ -253,7 +253,7 @@ class _HomePageState extends State<HomePage> {
                                         final totalUsdWithUzsConverted = totalUSD + (totalUZS / _exchangeRate);
                                         
                                         return _buildTotalBalanceCard(
-                                          totalUzsWithUsdConverted.toInt(),
+                                          totalUzsWithUsdConverted,
                                           totalUsdWithUzsConverted,
                                         );
                                       },
@@ -648,7 +648,7 @@ class _HomePageState extends State<HomePage> {
     return '$formattedInteger.$decimalPart';
   }
 
-  Widget _buildTotalBalanceCard(int totalInUZS, double totalInUSD) {
+  Widget _buildTotalBalanceCard(double totalInUZS, double totalInUSD) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.25),
@@ -685,43 +685,33 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _showBalance
-                          ? '${_formatNumber(totalInUZS)} UZS'
-                          : '••••••',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                child: Text(
+                  _showBalance
+                      ? '${_formatUZSAmount(totalInUZS)} UZS'
+                      : '••••••',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _showBalance
-                          ? '${_formatUSDAmount(totalInUSD)} USD'
-                          : '••••••',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+              const SizedBox(width: 12),
+              Text(
+                _showBalance
+                    ? '${_formatUSDAmount(totalInUSD)} USD'
+                    : '••••••',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

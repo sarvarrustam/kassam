@@ -4062,8 +4062,8 @@ class _StatsPageState extends State<StatsPage> {
       // USD: show with space formatting and 2 decimal places
       return '${_formatUSDAmount(amount)} USD';
     } else {
-      // UZS: show as integer with space formatting
-      return '${_formatNumber(amount.toInt())} ${currency.toUpperCase()}';
+      // UZS: show with decimal if present, space formatting
+      return '${_formatNumberWithDecimal(amount)} ${currency.toUpperCase()}';
     }
   }
 

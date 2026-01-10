@@ -56,7 +56,8 @@ class MyApp extends StatelessWidget {
             routeInformationParser: appRouter.routeInformationParser,
             routeInformationProvider: appRouter.routeInformationProvider,
             builder: (context, child) {
-              return Stack(
+              return 
+              Stack(
                 children: [
                   child ?? const SizedBox.shrink(),
                   const GlobalHttpInspectorButton(),

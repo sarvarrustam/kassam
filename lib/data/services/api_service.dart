@@ -80,7 +80,7 @@ class ApiService {
       ),
     );
 
-    // Alice Interceptor - HTTP so'rovlarni ko'rish uchun
+    //Alice Interceptor - HTTP so'rovlarni ko'rish uchun
     final aliceDioAdapter = AliceDioAdapter();
     _dio.interceptors.add(aliceDioAdapter);
     alice.addAdapter(aliceDioAdapter);
@@ -311,7 +311,7 @@ class ApiService {
 
         return {
           'success': false,
-          'error': 'Tarmoq xatoligi',
+          'error': 'Iltimos, internetingizni tekshiring',
           'errorCode': 0,
           'data': {},
         };
@@ -418,13 +418,13 @@ class ApiService {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return 'Serverga ulanishda xatolik. Qayta urinib ko\'ring.';
+        return 'Iltimos, internetingizni tekshiring';
       case DioExceptionType.connectionError:
-        return 'Internet bilan aloqa yo\'q.';
+        return 'Iltimos, internetingizni tekshiring';
       case DioExceptionType.badResponse:
         return e.response?.data['error'] ?? 'Server xatosi';
       default:
-        return 'Kutilmagan xatolik yuz berdi';
+        return 'Iltimos, internetingizni tekshiring';
     }
   }
 

@@ -1350,6 +1350,15 @@ class _StatsPageState extends State<StatsPage> {
                     toDate: toDateStr,
                   ),
                 );
+                
+                // Balansni ham yangilash
+                _statsBloc.add(
+                  StatsGetWalletBalanceEvent(
+                    walletId: _selectedWalletId!,
+                    fromDate: fromDateStr,
+                    toDate: toDateStr,
+                  ),
+                );
               }
             } else if (state is StatsError) {
               print('❌ StatsError received: ${state.message}');
@@ -3219,6 +3228,55 @@ class _StatsPageState extends State<StatsPage> {
             _parseAndSaveTransactions(state.data);
           }
           if (mounted) setState(() {});
+        } else if (state is StatsTransactionDeleted) {
+          // Tranzaksiya o'chirildi - ma'lumotlarni qayta yuklash
+          print('✅ Transaction deleted successfully!');
+          
+          // Loading holatini tozalash
+          if (mounted) {
+            setState(() {
+              _deletingTransactionIds.clear();
+            });
+          }
+          
+          // Success xabari
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          
+          // Tranzaksiyalar va balansni qayta yuklash
+          if (_selectedWalletId != null) {
+            final now = DateTime.now();
+            final fromDate = DateTime(now.year, now.month, 1);
+            final toDate = DateTime(now.year, now.month + 1, 0);
+
+            final fromDateStr =
+                '${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}';
+            final toDateStr =
+                '${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}';
+
+            // Tranzaksiyalarni qayta yuklash
+            _statsBloc.add(
+              StatsGetTransactionsEvent(
+                walletId: _selectedWalletId!,
+                fromDate: fromDateStr,
+                toDate: toDateStr,
+              ),
+            );
+
+            // Balansni qayta yuklash
+            _statsBloc.add(
+              StatsGetWalletBalanceEvent(
+                walletId: _selectedWalletId!,
+                fromDate: fromDateStr,
+                toDate: toDateStr,
+              ),
+            );
+          }
         }
       },
       child: Scaffold(
@@ -3797,17 +3855,14 @@ class _StatsPageState extends State<StatsPage> {
                                           );
 
                                           if (confirmed == true && !_deletingTransactionIds.contains(t.id)) {
-                                            // Loading holatini o'rnatish (faqat shu ID uchun)
+                                            // Loading holatini o'rnatish
                                             setState(() {
                                               _deletingTransactionIds.add(t.id!);
                                             });
                                             
-                                            // Ro'yxatdan darhol o'chirish
-                                            setState(() {
-                                              _transactions.removeWhere((trans) => trans.id == t.id);
-                                            });
+                                            print('🗑️ O\'chirilayotgan tranzaksiya ID: ${t.id}');
                                             
-                                            // BLoC orqali API ga o'chirish
+                                            // Faqat DELETE API ga murojaat qilish
                                             _statsBloc.add(
                                               StatsDeleteTransactionEvent(
                                                 transactionId: t.id!,

@@ -619,6 +619,35 @@ class _HomePageState extends State<HomePage> {
     return '$formattedInteger.$decimalPart';
   }
 
+  String _formatUZSAmount(double amount) {
+    // UZS miqdorini formatlash - kasr qism bo'lsa ko'rsatish
+    if (amount == amount.toInt()) {
+      // Kasr qism yo'q
+      return _formatNumber(amount.toInt());
+    }
+    
+    // Kasr qism bor - decimal formatni saqlash
+    final numberStr = amount.toStringAsFixed(2);
+    final parts = numberStr.split('.');
+    final integerPart = int.parse(parts[0]);
+    String decimalPart = parts[1];
+    
+    // Faqat .00 bo'lsa olib tashlash
+    if (decimalPart == '00') {
+      return _formatNumber(integerPart);
+    }
+    
+    // Oxirgi 0 ni olib tashlash (100.10 -> 100.1)
+    decimalPart = decimalPart.replaceAll(RegExp(r'0+$'), '');
+    
+    if (decimalPart.isEmpty) {
+      return _formatNumber(integerPart);
+    }
+    
+    final formattedInteger = _formatNumber(integerPart);
+    return '$formattedInteger.$decimalPart';
+  }
+
   Widget _buildTotalBalanceCard(int totalInUZS, double totalInUSD) {
     return Container(
       decoration: BoxDecoration(
@@ -707,7 +736,8 @@ class _HomePageState extends State<HomePage> {
     if (wallet.currency.toUpperCase() == 'USD') {
       formattedAmount = _formatUSDAmount(wallet.value);
     } else {
-      formattedAmount = _formatNumber(wallet.value.toInt());
+      // UZS uchun kasr qismni ham ko'rsatish
+      formattedAmount = _formatUZSAmount(wallet.value);
     }
     
     final displayText = _showBalance

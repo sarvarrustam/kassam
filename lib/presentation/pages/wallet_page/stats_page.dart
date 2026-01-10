@@ -65,6 +65,7 @@ class _StatsPageState extends State<StatsPage> {
   Function? _dialogRefreshCallback;
 
   @override
+  @override
   void initState() {
     super.initState();
     _statsBloc = StatsBloc();
@@ -72,7 +73,7 @@ class _StatsPageState extends State<StatsPage> {
     if (widget.walletId != null) {
       _selectedWalletId = widget.walletId;
     }
-    // _loadExchangeRate() olib tashlandi - kurs endi tranzaksiyalardan kelyapti
+    _loadExchangeRate(); // Kursni yuklash
     _loadCustomCategories();
     _loadInitialTransactions();
     // _loadWalletsList() olib tashlandi - faqat konvertatsiya dialogida kerak bo'lganda yuklanadi
@@ -997,6 +998,9 @@ class _StatsPageState extends State<StatsPage> {
 
   void _showAddTransactionSheet() {
     print('🔄 Opening new transaction dialog - resetting state...');
+
+    // Kursni yangilash (home page dan qaytganda yangi kurs bo'lishi mumkin)
+    _loadExchangeRate();
 
     // StatsGetDebtorsCreditors() olib tashlandi - + tugmasi bosilganda API chaqirilmasin
     // Faqat ichkaridagi qarz tugmalarini bosganda API chaqiriladi
@@ -3296,21 +3300,9 @@ class _StatsPageState extends State<StatsPage> {
         body: RefreshIndicator(
           color: AppColors.primaryGreen,
           onRefresh: () async {
-            // Internet ulanishini tekshirish
-            final hasInternet = await _connectivityService
-                .hasInternetConnection();
-            if (!hasInternet) {
-              if (mounted) {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const NoInternetPage(),
-                  ),
-                );
-              }
-              return;
-            }
+            print('🔄 PULL-TO-REFRESH STARTED!');
 
-            // Tranzaksiyalarni yangilash
+            // Tranzaksiyalarni yangilash (Internet tekshiruvini olib tashladik - API o'zi xato beradi)
             if (_selectedWalletId != null) {
               final now = DateTime.now();
               final fromDate = DateTime(now.year, now.month, 1);
@@ -3321,6 +3313,7 @@ class _StatsPageState extends State<StatsPage> {
               final toDateStr =
                   '${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}';
 
+              print('🔄 Calling API: GET /transaction/list');
               // API: GET /transaction/list - Pull-to-refresh orqali tranzaksiyalarni yangilash
               _statsBloc.add(
                 StatsGetTransactionsEvent(
@@ -3330,6 +3323,7 @@ class _StatsPageState extends State<StatsPage> {
                 ),
               );
 
+              print('🔄 Calling API: GET /wallet/balance');
               // API: GET /wallet/balance - Pull-to-refresh orqali balansni yangilash
               _statsBloc.add(
                 StatsGetWalletBalanceEvent(
@@ -3338,10 +3332,13 @@ class _StatsPageState extends State<StatsPage> {
                   toDate: toDateStr,
                 ),
               );
+            } else {
+              print('❌ Wallet ID is null!');
             }
 
-            // API chaqiruvini kutish - uzunroq vaqt
+            // API chaqiruvini kutish
             await Future.delayed(const Duration(milliseconds: 1500));
+            print('✅ PULL-TO-REFRESH COMPLETED!');
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),

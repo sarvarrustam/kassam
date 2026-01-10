@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:kassam/data/services/app_preferences_service.dart';
 import 'package:kassam/presentation/theme/app_colors.dart';
 
@@ -76,8 +77,8 @@ class _PinCodeSetupPageState extends State<PinCodeSetupPage> {
       await prefs.savePinCode(_firstPin);
       
       if (mounted) {
-        // Home sahifasiga o'tish
-        context.go('/home');
+        // Biometrik yoqish so'rovini ko'rsatish
+        await _showBiometricSetupDialog();
       }
     } else {
       // PIN mos kelmadi
@@ -98,6 +99,61 @@ class _PinCodeSetupPageState extends State<PinCodeSetupPage> {
           });
         }
       });
+    }
+  }
+
+  Future<void> _showBiometricSetupDialog() async {
+    // Biometrik mavjudligini tekshirish
+    final localAuth = LocalAuthentication();
+    bool canCheckBiometrics = false;
+    
+    try {
+      canCheckBiometrics = await localAuth.canCheckBiometrics;
+      final isDeviceSupported = await localAuth.isDeviceSupported();
+      canCheckBiometrics = canCheckBiometrics && isDeviceSupported;
+    } catch (e) {
+      print('❌ Biometrics check error: $e');
+    }
+
+    if (!canCheckBiometrics || !mounted) {
+      // Biometrik yo'q - to'g'ridan-to'g'ri Home ga o'tish
+      context.go('/home');
+      return;
+    }
+
+    // To'g'ridan-to'g'ri biometrik autentifikatsiyani ochish
+    try {
+      final authenticated = await localAuth.authenticate(
+        localizedReason: 'Keyingi safar tezroq kirish uchun barmoq izi yoki yuzingizni tasdiqlang',
+        options: const AuthenticationOptions(
+          biometricOnly: false,
+          stickyAuth: true,
+          useErrorDialogs: true,
+        ),
+      );
+
+      if (authenticated && mounted) {
+        // Biometrik muvaffaqiyatli - yoqish
+        final prefs = AppPreferencesService();
+        await prefs.setBiometricEnabled(true);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Barmoq izi yoqildi! ✅'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Biometric auth error: $e');
+      // Xato bo'lsa yoki bekor qilsa, davom etish
+    }
+
+    if (mounted) {
+      context.go('/home');
     }
   }
 

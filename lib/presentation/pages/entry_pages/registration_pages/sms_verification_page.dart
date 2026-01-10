@@ -94,7 +94,8 @@ class _SmsVerificationPageState extends State<SmsVerificationPage> {
           );
           // User ma'lumotlarini yuklash
           context.read<UserBloc>().add(UserGetDataEvent());
-          context.go('/home');
+          // SMS tasdiqdan keyin yangi PIN yaratish sahifasiga o'tkazish
+          context.go('/pin-setup');
         } else if (state is AuthVerifiedUserNew) {
          
          

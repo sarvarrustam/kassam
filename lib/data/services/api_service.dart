@@ -816,15 +816,21 @@ class ApiService {
         'debtorCreditorId': debtorCreditorId,
         'previousDebt': previousDebt,
         'currency': currency.toLowerCase(),
-        'amount': amount.toString(), // String sifatida - backend parse qiladi
-        'amountDebt': amountDebt.toString(), // String sifatida
-        'summa': amount.toString(), // Server compatibility
-        'sumaQarz': amountDebt.toString(), // Server compatibility
+        'amount': currency.toLowerCase() == 'usd' ? amount : amount.toInt(),
+        'amountDebt': currency.toLowerCase() == 'usd'
+            ? amountDebt
+            : amountDebt.toInt(),
+        'summa': currency.toLowerCase() == 'usd'
+            ? amount
+            : amount.toInt(), // Server compatibility
+        'sumaQarz': currency.toLowerCase() == 'usd'
+            ? amountDebt
+            : amountDebt.toInt(), // Server compatibility
         if (comment != null && comment.isNotEmpty) 'comment': comment,
       };
 
       print('💰 Request body: $body');
-      print('💰 Decimal precision check:');
+      print('💰 USD Precision check:');
       print('   - Original amount: $amount');
       print('   - Original amountDebt: $amountDebt');
       print('   - Sent amount: ${body['amount']}');

@@ -17,7 +17,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late final PageController _pageController;
   int _currentPage = 0;
   bool _showBalance = true;
@@ -30,11 +30,13 @@ class _HomePageState extends State<HomePage> {
   double? _cachedDollarTotal;
   String? _cachedUserName;
   double _exchangeRate = 12000.0; // Default kurs
+  bool _isInitialBuild = true;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
+    WidgetsBinding.instance.addObserver(this);
 
     // Frame render bo'lgandan keyin ishga tushirish
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -47,7 +49,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // App foreground ga kelganda refresh
+      print('🔄 App resumed - refreshing home page balances');
+      context.read<HomeBloc>().add(HomeGetWalletsEvent());
+      context.read<HomeBloc>().add(HomeGetTotalBalancesEvent());
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     super.dispose();
   }
@@ -749,10 +762,10 @@ class _HomePageState extends State<HomePage> {
         await context.push(
           '/stats?walletId=${wallet.id}&walletName=${Uri.encodeComponent(wallet.name)}&walletCurrency=${wallet.type}',
         );
-        // Stats page'dan qaytganda hamyonlarni yangilash
+        // Stats page'dan qaytganda hamyonlarni va jami balanslarni yangilash
         if (mounted) {
           context.read<HomeBloc>().add(HomeGetWalletsEvent());
-          // HomeGetTotalBalancesEvent() olib tashlandi - tranzaksiya sahifasiga o'tganda getWalletsBalans kerak emas
+          context.read<HomeBloc>().add(HomeGetTotalBalancesEvent());
         }
       },
       child: Container(

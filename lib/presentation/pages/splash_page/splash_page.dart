@@ -71,7 +71,7 @@ class _SplashPageState extends State<SplashPage>
         // Hozirgi app versiyasini olish
         final packageInfo = await PackageInfo.fromPlatform();
         final versionParts = packageInfo.version.split('.');
-        final currentVersion = int.tryParse(versionParts.first) ?? 1;
+        final currentVersion = int.tryParse(versionParts.first) ?? 2;
 
         print('📱 Current app version: $currentVersion');
 

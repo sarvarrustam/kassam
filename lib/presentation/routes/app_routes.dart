@@ -210,9 +210,9 @@ final GoRouter appRouter = GoRouter(
       name: 'version-update',
       builder: (context, state) {
         final currentVersion =
-            int.tryParse(state.uri.queryParameters['current'] ?? '1') ?? 1;
+            int.tryParse(state.uri.queryParameters['current'] ?? '2') ?? 2;
         final requiredVersion =
-            int.tryParse(state.uri.queryParameters['required'] ?? '1') ?? 1;
+            int.tryParse(state.uri.queryParameters['required'] ?? '2') ?? 2;
         return VersionUpdateRequiredPage(
           currentVersion: currentVersion,
           requiredVersion: requiredVersion,
